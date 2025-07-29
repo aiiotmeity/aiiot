@@ -1,0 +1,27 @@
+
+﻿
+143
+hook.js:608 
+ ❌ Error fetching health report: 
+bundle.js:80456 
+ ❌ Error fetching health report: AbortError: signal is aborted without reason
+    at bundle.js:80491:36
+    at safelyCallDestroy (bundle.js:54752:9)
+    at commitHookEffectListUnmount (bundle.js:54890:15)
+    at commitPassiveUnmountOnFiber (bundle.js:56512:15)
+    at commitPassiveUnmountEffects_complete (bundle.js:56492:11)
+    at commitPassiveUnmountEffects_begin (bundle.js:56483:11)
+    at commitPassiveUnmountEffects (bundle.js:56437:7)
+    at flushPassiveEffectsImpl (bundle.js:58258:7)
+    at flushPassiveEffects (bundle.js:58212:18)
+    at bundle.js:58027:13
+4914
+bundle.js:80456 
+ ❌ Error fetching health report: 
+bundle.js:80431  
+ GET http://localhost:8000/api/health-report/?username=jayasree&lat=10.177898877902233&lng=76.42994035405599 net::ERR_CONNECTION_REFUSED
+bundle.js:80456 
+ ❌ Error fetching health report: 
+1513
+bundle.js:80456 
+ ❌ Error fetching health report:
