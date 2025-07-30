@@ -36,7 +36,7 @@ urlpatterns = [
     path('api/family-members/', views.family_members_api, name='family_members_api'),
     path('api/family-members/<int:member_id>/', views.delete_family_member_api, name='delete_family_member_api'),
     path('api/family-members/update/<int:member_id>/', views.update_family_member_api, name='update_family_member_api'),
-     path('api/health-report/', views.health_report_api, name='health_report_api'),
+    
     path('api/admin/login/', views.admin_login_api, name='admin_login_api'),
     path('api/admin/dashboard/', views.admin_dashboard_api, name='admin_dashboard_api'),
 ]

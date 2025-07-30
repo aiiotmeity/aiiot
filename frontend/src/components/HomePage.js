@@ -132,7 +132,7 @@ function HomePage() {
 
   const displayAQI = loading && !homeData ? "..." : homeData?.highest_sub_index ?? "N/A";
   const displayLastUpdate = loading && !homeData ? "Syncing..." : homeData?.last_updated_on ?? "No data";
-  const displayStationName = homeData?.station_name || 'ASIET Campus Station';
+  const displayStationName = homeData?.station_name || 'No data';
 
   return (
     <div className="homepage">
@@ -171,7 +171,7 @@ function HomePage() {
           <div className="hero-text-section">
             <h1 className="hero-title">Air Quality Monitoring</h1>
             <p className="hero-subtitle">Live air quality updates and insights from Kalady, Ernakulam</p>
-            <p className="hero-note">Real-time AQI from {displayStationName}</p>
+            <p className="hero-note">Current AQI from the nearest monitoring point</p>
             
             <div className="hero-actions">
               <button onClick={handleMapNavigation} className="cta-button primary">
@@ -368,7 +368,7 @@ function HomePage() {
                 Get accurate air quality predictions with advanced meteorological models 
                 and machine learning algorithms for better planning.
               </p>
-              <button onClick={handleMapNavigation} className="service-button">
+              <button onClick={handleDashboardNavigation} className="service-button">
                 <i className="fas fa-arrow-right"></i>View Forecast
               </button>
             </div>

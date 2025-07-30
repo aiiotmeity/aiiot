@@ -53,6 +53,57 @@ const createAqiIcon = (aqi) => {
     return window.L.divIcon({ html: iconHtml, className: 'custom-div-icon', iconSize: [40, 40], iconAnchor: [20, 40] });
 };
 
+// Enhanced popup content creator
+const createStationPopupContent = (station, stationId) => {
+    const { station_info, averages, highest_sub_index } = station;
+    const pollutants = [
+        { key: 'pm25', name: 'PM2.5', unit: 'µg/m³' },
+        { key: 'pm10', name: 'PM10', unit: 'µg/m³' },
+        { key: 'so2', name: 'SO₂', unit: 'µg/m³' },
+        { key: 'no2', name: 'NO₂', unit: 'µg/m³' },
+        { key: 'co', name: 'CO', unit: 'µg/m³' },
+        { key: 'o3', name: 'O₃', unit: 'µg/m³' },
+        { key: 'nh3', name: 'NH₃', unit: 'µg/m³' }
+    ];
+
+    const readingsHtml = pollutants.map(p => {
+        const value = averages?.[p.key];
+        const displayValue = value ? value.toFixed(2) : 'N/A';
+        return `
+            <div class="popup-reading-item">
+                <div class="popup-reading-label">${p.name}</div>
+                <div class="popup-reading-value">
+                    ${displayValue}
+                    <span class="popup-reading-unit">${p.unit}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="map-station-popup">
+            <div class="popup-header">
+                <div class="popup-station-name">${station_info.name}</div>
+                <div class="popup-aqi-display">
+                    <div class="popup-aqi-value" style="background-color: ${getAQIColor(highest_sub_index)}">
+                        ${Math.round(highest_sub_index) || 'N/A'}
+                    </div>
+                    <div class="popup-aqi-status">${getAQIStatus(highest_sub_index)}</div>
+                </div>
+            </div>
+            <div class="popup-readings">
+                <div class="popup-readings-title">Current Readings</div>
+                <div class="popup-readings-grid">
+                    ${readingsHtml}
+                </div>
+            </div>
+            <a href="#" class="popup-view-details" onclick="window.mapPageInstance.handleStationSelect('${stationId}', true); return false;">
+                📊 View Detailed Analysis
+            </a>
+        </div>
+    `;
+};
+
 const MapPage = () => {
     // === STATE MANAGEMENT ===
     const [mapInstance, setMapInstance] = useState(null);
@@ -85,6 +136,26 @@ const MapPage = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+    // Make component instance available globally for popup callbacks
+    useEffect(() => {
+        window.mapPageInstance = {
+            handleStationSelect: (stationId, fromPopup = false) => {
+                setSelectedStationId(stationId);
+                setIsPanelOpen(true);
+                if (fromPopup && mapInstance && stations[stationId]) {
+                    const { lat, lng } = stations[stationId].station_info;
+                    mapInstance.setView([lat, lng], 15);
+                }
+                if (isMobile && fromPopup) {
+                    setTimeout(() => setIsPanelOpen(false), 500);
+                }
+            }
+        };
+        return () => {
+            delete window.mapPageInstance;
+        };
+    }, [mapInstance, stations, isMobile]);
 
     // === RESPONSIVE DETECTION ===
     useEffect(() => {
@@ -233,6 +304,7 @@ const MapPage = () => {
                 setForecastUpdatedAt(data.forecast_updated_at || null);
             } catch (err) {
                 console.error("Forecast fetch error:", err);
+                setForecastData([]);
             } finally {
                 setIsForecastLoading(false);
             }
@@ -241,7 +313,7 @@ const MapPage = () => {
         fetchForecast();
     }, [selectedStationId, API_BASE_URL]);
 
-    // === MAP MARKERS UPDATE ===
+    // === MAP MARKERS UPDATE WITH ENHANCED POPUPS ===
     useEffect(() => {
         if (!mapInstance || Object.keys(stations).length === 0) return;
         
@@ -253,6 +325,13 @@ const MapPage = () => {
             const marker = window.L.marker([lat, lng], { 
                 icon: createAqiIcon(station.highest_sub_index) 
             }).addTo(mapInstance);
+            
+            // Enhanced popup with detailed information
+            const popupContent = createStationPopupContent(station, id);
+            marker.bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'enhanced-station-popup'
+            });
             
             marker.on('click', () => {
                 setSelectedStationId(id);
@@ -384,7 +463,11 @@ const MapPage = () => {
                             <li><Link to="/" className="nav-link">Home</Link></li>
                             <li><Link to="/map" className="nav-link active">Live Map</Link></li>
                             {user && (
-                                <li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
+                                <>
+                                    <li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
+                                    <li><Link to="/health-assessment" className="nav-link">Health Update</Link></li>
+                                    <li><Link to="/add-family" className="nav-link">Add Family</Link></li>
+                                </>
                             )}
                         </ul>
                     </div>
@@ -541,63 +624,102 @@ const MapPage = () => {
                 {/* RIGHT PANEL - Station Details (AQI + Forecast + Current Readings) */}
                 <div className={`station-details-panel ${isPanelOpen ? 'open' : ''}`}>
                     <div className="station-details-content">
-                        // Replace the station details section in your MapPage.js with this:
+                        {selectedStationData ? (
+                            <div className="station-details">
+                                {/* Station Header */}
+                                <div className="station-header">
+                                    <h3>{selectedStationData.station_info.name}</h3>
+                                </div>
 
-{selectedStationData ? (
-    <div className="station-details">
-        {/* Station Header */}
-        <div className="station-header">
-            <h3>{selectedStationData.station_info.name}</h3>
-        </div>
+                                {/* AQI Section */}
+                                <div className="aqi-section">
+                                    <div className="current-aqi">
+                                        <span className="aqi-label">Current AQI</span>
+                                        <span 
+                                            className="aqi-value"
+                                            style={{ color: getAQIColor(selectedStationData.highest_sub_index) }}
+                                        >
+                                            {Math.round(selectedStationData.highest_sub_index)}
+                                        </span>
+                                        <span className="aqi-status">
+                                            {getAQIStatus(selectedStationData.highest_sub_index)}
+                                        </span>
+                                    </div>
+                                </div>
 
-        {/* AQI Section */}
-        <div className="aqi-section">
-            <div className="current-aqi">
-                <span className="aqi-label">Current AQI</span>
-                <span 
-                    className="aqi-value"
-                    style={{ color: getAQIColor(selectedStationData.highest_sub_index) }}
-                >
-                    {Math.round(selectedStationData.highest_sub_index)}
-                </span>
-                <span className="aqi-status">
-                    {getAQIStatus(selectedStationData.highest_sub_index)}
-                </span>
-            </div>
-        </div>
+                                {/* Current Readings Section - FIRST, FULL WIDTH */}
+                                <div className="readings-section">
+                                    <h4 className="section-title">
+                                        <i className="fas fa-chart-bar"></i>
+                                        Current Readings
+                                    </h4>
+                                    <div className="pollutant-grid">
+                                        {pollutants.map(p => (
+                                            <div className="metric-card" key={p.key}>
+                                                <div className="metric-label">{p.name}</div>
+                                                <div className="metric-value">
+                                                    {(selectedStationData.averages?.[p.key]?.toFixed(2)) ?? 'N/A'}
+                                                    <span className="metric-unit">µg/m³</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
 
-        {/* Current Readings Section - FIRST, FULL WIDTH */}
-        <div className="readings-section">
-            <h4 className="section-title">
-                <i className="fas fa-chart-bar"></i>
-                Current Readings
-            </h4>
-            <div className="pollutant-grid">
-                {pollutants.map(p => (
-                    <div className="metric-card" key={p.key}>
-                        <div className="metric-label">{p.name}</div>
-                        <div className="metric-value">
-                            {(selectedStationData.averages?.[p.key]?.toFixed(2)) ?? 'N/A'}
-                            <span className="metric-unit">µg/m³</span>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
+                                {/* Enhanced Forecast Section */}
+                                <div className="forecast-section">
+                                    <div className="forecast-header">
+                                        <h4 className="section-title">
+                                            <i className="fas fa-chart-line"></i>
+                                            4-Day Forecast
+                                        </h4>
+                                        <select 
+                                            className="parameter-selector"
+                                            value={selectedParameter}
+                                            onChange={(e) => setSelectedParameter(e.target.value)}
+                                        >
+                                            <option value="pm25_max">PM2.5</option>
+                                            <option value="pm10_max">PM10</option>
+                                            <option value="so2_max">SO₂</option>
+                                            <option value="no2_max">NO₂</option>
+                                            <option value="co_max">CO</option>
+                                            <option value="o3_max">O₃</option>
+                                            <option value="nh3_max">NH₃</option>
+                                        </select>
+                                    </div>
+                                    
+                                    {forecastUpdatedAt && (
+                                        <div className="forecast-update-time">
+                                            Last updated: {new Date(forecastUpdatedAt).toLocaleString()}
+                                        </div>
+                                    )}
 
-        
-    </div>
-) : (
-    <div className="no-station-selected">
-        <div className="no-station-message">
-            <i className="fas fa-satellite-dish"></i>
-            <h3>Select a Station</h3>
-            <p>Choose a monitoring station from the left panel to view detailed air quality data, current readings, and forecast information.</p>
-        </div>
-    </div>
-)}
-
-
+                                    <div className="chart-container">
+                                        {isForecastLoading ? (
+                                            <div className="forecast-loader">
+                                                <div className="loading-spinner small"></div>
+                                                <p>Loading forecast...</p>
+                                            </div>
+                                        ) : forecastData.length > 0 ? (
+                                            <Line data={forecastChartData} options={forecastChartOptions} />
+                                        ) : (
+                                            <div className="no-data-message">
+                                                <i className="fas fa-chart-line"></i>
+                                                <p>No forecast data available</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="no-station-selected">
+                                <div className="no-station-message">
+                                    <i className="fas fa-satellite-dish"></i>
+                                    <h3>Select a Station</h3>
+                                    <p>Choose a monitoring station from the left panel or click on a map marker to view detailed air quality data, current readings, and forecast information.</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

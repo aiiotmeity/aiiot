@@ -291,10 +291,7 @@ function FamilyPage() {
                                 <span className="btn-icon">➕</span>
                                 <span>Add Family Member</span>
                             </button>
-                            <button className="refresh-btn secondary" onClick={fetchFamilyMembers}>
-                                <span className="btn-icon">🔄</span>
-                                <span>Refresh</span>
-                            </button>
+                            
                         </div>
                     </div>
                 </div>
@@ -383,10 +380,7 @@ function FamilyPage() {
                     <div className="section-header">
                         <h2 className="section-title">👨‍👩‍👧‍👦 Family Members</h2>
                         <div className="section-actions">
-                            <div className="view-toggle">
-                                <button className="toggle-btn active">🔳 Grid View</button>
-                                <button className="toggle-btn">📋 List View</button>
-                            </div>
+                            
                         </div>
                     </div>
 
