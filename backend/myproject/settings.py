@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-
+import dj_database_url
 
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,17 +19,23 @@ if os.environ.get('RENDER'):
     ALLOWED_HOSTS = [
         'aiiot.it.com',
         'www.aiiot.it.com', 
-        'airaware-app-gcw7.onrender.com',  # Your current render URL
-        '*.onrender.com'  # Allow any render subdomain
+        'airaware-app-gcw7.onrender.com',
+        '.onrender.com'
     ]
     
-    # Database - Use PostgreSQL on Render
-    
+    # DATABASE CONFIGURATION - FIXED!
+    DATABASES = {
+        'default': dj_database_url.parse(
+            os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
     
     # Static files configuration for production
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
-        'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
+        'whitenoise.middleware.WhiteNoiseMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'corsheaders.middleware.CorsMiddleware',
         'django.middleware.common.CommonMiddleware',
@@ -48,13 +54,13 @@ if os.environ.get('RENDER'):
     CORS_ALLOWED_ORIGINS = [
         "https://aiiot.it.com",
         "https://www.aiiot.it.com",
-        "https://airaware-app-gcw7.onrender.com",  # Your current render URL
+        "https://airaware-app-gcw7.onrender.com",
     ]
     
     CSRF_TRUSTED_ORIGINS = [
         "https://aiiot.it.com",
         "https://www.aiiot.it.com",
-        "https://airaware-app-gcw7.onrender.com",  # Your current render URL
+        "https://airaware-app-gcw7.onrender.com",
     ]
     
     # Security settings for production
@@ -114,7 +120,7 @@ ROOT_URLCONF = 'myproject.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'frontend' / 'build'],  # Add React build directory
+        'DIRS': [BASE_DIR / 'frontend' / 'build'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -156,7 +162,7 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Session settings
-SESSION_COOKIE_AGE = 216000  # 2 hours in seconds
+SESSION_COOKIE_AGE = 216000
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
 
