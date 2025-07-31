@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
-# exit on error
 set -o errexit
 
-# Build the React frontend
+echo "🔄 Building React frontend..."
 npm --prefix frontend install
 npm --prefix frontend run build
 
-# Install Python dependencies
+echo "📁 Copying React build to Django static..."
+mkdir -p backend/static
+cp -r frontend/build/* backend/static/ 2>/dev/null || echo "Frontend build not found, continuing..."
+
+echo "📦 Installing Python dependencies..."
 pip install -r backend/requirements.txt
 
-# Collect static files for Django
+echo "🗄️ Running Django migrations..."
+python backend/manage.py migrate
+
+echo "📄 Collecting static files..."
 python backend/manage.py collectstatic --no-input
+
+echo "✅ Build completed successfully!"
