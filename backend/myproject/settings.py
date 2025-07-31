@@ -7,7 +7,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+# Use the secret key from environment variables, fallback to your generated key
+SECRET_KEY = os.environ.get('SECRET_KEY', '!&_&a&%%jycx%o%lh&q3q7c%$u6^@wn(ai^*7ex#_8o5qk2)8k')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
@@ -18,13 +19,17 @@ if os.environ.get('RENDER'):
     ALLOWED_HOSTS = [
         'aiiot.it.com',
         'www.aiiot.it.com', 
-        'airaware-app.onrender.com',  # Your render subdomain
+        'airaware-app-gcw7.onrender.com',  # Your current render URL
         '*.onrender.com'  # Allow any render subdomain
     ]
     
     # Database - Use PostgreSQL on Render
     DATABASES = {
-        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+        'default': dj_database_url.parse(
+            os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
     
     # Static files configuration for production
@@ -49,18 +54,20 @@ if os.environ.get('RENDER'):
     CORS_ALLOWED_ORIGINS = [
         "https://aiiot.it.com",
         "https://www.aiiot.it.com",
+        "https://airaware-app-gcw7.onrender.com",  # Your current render URL
     ]
     
     CSRF_TRUSTED_ORIGINS = [
         "https://aiiot.it.com",
         "https://www.aiiot.it.com",
+        "https://airaware-app-gcw7.onrender.com",  # Your current render URL
     ]
     
     # Security settings for production
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     
@@ -113,7 +120,7 @@ ROOT_URLCONF = 'myproject.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'frontend' / 'build'],  # Add React build directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -172,9 +179,16 @@ if os.environ.get('RENDER'):
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+                'style': '{',
+            },
+        },
         'handlers': {
             'console': {
                 'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
             },
         },
         'root': {
@@ -187,5 +201,15 @@ if os.environ.get('RENDER'):
                 'level': 'INFO',
                 'propagate': False,
             },
+            'myapp': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+                'propagate': False,
+            },
         },
     }
+
+# Additional static files directories
+STATICFILES_DIRS = [
+    BASE_DIR / 'frontend' / 'build' / 'static',
+] if (BASE_DIR / 'frontend' / 'build' / 'static').exists() else []
