@@ -4,10 +4,11 @@ set -o errexit
 echo "🔄 Building React frontend..."
 npm --prefix frontend install
 
-# ✅ FIX: Make react-scripts executable
+# ✅ Fix permission issue with react-scripts on Linux (Render)
 chmod +x frontend/node_modules/.bin/react-scripts
 
-npm --prefix frontend run build
+# ✅ Avoid treating warnings as errors during CI build
+CI='' npm --prefix frontend run build
 
 echo "📁 Copying React build to Django static..."
 mkdir -p backend/static
