@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-import dj_database_url
+
 
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,13 +24,7 @@ if os.environ.get('RENDER'):
     ]
     
     # Database - Use PostgreSQL on Render
-    DATABASES = {
-        'default': dj_database_url.parse(
-            os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
+    
     
     # Static files configuration for production
     MIDDLEWARE = [
