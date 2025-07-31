@@ -3,6 +3,10 @@ set -o errexit
 
 echo "🔄 Building React frontend..."
 npm --prefix frontend install
+
+# ✅ FIX: Make react-scripts executable
+chmod +x frontend/node_modules/.bin/react-scripts
+
 npm --prefix frontend run build
 
 echo "📁 Copying React build to Django static..."
