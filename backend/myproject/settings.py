@@ -10,8 +10,39 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Use the secret key from environment variables, fallback to your generated key
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+
+# DATABASE CONFIGURATION WITH ERROR HANDLING
+database_url = os.environ.get('DATABASE_URL')
+
+if database_url and database_url.strip():
+    # Production database - Parse DATABASE_URL
+    try:
+        DATABASES = {
+            'default': dj_database_url.parse(
+                database_url,
+                conn_max_age=600,
+                conn_health_checks=True,
+            )
+        }
+    except ValueError as e:
+        print(f"Database URL parse error: {e}")
+        print(f"DATABASE_URL value: '{database_url}'")
+        # Fallback to SQLite if DATABASE_URL is invalid
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+else:
+    # Development database or fallback
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Production vs Development settings
 if os.environ.get('RENDER'):
@@ -22,15 +53,6 @@ if os.environ.get('RENDER'):
         'airaware-app-gcw7.onrender.com',
         '.onrender.com'
     ]
-    
-    # DATABASE CONFIGURATION - FIXED!
-    DATABASES = {
-        'default': dj_database_url.parse(
-            os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
     
     # Static files configuration for production
     MIDDLEWARE = [
@@ -67,21 +89,10 @@ if os.environ.get('RENDER'):
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
     
 else:
     # Development settings
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'aiiot.it.com']
-    
-    # Development database
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
     
     # Standard middleware for development
     MIDDLEWARE = [
@@ -174,42 +185,17 @@ CACHES = {
     }
 }
 
-# Logging configuration for production
-if os.environ.get('RENDER'):
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'verbose': {
-                'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-                'style': '{',
-            },
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
         },
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'verbose',
-            },
-        },
-        'root': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-        'loggers': {
-            'django': {
-                'handlers': ['console'],
-                'level': 'INFO',
-                'propagate': False,
-            },
-            'myapp': {
-                'handlers': ['console'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-        },
-    }
-
-# Additional static files directories
-STATICFILES_DIRS = [
-    BASE_DIR / 'frontend' / 'build' / 'static',
-] if (BASE_DIR / 'frontend' / 'build' / 'static').exists() else []
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
