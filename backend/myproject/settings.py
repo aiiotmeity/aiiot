@@ -12,7 +12,7 @@ SECRET_KEY = 'your-secret-key-here'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['airaware-app.onrender.com']
 
 # Application definition
 
