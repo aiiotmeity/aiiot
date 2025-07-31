@@ -4,15 +4,32 @@ set -o errexit
 echo "🔄 Building React frontend..."
 npm --prefix frontend install
 
-# ✅ Fix permission issue with react-scripts on Linux (Render)
+# Fix permission issue with react-scripts on Linux (Render)
 chmod +x frontend/node_modules/.bin/react-scripts
 
-# ✅ Avoid treating warnings as errors during CI build
+# Build React app
 CI='' npm --prefix frontend run build
 
-echo "📁 Copying React build to Django static..."
+echo "📁 Creating Django templates folder..."
+# CREATE TEMPLATES FOLDER - This will make your HomePage.js work!
+mkdir -p backend/templates
+
+echo "📋 Copying React build to Django..."
+# Copy React's built index.html (with your HomePage.js inside) to Django templates
+if [ -f "frontend/build/index.html" ]; then
+    cp frontend/build/index.html backend/templates/
+    echo "✅ React index.html (with HomePage.js) copied to Django templates"
+else
+    echo "❌ React build failed!"
+    exit 1
+fi
+
+# Copy React static files (CSS, JS for your HomePage)
 mkdir -p backend/static
-cp -r frontend/build/* backend/static/ 2>/dev/null || echo "Frontend build not found, continuing..."
+if [ -d "frontend/build/static" ]; then
+    cp -r frontend/build/static/* backend/static/
+    echo "✅ React static files copied"
+fi
 
 echo "📦 Installing Python dependencies..."
 pip install -r backend/requirements.txt
@@ -23,4 +40,4 @@ python backend/manage.py migrate
 echo "📄 Collecting static files..."
 python backend/manage.py collectstatic --no-input
 
-echo "✅ Build completed successfully!"
+echo "✅ Build completed - HomePage.js ready to load!"
