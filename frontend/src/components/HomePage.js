@@ -14,7 +14,7 @@ function HomePage() {
   // --- Add hooks for navigation and authentication ---
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  //---const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';---
 
   // Page load tracking
   useEffect(() => {
@@ -49,22 +49,24 @@ function HomePage() {
     setShowFeaturePopup(false);
   };
 
-  const fetchHomeData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/home/`);
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
-      const data = await response.json();
-      setHomeData(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  // The corrected function
+const fetchHomeData = useCallback(async () => {
+  setLoading(true);
+  setError(null);
+  try {
+    // This now uses the correct, direct path
+    const response = await fetch('/api/home/'); 
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
     }
-  }, [API_BASE_URL]);
+    const data = await response.json();
+    setHomeData(data);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+}, []); // API_BASE_URL is removed from dependencies
 
   useEffect(() => {
     fetchHomeData();
