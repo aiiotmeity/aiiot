@@ -454,6 +454,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
+# In myapp/views.py, replace all old HomeAPI versions with this one:
+
 class HomeAPI(APIView):
     """
     Final Location-Aware HomeAPI:

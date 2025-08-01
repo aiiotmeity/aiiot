@@ -14,7 +14,11 @@ function HomePage() {
   // --- Add hooks for navigation and authentication ---
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  //---const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';---
+  
+  // API Base URL configuration - this is the key fix
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://airaware-app-gcw7.onrender.com' 
+    : 'http://localhost:8000';
 
   // Page load tracking
   useEffect(() => {
@@ -49,24 +53,49 @@ function HomePage() {
     setShowFeaturePopup(false);
   };
 
-  // The corrected function
-const fetchHomeData = useCallback(async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    // This now uses the correct, direct path
-    const response = await fetch('/api/home/'); 
-    if (!response.ok) {
-      throw new Error(`Server responded with ${response.status}`);
+  // The corrected function with proper API URL
+  const fetchHomeData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const fetchData = async (url) => {
+      try {
+        console.log('Fetching from:', url); // Debug log
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('Received data:', data); // Debug log
+        setHomeData(data);
+      } catch (err) {
+        console.error('Fetch error:', err); // Debug log
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (navigator.geolocation) {
+      // Try to get user's location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // If successful, fetch data with location parameters using full URL
+          fetchData(`${API_BASE_URL}/api/home/?lat=${latitude}&lng=${longitude}`);
+        },
+        (error) => {
+          console.warn("Could not get user location:", error.message);
+          // If it fails (e.g., user denies permission), fetch data without location using full URL
+          fetchData(`${API_BASE_URL}/api/home/`);
+        },
+        { timeout: 10000 } // Add a timeout for the location request
+      );
+    } else {
+      // If the browser doesn't support geolocation, fetch without location using full URL
+      fetchData(`${API_BASE_URL}/api/home/`);
     }
-    const data = await response.json();
-    setHomeData(data);
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-}, []); // API_BASE_URL is removed from dependencies
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     fetchHomeData();
@@ -91,10 +120,10 @@ const fetchHomeData = useCallback(async () => {
   }, [logout, navigate]);
 
   const handleAdminPortalClick = useCallback(() => {
-  // Clear any existing admin session to force login
-  localStorage.removeItem('admin_user');
-  navigate('/admin/login');
-}, [navigate]);
+    // Clear any existing admin session to force login
+    localStorage.removeItem('admin_user');
+    navigate('/admin/login');
+  }, [navigate]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -410,11 +439,8 @@ const fetchHomeData = useCallback(async () => {
               <a href="#services" className="footer-link">Services</a>
               <Link to="/map" className="footer-link">Live Map</Link>
               <button onClick={handleAdminPortalClick} className="footer-link footer-button">
-  Admin Portal
-</button>
-
-
-
+                Admin Portal
+              </button>
 
               {user && (
                 <button onClick={handleLogout} className="footer-link footer-button">
