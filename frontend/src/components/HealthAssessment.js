@@ -109,8 +109,7 @@ function HealthAssessment() {
         { value: 'Never smoked', label: 'Never smoked', icon: '🚫' },
         { value: 'Former smoker', label: 'Former smoker', icon: '⏰' },
         { value: 'Current smoker', label: 'Current smoker', icon: '🚬' },
-        { value: 'Exposed to secondhand smoke', label: 'Exposed to secondhand smoke', icon: '☁️' },
-        
+        { value: 'Exposed to secondhand smoke', label: 'Exposed to secondhand smoke', icon: '☁️' }
       ]
     },
     {
@@ -124,8 +123,7 @@ function HealthAssessment() {
         { value: 'Urban area', label: 'Urban area with heavy traffic', icon: '🏙️' },
         { value: 'Industrial zone', label: 'Near industrial zone', icon: '🏭' },
         { value: 'Rural area', label: 'Rural area', icon: '🌳' },
-        { value: 'Coastal area', label: 'Coastal area', icon: '🌊' },
-        { value: 'Other', label: 'Other', icon: '📋' }
+        { value: 'Coastal area', label: 'Coastal area', icon: '🌊' }
       ]
     },
     {
@@ -172,7 +170,9 @@ function HealthAssessment() {
         { value: 'Heart Disease', label: 'Heart Disease', icon: '❤️' },
         { value: 'Allergies', label: 'Allergies', icon: '🤧' },
         { value: 'Immunocompromised', label: 'Immunocompromised', icon: '🛡️' },
-        { value: 'Other', label: 'Other', icon: '📋' }
+        { value: 'None of the above', label: 'None of the above', icon: '✅' }
+
+        
       ]
     }
   ];

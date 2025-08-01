@@ -41,44 +41,38 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-// Known accurate locations for the area (add your specific coordinates here)
+// Known accurate locations for the area
 const KNOWN_LOCATIONS = {
-  // ASIET Campus area
   '10.1783_76.4309': {
     display_name: 'ASIET Campus, Kalady',
     city: 'Kalady',
     state: 'Kerala',
     country: 'India'
   },
-  // Mattoor Junction area  
   '10.1710_76.4296': {
     display_name: 'Mattoor Junction, Kalady',
     city: 'Kalady',
     state: 'Kerala', 
     country: 'India'
   },
-  // Kalady town center
   '10.1750_76.4300': {
     display_name: 'Kalady Town, Kerala',
     city: 'Kalady',
     state: 'Kerala',
     country: 'India'
   },
-  // Kalady railway station area
   '10.1765_76.4285': {
     display_name: 'Kalady Railway Station Area',
     city: 'Kalady',
     state: 'Kerala',
     country: 'India'
   },
-  // Perumbavoor nearby area (if user is from there)
   '10.1800_76.4700': {
     display_name: 'Perumbavoor, Kerala',
     city: 'Perumbavoor',
     state: 'Kerala',
     country: 'India'
   },
-  // Angamaly area (if user is from there)
   '10.1900_76.3900': {
     display_name: 'Angamaly, Kerala',
     city: 'Angamaly',
@@ -102,7 +96,7 @@ const getLocationName = async (lat, lng) => {
   for (const [key, location] of Object.entries(KNOWN_LOCATIONS)) {
     const [knownLat, knownLng] = key.split('_').map(Number);
     const distance = calculateDistance(lat, lng, knownLat, knownLng);
-    if (distance < 2.0) { // Within 2km
+    if (distance < 2.0) {
       console.log(`✅ Using nearby known location: ${location.display_name} (${distance.toFixed(2)}km away)`);
       return {
         ...location,
@@ -113,7 +107,6 @@ const getLocationName = async (lat, lng) => {
   
   // Strategy 3: Try multiple geocoding services
   const geocodingResults = await Promise.allSettled([
-    // OpenStreetMap Nominatim (often more accurate for Indian locations)
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1&accept-language=en`)
       .then(res => res.json())
       .then(data => ({
@@ -122,7 +115,6 @@ const getLocationName = async (lat, lng) => {
         location: parseOpenStreetMapResult(data)
       })),
     
-    // BigDataCloud
     fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
       .then(res => res.json())
       .then(data => ({
@@ -131,7 +123,6 @@ const getLocationName = async (lat, lng) => {
         location: parseBigDataCloudResult(data)
       })),
     
-    // LocationIQ as additional fallback
     fetch(`https://us1.locationiq.com/v1/reverse.php?key=demo&lat=${lat}&lon=${lng}&format=json`)
       .then(res => res.json())
       .then(data => ({
@@ -139,10 +130,9 @@ const getLocationName = async (lat, lng) => {
         data: data,
         location: parseLocationIQResult(data)
       }))
-      .catch(() => null) // LocationIQ demo key might not work
+      .catch(() => null)
   ]);
   
-  // Analyze results and pick the best one
   const validResults = geocodingResults
     .filter(result => result.status === 'fulfilled' && result.value && result.value.location)
     .map(result => result.value);
@@ -150,7 +140,6 @@ const getLocationName = async (lat, lng) => {
   console.log('🔍 Geocoding results:', validResults);
   
   if (validResults.length > 0) {
-    // Prefer results that mention Kalady, Kerala, or nearby known areas
     const bestResult = validResults.find(result => {
       const location = result.location;
       const displayName = location.display_name.toLowerCase();
@@ -158,13 +147,13 @@ const getLocationName = async (lat, lng) => {
              displayName.includes('perumbavoor') || 
              displayName.includes('angamaly') ||
              displayName.includes('ernakulam');
-    }) || validResults[0]; // Fallback to first valid result
+    }) || validResults[0];
     
     console.log('✅ Using geocoding result from:', bestResult.service, bestResult.location.display_name);
     return bestResult.location;
   }
   
-  // Strategy 4: Intelligent regional fallback based on coordinates
+  // Strategy 4: Intelligent regional fallback
   const regionalFallback = getRegionalFallback(lat, lng);
   console.log('⚠️ All geocoding failed, using regional fallback:', regionalFallback.display_name);
   return regionalFallback;
@@ -180,7 +169,6 @@ const parseOpenStreetMapResult = (data) => {
   const district = addr.county || addr.state_district;
   const state = addr.state || 'Kerala';
   
-  // Prefer village/hamlet over town if available
   const primaryLocation = village || town || district || 'Unknown Location';
   
   return {
@@ -220,7 +208,6 @@ const parseLocationIQResult = (data) => {
 
 // Get regional fallback based on coordinate ranges
 const getRegionalFallback = (lat, lng) => {
-  // Kalady/ASIET area coordinates: roughly 10.15-10.20, 76.40-76.45
   if (lat >= 10.15 && lat <= 10.20 && lng >= 76.40 && lng <= 76.45) {
     return {
       display_name: 'Kalady Area, Kerala',
@@ -230,7 +217,6 @@ const getRegionalFallback = (lat, lng) => {
     };
   }
   
-  // Perumbavoor area: roughly 10.10-10.25, 76.45-76.50
   if (lat >= 10.10 && lat <= 10.25 && lng >= 76.45 && lng <= 76.50) {
     return {
       display_name: 'Perumbavoor Area, Kerala',
@@ -240,7 +226,6 @@ const getRegionalFallback = (lat, lng) => {
     };
   }
   
-  // Angamaly area: roughly 10.15-10.25, 76.35-76.42
   if (lat >= 10.15 && lat <= 10.25 && lng >= 76.35 && lng <= 76.42) {
     return {
       display_name: 'Angamaly Area, Kerala',
@@ -250,7 +235,6 @@ const getRegionalFallback = (lat, lng) => {
     };
   }
   
-  // General Ernakulam district fallback
   if (lat >= 9.8 && lat <= 10.4 && lng >= 76.0 && lng <= 77.0) {
     return {
       display_name: 'Ernakulam District, Kerala',
@@ -260,7 +244,6 @@ const getRegionalFallback = (lat, lng) => {
     };
   }
   
-  // Kerala state fallback
   return {
     display_name: `Location in Kerala (${lat.toFixed(3)}, ${lng.toFixed(3)})`,
     city: 'Kerala',
@@ -292,7 +275,8 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [isLocationUpdating, setIsLocationUpdating] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
-  const [healthData, setHealthData] = useState(null); // Added health data state
+  const [healthData, setHealthData] = useState(null);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
   const navigate = useNavigate();
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -301,6 +285,77 @@ function Dashboard() {
 
   const locationTimeoutRef = useRef(null);
   const abortControllerRef = useRef(null);
+
+  // ===== MOBILE DETECTION AND RESIZE HANDLER =====
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobileView(mobile);
+      
+      // Close mobile menu on resize to desktop
+      if (!mobile && isMenuOpen) {
+        setIsMenuOpen(false);
+        document.body.style.overflow = '';
+      }
+    };
+
+    let resizeTimeout;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(handleResize, 100);
+    };
+
+    window.addEventListener('resize', debouncedResize);
+    handleResize(); // Initial call
+
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      clearTimeout(resizeTimeout);
+    };
+  }, [isMenuOpen]);
+
+  // ===== MOBILE NAVIGATION HANDLERS =====
+  const toggleMenu = useCallback(() => {
+    setIsMenuOpen(prev => {
+      const newState = !prev;
+      document.body.style.overflow = newState ? 'hidden' : '';
+      return newState;
+    });
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setIsMenuOpen(false);
+    document.body.style.overflow = '';
+  }, []);
+
+  // Close menu on escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isMenuOpen) {
+        closeMenu();
+      }
+    };
+
+    const handleClickOutside = (e) => {
+      if (isMenuOpen && isMobileView) {
+        const navLinks = document.querySelector('.nav-links');
+        const menuToggle = document.querySelector('.menu-toggle');
+        
+        if (navLinks && !navLinks.contains(e.target) && 
+            menuToggle && !menuToggle.contains(e.target)) {
+          closeMenu();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isMenuOpen, isMobileView, closeMenu]);
 
   // ===== GET USER LOCATION =====
   const getUserLocation = useCallback(() => {
@@ -334,14 +389,12 @@ function Dashboard() {
             return;
           }
           
-          // Get location name with enhanced accuracy
           try {
             const locationName = await getLocationName(location.lat, location.lng);
             setUserLocationName(locationName);
             console.log('📍 Location name resolved:', locationName.display_name);
           } catch (nameError) {
             console.log('❌ Failed to get location name:', nameError);
-            // Use regional fallback even on error
             const fallbackName = getRegionalFallback(location.lat, location.lng);
             setUserLocationName(fallbackName);
           }
@@ -361,7 +414,7 @@ function Dashboard() {
         { 
           enableHighAccuracy: true, 
           timeout: 10000, 
-          maximumAge: 300000 // 5 minutes
+          maximumAge: 300000
         }
       );
     });
@@ -382,7 +435,6 @@ function Dashboard() {
       
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      // Build URL with location if available
       const url = new URL(`${API_BASE_URL}/api/dashboard/`);
       url.searchParams.append('username', username);
       
@@ -408,7 +460,6 @@ function Dashboard() {
       const data = await response.json();
       console.log('✅ Dashboard data received:', data);
       
-      // FIXED: Set health data from API response
       if (data.health_data) {
         console.log('✅ Health data found:', data.health_data);
         setHealthData(data.health_data);
@@ -423,7 +474,6 @@ function Dashboard() {
       
       if (error.name !== 'AbortError') {
         setError(`Failed to load dashboard data: ${error.message}`);
-        // Load with sample data as fallback
         loadSampleData();
       }
     } finally {
@@ -440,12 +490,10 @@ function Dashboard() {
 
     setDashboardData(data);
 
-    // Process location context from backend or calculate locally
     const stations = data.stations;
     const stationIds = Object.keys(stations);
     
     if (locationData && stationIds.length > 0) {
-      // Calculate distances to all stations
       const stationDistances = {};
       stationIds.forEach(stationId => {
         const station = stations[stationId];
@@ -461,7 +509,6 @@ function Dashboard() {
         };
       });
 
-      // Find nearest station
       const nearestStationId = Object.keys(stationDistances).reduce((nearest, current) => 
         stationDistances[current].distance < stationDistances[nearest].distance ? current : nearest
       );
@@ -476,11 +523,9 @@ function Dashboard() {
         aqi: nearestStation.highest_sub_index || 50
       });
 
-      // Check if user is within 1km of any sensor OR between sensors
       const isWithinSensorRange = Object.values(stationDistances).some(s => s.distance <= 1.0);
       
       if (isWithinSensorRange || nearestDistance <= 1.0) {
-        // Within 1km or between sensors - use interpolation for exact location
         const idwResult = calculateIDWInterpolation(locationData, stations);
         
         setCurrentDataInfo({
@@ -496,7 +541,6 @@ function Dashboard() {
           data_type: 'Your Location Data (Calculated)'
         });
       } else {
-        // Beyond 1km from all sensors - show nearest station data
         setCurrentDataInfo({
           method: 'nearest_station',
           source: 'nearest_station',
@@ -511,7 +555,6 @@ function Dashboard() {
         });
       }
     } else {
-      // No location data - use default station (lora-v1)
       const defaultStation = stations['lora-v1'] || stations[stationIds[0]] || {};
       setCurrentDataInfo({
         method: 'default_station',
@@ -549,12 +592,10 @@ function Dashboard() {
         station.station_info.lng
       );
 
-      // Avoid division by zero
       const safeDistance = Math.max(distance, 0.001);
       const weight = 1.0 / (safeDistance ** 2);
       totalWeight += weight;
 
-      // Add weighted values
       const averages = station.averages || {};
       Object.keys(weightedValues).forEach(param => {
         if (averages[param] !== undefined) {
@@ -562,11 +603,9 @@ function Dashboard() {
         }
       });
 
-      // Add weighted AQI
       weightedAqi += (station.highest_sub_index || 0) * weight;
     });
 
-    // Calculate final interpolated values
     const interpolated_values = {};
     Object.keys(weightedValues).forEach(param => {
       interpolated_values[param] = totalWeight > 0 ? 
@@ -640,7 +679,6 @@ function Dashboard() {
       }
     };
 
-    // Set sample health data
     setHealthData(sampleData.health_data);
     processDashboardData(sampleData, userLocation);
     setLastUpdateTime(new Date());
@@ -652,15 +690,11 @@ function Dashboard() {
     const initializeDashboard = async () => {
       console.log('⚡ Initializing dashboard...');
       
-      // Load initial data immediately
       await fetchDashboardData();
       
-      // Try to get user location
       try {
         const location = await getUserLocation();
         console.log('📍 Location obtained:', location);
-        
-        // Refetch data with location
         await fetchDashboardData(location);
       } catch (locationError) {
         console.log('📍 Location detection failed:', locationError);
@@ -786,12 +820,19 @@ function Dashboard() {
     setSelectedParameter(param);
   }, []);
 
-  const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
+  const handleNavLinkClick = useCallback(() => {
+    if (isMobileView) {
+      closeMenu();
+    }
+  }, [isMobileView, closeMenu]);
   
   const handleLogout = useCallback(() => {
+    if (isMobileView) {
+      closeMenu();
+    }
     localStorage.clear();
     navigate('/login');
-  }, [navigate]);
+  }, [navigate, isMobileView, closeMenu]);
 
   const handleRefreshData = useCallback(() => {
     fetchDashboardData(userLocation);
@@ -806,10 +847,84 @@ function Dashboard() {
     }
   }, [getUserLocation, fetchDashboardData]);
 
+  // ===== MOBILE TOUCH HANDLERS =====
+  useEffect(() => {
+    if (!isMobileView) return;
+
+    const handleTouchFeedback = (element, scale = 0.98) => {
+      const touchStart = () => {
+        element.style.transform = `scale(${scale})`;
+        element.style.transition = 'transform 0.1s ease';
+      };
+      
+      const touchEnd = () => {
+        setTimeout(() => {
+          element.style.transform = '';
+          element.style.transition = 'transform 0.3s ease';
+        }, 150);
+      };
+
+      element.addEventListener('touchstart', touchStart, { passive: true });
+      element.addEventListener('touchend', touchEnd, { passive: true });
+      element.addEventListener('touchcancel', touchEnd, { passive: true });
+
+      return () => {
+        element.removeEventListener('touchstart', touchStart);
+        element.removeEventListener('touchend', touchEnd);
+        element.removeEventListener('touchcancel', touchEnd);
+      };
+    };
+
+    const elements = document.querySelectorAll('.metric-card, .action-btn, .quick-action-btn, .param-btn');
+    const cleanupFunctions = Array.from(elements).map(el => handleTouchFeedback(el));
+
+    return () => cleanupFunctions.forEach(cleanup => cleanup && cleanup());
+  }, [isMobileView]);
+
+  // ===== FORECAST TABLE SCROLL INDICATOR =====
+  useEffect(() => {
+    if (!isMobileView) return;
+
+    const tableContainer = document.querySelector('.forecast-table-section');
+    if (!tableContainer) return;
+
+    const handleScroll = () => {
+      const canScrollLeft = tableContainer.scrollLeft > 0;
+      const canScrollRight = tableContainer.scrollLeft < (tableContainer.scrollWidth - tableContainer.clientWidth);
+      
+      // Add/remove scroll indicators
+      tableContainer.classList.toggle('can-scroll-left', canScrollLeft);
+      tableContainer.classList.toggle('can-scroll-right', canScrollRight);
+    };
+
+    tableContainer.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+
+    return () => {
+      tableContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [isMobileView, dashboardData]);
+
+  // ===== SMOOTH SCROLL BEHAVIOR =====
+  useEffect(() => {
+    if (isMobileView) {
+      document.documentElement.style.scrollBehavior = 'smooth';
+      document.documentElement.style.webkitOverflowScrolling = 'touch';
+    }
+
+    return () => {
+      document.documentElement.style.scrollBehavior = '';
+      document.documentElement.style.webkitOverflowScrolling = '';
+    };
+  }, [isMobileView]);
+
   // ===== MAIN RENDER =====
   return (
     <div className="dashboard-page">
       {/* Real-time Status */}
+      <div className="realtime-status">
+        🔴 LIVE • Real-time air quality monitoring system active
+      </div>
       
       {/* Error Banner */}
       {error && (
@@ -819,25 +934,25 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Navigation */}
+      {/* Enhanced Mobile Navigation */}
       <nav className="navbar">
         <div className="navbar-content">
           <a href="/" className="navbar-brand">
-            <img src="/aqi.webp" alt="AQM Logo" width="40" height="40" style={{ marginRight: '12px' }} />
+            <img src="/aqi.webp" alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
             AirAware
           </a>
 
-          <div className="menu-toggle" onClick={toggleMenu}>☰</div>
+          <div className="menu-toggle" onClick={toggleMenu}>
+            {isMenuOpen ? '✕' : '☰'}
+          </div>
 
           <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-            <li><a href="/" className="nav-link">🏠 Home</a></li>
-           
-            <li><a href="/health-assessment" className="nav-link">📋 Health Update</a></li>
-            <li><a href="/health-report" className="nav-link">📄 Health Report</a></li>
-            <li><a href="/add-family" className="nav-link">👥 Add Family</a></li>
-            <li><a href="/map"  className="nav-link">Live Map</a></li>
+            <li><a href="/" className="nav-link" onClick={handleNavLinkClick}>🏠 Home</a></li>
+            <li><a href="/health-assessment" className="nav-link" onClick={handleNavLinkClick}>📋 Health Update</a></li>
+            <li><a href="/health-report" className="nav-link" onClick={handleNavLinkClick}>📄 Health Report</a></li>
+            <li><a href="/add-family" className="nav-link" onClick={handleNavLinkClick}>👥 Add Family</a></li>
+            <li><a href="/map" className="nav-link" onClick={handleNavLinkClick}>🗺️ Live Map</a></li>
             <li className="user-info">👤 <span>{username}</span></li>
-            
             <li>
               <button onClick={handleLogout} className="nav-link login-btn">🚪 Logout</button>
             </li>
@@ -849,7 +964,7 @@ function Dashboard() {
       <div className={`alert-banner ${aqiStatus.class}`}>
         ℹ️ <span>
           {currentDataInfo?.station_name || 'Your Location'} AQI: {Math.round(currentAQI)} - {aqiStatus.status}
-          {nearestStationInfo && (
+          {nearestStationInfo && !isMobileView && (
             ` • Distance to nearest sensor: ${nearestStationInfo.distance.toFixed(1)}km`
           )}
         </span>
@@ -899,7 +1014,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Enhanced Location Context Banner - Horizontal Layout */}
+        {/* Enhanced Location Context Banner */}
         {currentDataInfo?.show_distance_message && (
           <div className="location-context-banner-horizontal">
             <div className="location-main-content">
@@ -984,7 +1099,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Dashboard Grid */}
+        {/* Dashboard Grid - Mobile Optimized */}
         <div className="dashboard-grid">
           {/* Interactive Map */}
           <div id="map-section" className="dashboard-card map-card">
@@ -993,7 +1108,7 @@ function Dashboard() {
               <div className="map-controls">
                 {userLocationName && (
                   <div className="location-display">
-                    📍 {userLocationName.display_name}
+                    📍 {isMobileView ? userLocationName.city : userLocationName.display_name}
                   </div>
                 )}
                 <div className="map-legend">
@@ -1165,18 +1280,24 @@ function Dashboard() {
           <div className="weather-grid">
             <div className="weather-card">
               <div className="weather-icon">🌡️</div>
-              <div className="weather-value">{formatValue(currentValues.temp || 28, 'temp')}°C</div>
-              <div className="weather-label">Temperature</div>
+              <div className="weather-content">
+                <div className="weather-value">{formatValue(currentValues.temp || 28, 'temp')}°C</div>
+                <div className="weather-label">Temperature</div>
+              </div>
             </div>
             <div className="weather-card">
               <div className="weather-icon">💧</div>
-              <div className="weather-value">{formatValue(currentValues.hum || 65, 'hum')}%</div>
-              <div className="weather-label">Humidity</div>
+              <div className="weather-content">
+                <div className="weather-value">{formatValue(currentValues.hum || 65, 'hum')}%</div>
+                <div className="weather-label">Humidity</div>
+              </div>
             </div>
             <div className="weather-card">
               <div className="weather-icon">📏</div>
-              <div className="weather-value">{formatValue(currentValues.pre || 1013, 'pre')} hPa</div>
-              <div className="weather-label">Atmospheric Pressure</div>
+              <div className="weather-content">
+                <div className="weather-value">{formatValue(currentValues.pre || 1013, 'pre')} hPa</div>
+                <div className="weather-label">Atmospheric Pressure</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1244,9 +1365,6 @@ function Dashboard() {
             </div>
           )}
         </div>
-
-        {/* Data Disclaimer */}
-        
 
         {/* Quick Actions */}
         <div className="quick-actions">
@@ -1329,7 +1447,6 @@ function Dashboard() {
               <h4>Quick Links</h4>
               <ul>
                 <li><a href="/">🏠 Home</a></li>
-                
                 <li><a href="/health-report">📄 Health Report</a></li>
                 <li><a href="/add-family">👥 Add Family</a></li>
               </ul>

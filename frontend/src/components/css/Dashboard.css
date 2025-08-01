@@ -1879,3 +1879,375 @@ body {
     padding: 0.75rem;
   }
 }
+/* ===== CRITICAL MOBILE FIXES - Add to Dashboard.css ===== */
+
+/* Force single column layout on mobile for dashboard grid */
+@media (max-width: 768px) {
+  .dashboard-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    grid-template-columns: none !important;
+  }
+  
+  .dashboard-card {
+    width: 100% !important;
+    max-width: none !important;
+    margin-bottom: 1rem;
+  }
+  
+  /* Map card specific fixes */
+  .map-card {
+    order: 1;
+  }
+  
+  .forecast-card {
+    order: 2;
+  }
+  
+  /* Ensure map container is properly sized */
+  .map-container {
+    height: 280px !important;
+    width: 100% !important;
+    min-height: 280px;
+  }
+  
+  /* Fix card titles and headers */
+  .card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+  
+  .card-title {
+    font-size: 1rem !important;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Map controls mobile layout */
+  .map-controls {
+    width: 100%;
+    align-items: flex-start !important;
+  }
+  
+  .location-display {
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Map info section */
+  .map-info {
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+  }
+  
+  .map-status {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .map-description {
+    font-size: 0.7rem;
+    text-align: center;
+  }
+  
+  /* Forecast section mobile fixes */
+  .forecast-info {
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+  
+  .forecast-source,
+  .forecast-update {
+    font-size: 0.7rem;
+  }
+  
+  /* Forecast controls grid - 3 columns on very small screens */
+  .forecast-controls {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem;
+  }
+  
+  .param-btn {
+    padding: 0.5rem 0.25rem !important;
+    font-size: 0.7rem !important;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Chart section mobile */
+  .chart-section {
+    height: 180px !important;
+    margin-bottom: 1rem;
+  }
+  
+  /* Forecast table mobile optimization */
+  .forecast-table-section {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .forecast-table {
+    font-size: 0.75rem !important;
+    min-width: 280px;
+  }
+  
+  .forecast-table th,
+  .forecast-table td {
+    padding: 0.5rem 0.375rem !important;
+    white-space: nowrap;
+  }
+  
+  .forecast-table th {
+    font-size: 0.7rem !important;
+  }
+}
+
+/* ===== EXTRA SMALL SCREENS (Below 480px) ===== */
+@media (max-width: 480px) {
+  .dashboard-grid {
+    gap: 0.75rem !important;
+  }
+  
+  .dashboard-card {
+    padding: 1rem !important;
+    border-radius: 12px;
+  }
+  
+  .map-container {
+    height: 250px !important;
+    min-height: 250px;
+  }
+  
+  .card-title {
+    font-size: 0.9rem !important;
+  }
+  
+  /* Forecast controls - 2 columns on very small screens */
+  .forecast-controls {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .param-btn {
+    font-size: 0.65rem !important;
+    padding: 0.4rem 0.2rem !important;
+  }
+  
+  .chart-section {
+    height: 160px !important;
+  }
+  
+  .map-legend {
+    font-size: 0.65rem !important;
+    gap: 0.5rem;
+  }
+  
+  .legend-item {
+    gap: 0.25rem;
+  }
+  
+  .legend-dot {
+    width: 6px !important;
+    height: 6px !important;
+  }
+}
+
+/* ===== MOBILE NAVIGATION OVERLAY FIXES ===== */
+@media (max-width: 768px) {
+  .nav-links {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    z-index: 9999 !important;
+    padding: 2rem !important;
+  }
+  
+  .nav-links.active {
+    display: flex !important;
+  }
+  
+  .nav-link {
+    width: 100% !important;
+    max-width: 300px !important;
+    padding: 1rem 1.5rem !important;
+    margin: 0 !important;
+    font-size: 1.1rem !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+  }
+  
+  .user-info {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: var(--success-color) !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  }
+  
+  .login-btn {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  }
+}
+
+/* ===== ENSURE MOBILE METRICS GRID ===== */
+@media (max-width: 768px) {
+  .metrics-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+  }
+  
+  .metric-card {
+    padding: 1rem !important;
+    min-height: 120px;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem !important;
+  }
+  
+  .metric-label {
+    font-size: 0.7rem !important;
+  }
+  
+  .metric-unit {
+    font-size: 0.6rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+  
+  .metric-card {
+    padding: 0.75rem !important;
+    min-height: 100px;
+  }
+  
+  .metric-value {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* ===== WELCOME SECTION MOBILE ===== */
+@media (max-width: 768px) {
+  .welcome-content {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 1.5rem !important;
+  }
+  
+  .welcome-info {
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .aqi-overview {
+    text-align: center !important;
+    align-items: center !important;
+  }
+  
+  .welcome-text h1 {
+    font-size: 1.375rem !important;
+    text-align: center;
+  }
+}
+
+/* ===== LOCATION BANNER MOBILE ===== */
+@media (max-width: 768px) {
+  .location-main-content {
+    grid-template-columns: 1fr !important;
+    text-align: center !important;
+    gap: 1.5rem !important;
+  }
+  
+  .location-stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* ===== HEALTH SECTION MOBILE ===== */
+@media (max-width: 768px) {
+  .health-content {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+  
+  .health-display {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  
+  .risk-level {
+    text-align: center !important;
+  }
+}
+
+/* ===== WEATHER SECTION MOBILE ===== */
+@media (max-width: 768px) {
+  .weather-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .weather-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    text-align: left !important;
+    padding: 1rem !important;
+  }
+  
+  .weather-content {
+    text-align: left !important;
+  }
+}
+
+/* ===== QUICK ACTIONS MOBILE ===== */
+@media (max-width: 768px) {
+  .quick-actions-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+/* ===== FOOTER MOBILE ===== */
+@media (max-width: 768px) {
+  .footer-content {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+}
+
+/* ===== FORCE MOBILE LAYOUT ===== */
+@media (max-width: 768px) {
+  /* Override any flex or grid that might be causing issues */
+  .main-container > * {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* Ensure all sections stack properly */
+  .dashboard-page .main-container {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .dashboard-page .main-container > * {
+    flex-shrink: 0;
+  }
+}
