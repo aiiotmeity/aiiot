@@ -27,7 +27,10 @@ function FamilyPage() {
     const [formLoading, setFormLoading] = useState(false);
 
     const navigate = useNavigate();
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://airaware-app-gcw7.onrender.com' 
+    : 'http://localhost:8000';
+
 
     const fetchFamilyMembers = useCallback(async () => {
         if (!username) {

@@ -12,7 +12,10 @@ function Signup() {
   const [success, setSuccess] = useState(false);
 
   const navigate = useNavigate();
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://airaware-app-gcw7.onrender.com' 
+    : 'http://localhost:8000';
+
 
   // Memoize particles to prevent recreation on every render
   const particles = useMemo(() => {

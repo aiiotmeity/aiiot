@@ -9,7 +9,10 @@ function AdminLogin() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://airaware-app-gcw7.onrender.com' 
+    : 'http://localhost:8000';
+
 
     // Check if user wants to logout first
     useEffect(() => {

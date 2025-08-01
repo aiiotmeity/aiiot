@@ -135,7 +135,10 @@ const MapPage = () => {
     // Hooks
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://airaware-app-gcw7.onrender.com' 
+    : 'http://localhost:8000';
+
 
     // Make component instance available globally for popup callbacks
     useEffect(() => {

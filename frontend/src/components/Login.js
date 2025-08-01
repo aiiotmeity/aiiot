@@ -13,7 +13,10 @@ function Login() {
   const navigate = useNavigate();
 
   // Safe API URL
-  const API_BASE_URL = 'http://localhost:8000';
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://airaware-app-gcw7.onrender.com' 
+    : 'http://localhost:8000';
+
 
   console.log('Login component loaded');
 
