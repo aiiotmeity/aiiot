@@ -110,7 +110,7 @@ function HealthAssessment() {
         { value: 'Former smoker', label: 'Former smoker', icon: '⏰' },
         { value: 'Current smoker', label: 'Current smoker', icon: '🚬' },
         { value: 'Exposed to secondhand smoke', label: 'Exposed to secondhand smoke', icon: '☁️' },
-        { value: 'None', label: 'None of the above', icon: '✅' }
+        
       ]
     },
     {
@@ -171,6 +171,7 @@ function HealthAssessment() {
         { value: 'Heart Disease', label: 'Heart Disease', icon: '❤️' },
         { value: 'Allergies', label: 'Allergies', icon: '🤧' },
         { value: 'Immunocompromised', label: 'Immunocompromised', icon: '🛡️' }
+        { value: 'Other', label: 'Other', icon: '📋' }
       ]
     }
   ];
