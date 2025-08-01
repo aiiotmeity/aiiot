@@ -242,9 +242,12 @@ function HealthReport() {
     const handlePrint = useCallback(() => {
         window.print();
     }, []);
+     const handleRefresh1 = () => {
+    navigate('/dashboard');
+  };
 
     if (loading) return <div className="panel-loader"><h2>🏥 Generating Your Health Report...</h2><div className="loading-spinner"></div></div>;
-    if (error) return <div className="error-message"><h2>⚠️ Error</h2><p>{error}</p><button onClick={handleRefresh} className="retry-btn">🔄 Try Again</button></div>;
+    if (error) return <div className="error-message"><h2>⚠️ Error</h2><p>{error}</p><button onClick={handleRefresh1} className="retry-btn">🔄 Try Again</button></div>;
     if (!reportData) return <div className="error-message"><h2>📊 No Report Data</h2><p>Unable to generate your health report at this time.</p></div>;
 
     const { health_assessment, stations, forecasts } = reportData;
