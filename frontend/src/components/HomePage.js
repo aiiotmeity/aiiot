@@ -524,7 +524,7 @@ function HomePage() {
             </div>
 
             <div className="popup-footer">
-              <button className="popup-cta" onClick={() => {closeFeaturePopup(); navigate('/home');}}>
+              <button className="popup-cta" onClick={() => {closeFeaturePopup(); navigate('/');}}>
                 <i className="fas fa-play"></i>
                 Start Exploring
               </button>
