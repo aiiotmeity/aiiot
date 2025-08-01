@@ -124,7 +124,8 @@ function HealthAssessment() {
         { value: 'Urban area', label: 'Urban area with heavy traffic', icon: '🏙️' },
         { value: 'Industrial zone', label: 'Near industrial zone', icon: '🏭' },
         { value: 'Rural area', label: 'Rural area', icon: '🌳' },
-        { value: 'Coastal area', label: 'Coastal area', icon: '🌊' }
+        { value: 'Coastal area', label: 'Coastal area', icon: '🌊' },
+        { value: 'Other', label: 'Other', icon: '📋' }
       ]
     },
     {
@@ -170,7 +171,7 @@ function HealthAssessment() {
         { value: 'Diabetes', label: 'Diabetes', icon: '💉' },
         { value: 'Heart Disease', label: 'Heart Disease', icon: '❤️' },
         { value: 'Allergies', label: 'Allergies', icon: '🤧' },
-        { value: 'Immunocompromised', label: 'Immunocompromised', icon: '🛡️' }
+        { value: 'Immunocompromised', label: 'Immunocompromised', icon: '🛡️' },
         { value: 'Other', label: 'Other', icon: '📋' }
       ]
     }
