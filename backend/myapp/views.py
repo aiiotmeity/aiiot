@@ -366,55 +366,94 @@ def calculate_subindices(averages):
     return sub_indices
 
 # In your views.py - Replace ONLY the process_device_items function with this:
+# This is our rulebook for what a "good" sensor reading looks like.
+VALID_SENSOR_RANGES = {
+    'nh3':  (0.0, 150.0),  # A valid NH3 reading must be between 0 and 1000
+    'o3':   (0.0, 150.0),
+    'pm25': (0.0, 150.0),
+    'pm10': (0.0, 50.0),
+    'co':   (0.0, 30.0),
+    'so2':  (0.0, 150.0),
+    'no2':  (0.0, 150.0)
+}
+
+def get_safe_value(pollutant_name, value_to_check):
+    """
+    This function checks if a sensor value is good.
+    - If the value is good, it returns the original value.
+    - If the value is bad (outside the valid range), it returns the safe default value.
+    """
+    try:
+        min_val, max_val = VALID_SENSOR_RANGES[pollutant_name]
+        default_val = WHO_LIMITS[pollutant_name]
+        
+        value = float(value_to_check)
+
+        # Check if the value is inside our valid range
+        if min_val <= value <= max_val:
+            return value  # The value is good, return it.
+        else:
+            # The value is bad (too high or too low), so return the default.
+            return default_val
+            
+    except (ValueError, TypeError, KeyError):
+        # If the value is not a number or the pollutant name is wrong, return the default.
+        return WHO_LIMITS.get(pollutant_name, 0)
+
+# In views (14).py, replace the entire process_device_items function with this:
+
+# In views (14).py, replace the entire process_device_items function with this:
 
 def process_device_items(items):
     """
-    Corrected version: Processes items and correctly parses the device's
-    unique date and time from the payload for display.
+    Final, simplified version.
+    This function calculates the average and then uses get_safe_value()
+    to clean the data before showing it to the user.
     """
     if not items:
         return None, {}, {}, None
 
+    # (The first part of the function for sorting and parsing remains the same)
     for item in items:
         item.update(parse_payload(item.get('payload', {})))
-    
     items.sort(
         key=lambda x: datetime.strptime(truncate_nanoseconds(x['received_at']), '%Y-%m-%dT%H:%M:%S.%fZ'),
         reverse=True
     )
-    
     latest_item = items[0] if items else None
-    
     if latest_item:
-        # --- DATE & TIME FIX: Use the date and time from the sensor payload ---
-        device_date_str = latest_item.get('date')  # e.g., "30:07:2025"
-        device_time_str = latest_item.get('time')  # e.g., "10:53"
-        
+        # ... (date and time formatting logic is unchanged)
+        device_date_str = latest_item.get('date')
+        device_time_str = latest_item.get('time')
         if device_date_str and device_time_str:
             try:
-                # Parse DD:MM:YYYY and reformat to YYYY-MM-DD
                 formatted_date = datetime.strptime(device_date_str, '%d:%m:%Y').strftime('%Y-%m-%d')
-                # Combine the corrected date with the device time for the final display
                 latest_item['last_updated_on'] = f"{formatted_date} at {device_time_str}"
             except (ValueError, TypeError):
                 latest_item['last_updated_on'] = "Invalid date/time"
         else:
-            # Fallback to the database timestamp if payload is missing date/time
             db_timestamp = datetime.strptime(truncate_nanoseconds(latest_item['received_at']), '%Y-%m-%dT%H:%M:%S.%fZ')
             latest_item['last_updated_on'] = db_timestamp.strftime('%Y-%m-%d %H:%M:%S')
 
-    # Calculate averages based on the latest 24 items
+    # 1. Calculate the raw averages from the last 24 items
     latest_24_items = items[:24]
     parameters = ['nh3', 'o3', 'pm25', 'pm10', 'co', 'so2', 'no2']
     sums = {p: sum(float(it.get(p, 0)) for it in latest_24_items if it.get(p) is not None) for p in parameters}
     counts = {p: sum(1 for it in latest_24_items if it.get(p) is not None) for p in parameters}
-    averages = {p: sums[p] / counts[p] if counts[p] > 0 else 0 for p in parameters}
-    
-    sub_indices = calculate_subindices(averages)
+    raw_averages = {p: sums[p] / counts[p] if counts[p] > 0 else 0 for p in parameters}
+
+    # 2. Clean the averages using our new rule
+    safe_averages = {
+        param: get_safe_value(param, value) for param, value in raw_averages.items()
+    }
+
+    # 3. Calculate the final AQI using only the safe, clean values
+    sub_indices = calculate_subindices(safe_averages) # Use your preferred subindex calculation
     valid_indices = [v for v in sub_indices.values() if v is not None]
     highest_sub_index = round(max(valid_indices)) if valid_indices else None
     
-    return latest_item, averages, sub_indices, highest_sub_index
+    # Return the safe values. The user will never see the raw, potentially faulty data.
+    return latest_item, safe_averages, sub_indices, highest_sub_index
 
 def get_aqi_status(aqi):
     """Returns AQI category based on value."""
@@ -2134,28 +2173,61 @@ def admin_login_api(request):
     except AdminUserlogin.DoesNotExist:
         return Response({'error': 'Invalid username or password.'}, status=status.HTTP_401_UNAUTHORIZED)
 
+# In your views.py file, replace the admin_dashboard_api with this new version
+
 @api_view(['GET'])
 @csrf_exempt
 def admin_dashboard_api(request):
-    """ API to provide a complete overview for the Admin Command Center. """
+    """ 
+    API to provide a complete overview for the Admin Command Center.
+    This version provides the TRUE, RAW sensor values for diagnostics.
+    """
     try:
+        # --- Get data for both stations ---
         lora_v1_items = get_device_data("lora-v1", limit=24)
         loradev2_items = get_device_data("loradev2", limit=24)
-        latest_lora_v1, _, _, high_index_lora_v1 = process_device_items(lora_v1_items)
-        latest_loradev2, _, _, high_index_loradev2 = process_device_items(loradev2_items)
 
+        # --- For the AQI value, we can still use the regular processing ---
+        # This gives the admin an accurate AQI overview.
+        _, _, _, high_index_lora_v1 = process_device_items(lora_v1_items)
+        _, _, _, high_index_loradev2 = process_device_items(loradev2_items)
+
+        # --- KEY CHANGE: Get the LATEST RAW item for the detailed view ---
+        # We will not clean this data. The admin will see the original values.
+        latest_raw_item_v1 = {}
+        if lora_v1_items:
+            # Get the most recent item and parse its payload to get the raw data
+            latest_raw_item_v1 = parse_payload(lora_v1_items[0].get('payload', {}))
+            # Manually add the timestamp so the admin knows when it was received
+            latest_raw_item_v1['time'] = lora_v1_items[0].get('received_at')
+
+        latest_raw_item_v2 = {}
+        if loradev2_items:
+            # Do the same for the second station
+            latest_raw_item_v2 = parse_payload(loradev2_items[0].get('payload', {}))
+            latest_raw_item_v2['time'] = loradev2_items[0].get('received_at')
+
+        # --- Fetch user and health data as before ---
         users = list(User.objects.all().values('id', 'name', 'phone_number'))
         health_assessments = list(HealthAssessment.objects.all().values('id', 'user__name', 'age_group', 'gender', 'health_score'))
 
+        # --- Construct the response with the RAW data ---
         response_data = {
             'station_data': {
-                'lora-v1': {'latest_item': latest_lora_v1, 'aqi': high_index_lora_v1},
-                'loradev2': {'latest_item': latest_loradev2, 'aqi': high_index_loradev2}
+                'lora-v1': {
+                    'latest_item': latest_raw_item_v1,  # This now contains the original, unfiltered values
+                    'aqi': high_index_lora_v1
+                },
+                'loradev2': {
+                    'latest_item': latest_raw_item_v2, # This also contains the original, unfiltered values
+                    'aqi': high_index_loradev2
+                }
             },
             'users': users,
             'health_assessments': health_assessments
         }
         return Response(response_data, status=status.HTTP_200_OK)
+
     except Exception as e:
         logger.error(f"Error in admin_dashboard_api: {e}", exc_info=True)
         return Response({'error': 'Internal server error'}, status=500)
