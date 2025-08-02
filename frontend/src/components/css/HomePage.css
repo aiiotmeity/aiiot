@@ -169,7 +169,7 @@ ul {
 }
 
 .nav-link:hover, .nav-button:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(221, 225, 231, 0.1);
   color: var(--primary-color) !important;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);

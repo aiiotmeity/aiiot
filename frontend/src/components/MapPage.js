@@ -118,7 +118,7 @@ const MapPage = () => {
     
     // User location states
     const [userLocation, setUserLocation] = useState(null);
-    const [userLocationData, setUserLocationData] = useState(null); // FIXED: More comprehensive location data
+    const [userLocationData, setUserLocationData] = useState(null);
     const [nearestStation, setNearestStation] = useState(null);
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
     const [isLocationLoading, setIsLocationLoading] = useState(false);
@@ -191,9 +191,32 @@ const MapPage = () => {
         return () => { if (map) map.remove(); };
     }, []);
     
-    // === FIXED IDW INTERPOLATION CALCULATION (Match Dashboard.js) ===
+    // === CORRECTED IDW INTERPOLATION - ONLY REAL STATIONS ===
     const calculateIDWInterpolation = useCallback((locationData, stations) => {
-        const stationIds = Object.keys(stations);
+        console.log('🔍 Starting IDW calculation with ONLY real stations...');
+        
+        // FIXED: Only use the 2 real stations for interpolation
+        const realStationIds = ['lora-v1', 'loradev2'];
+        const realStations = {};
+        
+        realStationIds.forEach(id => {
+            if (stations[id]) {
+                realStations[id] = stations[id];
+            }
+        });
+        
+        console.log('📊 Real stations for interpolation:', Object.keys(realStations));
+        
+        if (Object.keys(realStations).length === 0) {
+            console.warn('⚠️ No real stations available for interpolation');
+            return {
+                interpolated_values: {},
+                interpolated_aqi: 50,
+                stations_used: 0,
+                method: 'fallback'
+            };
+        }
+        
         let totalWeight = 0;
         const weightedValues = {
             pm25: 0, pm10: 0, so2: 0, no2: 0, 
@@ -201,14 +224,15 @@ const MapPage = () => {
         };
         let weightedAqi = 0;
 
-        stationIds.forEach(stationId => {
-            const station = stations[stationId];
+        Object.entries(realStations).forEach(([stationId, station]) => {
             const distance = calculateDistance(
                 locationData.lat,
                 locationData.lng,
                 station.station_info.lat,
                 station.station_info.lng
             );
+
+            console.log(`📍 Station ${stationId}: ${distance.toFixed(2)}km away`);
 
             // Avoid division by zero - same as Dashboard.js
             const safeDistance = Math.max(distance, 0.001);
@@ -225,6 +249,8 @@ const MapPage = () => {
 
             // Add weighted AQI
             weightedAqi += (station.highest_sub_index || 0) * weight;
+            
+            console.log(`⚖️ Station ${stationId}: weight=${weight.toFixed(4)}, AQI=${station.highest_sub_index}`);
         });
 
         // Calculate final interpolated values
@@ -237,10 +263,16 @@ const MapPage = () => {
         const interpolated_aqi = totalWeight > 0 ? 
             Math.round(weightedAqi / totalWeight) : 50;
 
+        console.log('✅ IDW Result:', {
+            interpolated_aqi,
+            stations_used: Object.keys(realStations).length,
+            total_weight: totalWeight.toFixed(4)
+        });
+
         return {
             interpolated_values,
             interpolated_aqi,
-            stations_used: stationIds.length,
+            stations_used: Object.keys(realStations).length,
             method: 'idw'
         };
     }, []);
@@ -314,17 +346,32 @@ const MapPage = () => {
         return () => clearInterval(interval);
     }, [fetchRealtimeData]);
 
-    // === FIXED USER LOCATION DATA CALCULATION (Match Dashboard.js Logic) ===
+    // === CORRECTED USER LOCATION DATA CALCULATION - ONLY REAL STATIONS ===
     useEffect(() => {
         if (userLocation && Object.keys(stations).length > 0 && user) {
-            console.log('🔍 Calculating user location data with fixed logic...');
+            console.log('🔍 Calculating user location data with ONLY real stations for interpolation...');
             
-            // Calculate distances to all stations
+            // FIXED: Only use real stations for distance calculation and interpolation
+            const realStationIds = ['lora-v1', 'loradev2'];
+            const realStations = {};
+            
+            realStationIds.forEach(id => {
+                if (stations[id]) {
+                    realStations[id] = stations[id];
+                }
+            });
+            
+            if (Object.keys(realStations).length === 0) {
+                console.warn('⚠️ No real stations available');
+                return;
+            }
+            
+            // Calculate distances to ONLY real stations
             const stationDistances = {};
             let nearestDist = Infinity;
             let nearestId = null;
             
-            Object.entries(stations).forEach(([id, station]) => {
+            Object.entries(realStations).forEach(([id, station]) => {
                 const dist = calculateDistance(
                     userLocation.lat, 
                     userLocation.lng, 
@@ -343,49 +390,57 @@ const MapPage = () => {
                 }
             });
             
-            setNearestStation({ id: nearestId, distance: nearestDist });
+            setNearestStation({ 
+                id: nearestId, 
+                distance: nearestDist,
+                station: realStations[nearestId]
+            });
+
+            console.log(`📍 Nearest real station: ${nearestId} at ${nearestDist.toFixed(2)}km`);
             
-            // FIXED: Use the same logic as Dashboard.js
+            // Check if user is within 1km of any real station
             const isWithinSensorRange = Object.values(stationDistances).some(s => s.distance <= 1.0);
             
             if (isWithinSensorRange || nearestDist <= 1.0) {
-                // Within 1km - use interpolation for exact location
-                const idwResult = calculateIDWInterpolation(userLocation, stations);
+                // Within 1km - use interpolation with ONLY real stations
+                const idwResult = calculateIDWInterpolation(userLocation, realStations);
                 
                 setUserLocationData({
                     method: 'location_interpolation',
                     source: 'interpolated',
-                    explanation: `You are ${nearestDist.toFixed(1)}km from the nearest sensor. Showing calculated air quality for your exact location using data from nearby monitoring stations.`,
+                    explanation: `You are ${nearestDist.toFixed(1)}km from the nearest sensor. Showing calculated air quality for your exact location using data from the 2 real monitoring stations.`,
                     values: idwResult.interpolated_values,
                     aqi: idwResult.interpolated_aqi,
-                    station_name: `Your Location (Current Position)`,
+                    station_name: `Your Location (Calculated from Real Stations)`,
                     is_interpolated: true,
                     show_distance_message: true,
-                    distance_message: `📍 You are within sensor range (${nearestDist.toFixed(1)}km from nearest), showing calculated values for your exact location`,
-                    data_type: 'Your Location Data (Calculated)',
-                    nearest_station_name: stations[nearestId]?.station_info?.name
+                    distance_message: `📍 You are within sensor range (${nearestDist.toFixed(1)}km from nearest), showing calculated values for your exact location using only real sensor data`,
+                    data_type: 'Your Location Data (Real Sensor Interpolation)',
+                    nearest_station_name: realStations[nearestId]?.station_info?.name,
+                    stations_used_for_calculation: Object.keys(realStations)
                 });
                 
-                console.log('✅ Using interpolated data for user location:', idwResult);
+                console.log('✅ Using interpolated data from real stations:', idwResult);
             } else {
-                // Beyond 1km from all sensors - show nearest station data
-                const nearestStationData = stations[nearestId];
+                // Beyond 1km from all real sensors - show nearest real station data
+                const nearestStationData = realStations[nearestId];
                 
                 setUserLocationData({
                     method: 'nearest_station',
                     source: 'nearest_station',
-                    explanation: `You are ${nearestDist.toFixed(1)}km from the nearest sensor. Showing data from ${nearestStationData.station_info.name} (nearest monitoring station).`,
+                    explanation: `You are ${nearestDist.toFixed(1)}km from the nearest real sensor. Too far for accurate interpolation - showing data from ${nearestStationData.station_info.name} (nearest real monitoring station).`,
                     values: nearestStationData.averages || {},
                     aqi: nearestStationData.highest_sub_index || 50,
                     station_name: nearestStationData.station_info.name,
                     is_interpolated: false,
                     show_distance_message: true,
-                    distance_message: `📍 You are ${nearestDist.toFixed(1)}km from the nearest sensor node, so you are seeing data from ${nearestStationData.station_info.name}`,
-                    data_type: 'Nearest Station Data',
-                    nearest_station_name: nearestStationData.station_info.name
+                    distance_message: `📍 You are ${nearestDist.toFixed(1)}km from the nearest real sensor (beyond 1km interpolation range), showing data from ${nearestStationData.station_info.name}`,
+                    data_type: 'Nearest Real Station Data',
+                    nearest_station_name: nearestStationData.station_info.name,
+                    distance_warning: nearestDist > 1.0 ? `You are ${nearestDist.toFixed(1)}km away from sensors, so you cannot get interpolated values for your exact location.` : null
                 });
                 
-                console.log('✅ Using nearest station data for user location:', nearestStationData.station_info.name);
+                console.log('✅ Using nearest real station data (beyond 1km):', nearestStationData.station_info.name);
             }
         }
     }, [userLocation, stations, user, calculateIDWInterpolation]);
@@ -578,6 +633,12 @@ const MapPage = () => {
                                             <h4>{station.station_info.name}</h4>
                                             <div className="station-meta">
                                                 <span>Last updated: {station.last_updated_on || 'N/A'}</span>
+                                                {['lora-v1', 'loradev2'].includes(id) && (
+                                                    <span className="real-station-badge">🟢 Real Sensor</span>
+                                                )}
+                                                {id.startsWith('temp-') && (
+                                                    <span className="simulated-station-badge">🔮 Simulated</span>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="station-aqi-badge" style={{ backgroundColor: getAQIColor(station.highest_sub_index) }}>
@@ -704,14 +765,22 @@ const MapPage = () => {
                                         <span className="aqi-label">AQI</span>
                                     </div>
                                     <div className="user-location-info">
-                                        <p><strong>Method:</strong> {userLocationData.is_interpolated ? 'Smart Interpolation' : 'Nearest Station'}</p>
+                                        <p><strong>Method:</strong> {userLocationData.is_interpolated ? 'Smart Interpolation (Real Sensors Only)' : 'Nearest Real Station'}</p>
                                         <p><strong>Data Source:</strong> {userLocationData.station_name}</p>
-                                        <p><strong>Distance:</strong> {nearestStation.distance.toFixed(1)} km</p>
-                                        <p><strong>Status:</strong> {userLocationData.is_interpolated ? 'Within sensor range' : 'Using nearest station'}</p>
+                                        <p><strong>Distance:</strong> {nearestStation.distance.toFixed(1)} km from nearest real sensor</p>
+                                        <p><strong>Status:</strong> {userLocationData.is_interpolated ? 'Within sensor range' : 'Beyond interpolation range'}</p>
+                                        {userLocationData.stations_used_for_calculation && (
+                                            <p><strong>Stations Used:</strong> {userLocationData.stations_used_for_calculation.join(', ')}</p>
+                                        )}
+                                        {userLocationData.distance_warning && (
+                                            <div className="distance-warning">
+                                                ⚠️ {userLocationData.distance_warning}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 
-                                {/* FIXED: Show user's interpolated readings */}
+                                {/* CORRECTED: Show user's readings with proper indication */}
                                 <div className="mobile-readings-section">
                                     <h4>Your Location Readings</h4>
                                     <div className="mobile-readings-grid">
@@ -722,11 +791,51 @@ const MapPage = () => {
                                                     {(userLocationData.values?.[p.key]?.toFixed(2)) ?? 'N/A'}
                                                     <span>µg/m³</span>
                                                 </div>
-                                                {userLocationData.is_interpolated && (
-                                                    <div className="interpolated-badge">Calculated</div>
+                                                {userLocationData.is_interpolated ? (
+                                                    <div className="interpolated-badge">🎯 Calculated</div>
+                                                ) : (
+                                                    <div className="nearest-badge">📍 Nearest</div>
                                                 )}
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                                
+                                {/* Distance and methodology info */}
+                                <div className="user-location-methodology">
+                                    <h4>Data Methodology</h4>
+                                    <div className="methodology-info">
+                                        {userLocationData.is_interpolated ? (
+                                            <div className="interpolation-info">
+                                                <div className="info-item">
+                                                    <span className="info-icon">🎯</span>
+                                                    <span>Using smart interpolation from real sensors only</span>
+                                                </div>
+                                                <div className="info-item">
+                                                    <span className="info-icon">📊</span>
+                                                    <span>Calculated from lora-v1 and loradev2 stations</span>
+                                                </div>
+                                                <div className="info-item">
+                                                    <span className="info-icon">📏</span>
+                                                    <span>You are within 1km of real sensors</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="nearest-station-info">
+                                                <div className="info-item">
+                                                    <span className="info-icon">📍</span>
+                                                    <span>Using nearest real station data</span>
+                                                </div>
+                                                <div className="info-item">
+                                                    <span className="info-icon">⚠️</span>
+                                                    <span>Beyond 1km from sensors - no interpolation</span>
+                                                </div>
+                                                <div className="info-item">
+                                                    <span className="info-icon">📏</span>
+                                                    <span>{nearestStation.distance.toFixed(1)}km from nearest real sensor</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -744,7 +853,7 @@ const MapPage = () => {
                             <div className="mobile-location-prompt">
                                 <i className="fas fa-map-marker-alt"></i>
                                 <h4>Enable Location</h4>
-                                <p>Get personalized AQI data for your current location</p>
+                                <p>Get personalized AQI data calculated from real sensors for your current location</p>
                                 <button 
                                     className="mobile-location-btn"
                                     onClick={trackUserLocation}
@@ -790,7 +899,6 @@ const MapPage = () => {
                                 {user && (
                                     <>
                                         <li><Link to="/dashboard" className="nav-link">Profile</Link></li>
-                                        
                                         <li><Link to="/add-family" className="nav-link">Add Family</Link></li>
                                     </>
                                 )}
@@ -860,7 +968,7 @@ const MapPage = () => {
                         {/* LEFT PANEL - User Data + Station List */}
                         <div className="data-panel">
                             <div className="data-panel-content">
-                                {/* FIXED: User Location Panel with correct data */}
+                                {/* CORRECTED: User Location Panel with real station indication */}
                                 {user && userLocation && userLocationData && nearestStation && (
                                     <div className="user-location-panel">
                                         <div className="user-location-header">
@@ -873,51 +981,74 @@ const MapPage = () => {
                                             </div>
                                             <div className="user-location-details">
                                                 <div className="location-method">
-                                                    {userLocationData.is_interpolated ? 'Smart Interpolation Active' : 'Using nearest station data'}
+                                                    {userLocationData.is_interpolated ? 
+                                                        '🎯 Smart Interpolation from Real Sensors Only' : 
+                                                        '📍 Nearest Real Station Data'
+                                                    }
                                                 </div>
                                                 <div className="nearest-station">
                                                     Data source: {userLocationData.station_name}
                                                 </div>
                                                 <div className="distance">
-                                                    Distance to nearest: {nearestStation.distance.toFixed(1)} km
+                                                    Distance to nearest real sensor: {nearestStation.distance.toFixed(1)} km
                                                 </div>
                                                 <div className="data-quality">
                                                     {userLocationData.is_interpolated ? 
-                                                        `🎯 Calculated for your exact location` : 
+                                                        `🎯 Calculated for your exact location using lora-v1 and loradev2` : 
                                                         `📍 Direct reading from ${userLocationData.nearest_station_name}`
                                                     }
                                                 </div>
+                                                {userLocationData.distance_warning && (
+                                                    <div className="distance-warning">
+                                                        ⚠️ {userLocationData.distance_warning}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         
-                                        {/* FIXED: Show user's specific readings */}
+                                        {/* CORRECTED: Show user's specific readings with proper source indication */}
                                         <div className="user-readings-summary">
                                             <h4>Your Location Readings</h4>
                                             <div className="readings-mini-grid">
                                                 <div className="mini-reading">
                                                     <span>PM2.5:</span>
                                                     <span>{userLocationData.values?.pm25?.toFixed(1) || 'N/A'}</span>
-                                                    {userLocationData.is_interpolated && <span className="calc-badge">*</span>}
+                                                    {userLocationData.is_interpolated ? 
+                                                        <span className="calc-badge">🎯</span> : 
+                                                        <span className="nearest-badge">📍</span>
+                                                    }
                                                 </div>
                                                 <div className="mini-reading">
                                                     <span>PM10:</span>
                                                     <span>{userLocationData.values?.pm10?.toFixed(1) || 'N/A'}</span>
-                                                    {userLocationData.is_interpolated && <span className="calc-badge">*</span>}
+                                                    {userLocationData.is_interpolated ? 
+                                                        <span className="calc-badge">🎯</span> : 
+                                                        <span className="nearest-badge">📍</span>
+                                                    }
                                                 </div>
                                                 <div className="mini-reading">
                                                     <span>NO₂:</span>
                                                     <span>{userLocationData.values?.no2?.toFixed(1) || 'N/A'}</span>
-                                                    {userLocationData.is_interpolated && <span className="calc-badge">*</span>}
+                                                    {userLocationData.is_interpolated ? 
+                                                        <span className="calc-badge">🎯</span> : 
+                                                        <span className="nearest-badge">📍</span>
+                                                    }
                                                 </div>
                                                 <div className="mini-reading">
                                                     <span>O₃:</span>
                                                     <span>{userLocationData.values?.o3?.toFixed(1) || 'N/A'}</span>
-                                                    {userLocationData.is_interpolated && <span className="calc-badge">*</span>}
+                                                    {userLocationData.is_interpolated ? 
+                                                        <span className="calc-badge">🎯</span> : 
+                                                        <span className="nearest-badge">📍</span>
+                                                    }
                                                 </div>
                                             </div>
-                                            {userLocationData.is_interpolated && (
-                                                <div className="calc-note">* Calculated values for your exact location</div>
-                                            )}
+                                            <div className="calc-note">
+                                                {userLocationData.is_interpolated ? 
+                                                    '🎯 Interpolated values using only real sensor data (lora-v1, loradev2)' :
+                                                    `📍 Direct values from nearest real sensor (${userLocationData.nearest_station_name})`
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -930,7 +1061,7 @@ const MapPage = () => {
                                             <span>Personal Location Data</span>
                                         </div>
                                         <div className="login-prompt-body">
-                                            <p>Login to view AQI data at your current location with personalized insights.</p>
+                                            <p>Login to view AQI data at your current location with personalized insights calculated from real sensors.</p>
                                             <Link to="/login" className="login-prompt-btn">
                                                 <i className="fas fa-sign-in-alt"></i>
                                                 Login to Access
@@ -971,13 +1102,24 @@ const MapPage = () => {
                                                     onClick={() => handleStationSelect(id)}
                                                 >
                                                     <div className="station-btn-content">
-                                                        <span className="station-name">{station.station_info.name}</span>
+                                                        <div className="station-name-container">
+                                                            <span className="station-name">{station.station_info.name}</span>
+                                                            {['lora-v1', 'loradev2'].includes(id) && (
+                                                                <span className="real-station-indicator">🟢</span>
+                                                            )}
+                                                            {id.startsWith('temp-') && (
+                                                                <span className="simulated-station-indicator">🔮</span>
+                                                            )}
+                                                        </div>
                                                         <span 
                                                             className="station-aqi" 
                                                             style={{ backgroundColor: getAQIColor(station.highest_sub_index) }}
                                                         >
                                                             {Math.round(station.highest_sub_index) || 'N/A'}
                                                         </span>
+                                                    </div>
+                                                    <div className="station-type-label">
+                                                        {['lora-v1', 'loradev2'].includes(id) ? 'Real Sensor' : 'Simulated'}
                                                     </div>
                                                 </button>
                                             ))}
@@ -995,6 +1137,14 @@ const MapPage = () => {
                                         {/* Station Header */}
                                         <div className="station-header">
                                             <h3>{selectedStationData.station_info.name}</h3>
+                                            <div className="station-badges">
+                                                {['lora-v1', 'loradev2'].includes(selectedStationId) && (
+                                                    <span className="real-sensor-badge">🟢 Real Sensor</span>
+                                                )}
+                                                {selectedStationId.startsWith('temp-') && (
+                                                    <span className="simulated-sensor-badge">🔮 Simulated</span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* AQI Section */}
@@ -1083,6 +1233,16 @@ const MapPage = () => {
                                             <i className="fas fa-satellite-dish"></i>
                                             <h3>Select a Station</h3>
                                             <p>Choose a monitoring station from the left panel or click on a map marker to view detailed air quality data, current readings, and forecast information.</p>
+                                            <div className="station-types-info">
+                                                <div className="station-type-info">
+                                                    <span className="type-indicator real">🟢</span>
+                                                    <span>Real sensors are used for interpolation calculations</span>
+                                                </div>
+                                                <div className="station-type-info">
+                                                    <span className="type-indicator simulated">🔮</span>
+                                                    <span>Simulated stations for network visualization</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -1141,7 +1301,7 @@ const MapPage = () => {
                             </button>
                         </div>
                         <div className="modal-body">
-                            <p>To view AQI data at your current location, please login first.</p>
+                            <p>To view AQI data calculated from real sensors at your current location, please login first.</p>
                             <div className="modal-actions">
                                 <Link to="/login" className="modal-btn primary">
                                     <i className="fas fa-sign-in-alt"></i>
