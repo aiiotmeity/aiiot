@@ -171,7 +171,7 @@ function HomePage() {
       <nav className="navbar">
         <div className="navbar-content">
           <Link to="/" className="navbar-brand">
-            <img src="/aqi.webp" alt="AQM Logo" loading="lazy" width="40" height="40" />
+           {/*--- <img src="/aqi.webp" alt="AQM Logo" loading="lazy" width="40" height="40" />---*/}
             AirAware
           </Link>
           <div className="menu-toggle" onClick={toggleMenu}>
