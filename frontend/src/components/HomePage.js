@@ -202,7 +202,7 @@ function HomePage() {
           <div className="hero-text-section">
             <h1 className="hero-title">Air Quality Monitoring</h1>
             <p className="hero-subtitle">Live air quality updates and insights from Kalady, Ernakulam</p>
-            <p className="hero-note">Current AQI from the nearest monitoring point</p>
+            <p className="hero-note">Current AQI from the nearest monitoring station</p>
             
             <div className="hero-actions">
               <button onClick={handleMapNavigation} className="cta-button primary">

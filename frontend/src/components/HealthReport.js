@@ -608,14 +608,12 @@ function HealthReport() {
                             <strong>Generated:</strong> {new Date().toLocaleString('en-IN')}
                         </div>
                         <div className="metadata-item">
-                            <strong>Patient:</strong> {username}
+                            <strong>Name:</strong> {username}
                         </div>
                         <div className="metadata-item">
                             <strong>Location:</strong> {currentDataInfo?.is_interpolated ? 'Your Current Location' : 'Nearest Real Station Data'}
                         </div>
-                        <div className="metadata-item">
-                            <strong>Data Source:</strong> {currentDataInfo?.station_name || 'ASIET Campus Station'}
-                        </div>
+                        
                         {currentDataInfo?.stations_used_for_calculation && (
                             <div className="metadata-item">
                                 <strong>Calculation Method:</strong> Interpolated from {currentDataInfo.stations_used_for_calculation.join(', ')}
