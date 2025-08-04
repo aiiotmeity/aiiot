@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './css/Login.css';
 import logoImage from '../assets/aqi.webp'; 
 
@@ -252,10 +252,11 @@ function Login() {
       {/* Navbar */}
       <nav className="navbar">
         <div className="navbar-content">
-          <a href="/" className="navbar-brand">
-            <img src="/aqi.webp" alt="AQM Logo" />
-            AirAware
-          </a>
+          <Link to="/" className="navbar-brand">
+                      {/* 2. USE THE IMPORTED VARIABLE */}
+                      <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                      AirAware
+                    </Link>
         </div>
       </nav>
 
