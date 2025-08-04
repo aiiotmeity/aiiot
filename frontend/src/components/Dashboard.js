@@ -411,7 +411,6 @@ function Dashboard() {
     } catch (error) {
       console.error('❌ Error fetching dashboard data:', error);
       if (error.name !== 'AbortError') {
-        setError(`Failed to load dashboard data: ${error.message}`);
         loadSampleData();
       }
     } finally {
@@ -643,14 +642,7 @@ function Dashboard() {
             </span>
           );
         case 'failed':
-          return (
-            <span style={{ color: '#ef4444' }}>
-              
-              <button onClick={getUserLocation} className="retry-location-btn">
-                
-              </button>
-            </span>
-          );
+            return null;
         default:
           return <span style={{ color: '#6b7280' }}>📍 </span>;
       }
@@ -804,9 +796,9 @@ function Dashboard() {
           {locationStatus === 'failed' && (
             <button onClick={handleEnableLocation} className="action-btn primary">📍 Enable Location for Personalized Data</button>
           )}
-          {/*<button onClick={handleRefreshData} className="action-btn secondary" disabled={loading}>
+          <button onClick={handleRefreshData} className="action-btn secondary" disabled={loading}>
             {loading ? '🔄 Refreshing...' : '🔄 Refresh Data'}
-          </button>*/}
+          </button>
         </div>
 
         <div className="metrics-section">
