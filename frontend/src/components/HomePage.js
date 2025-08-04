@@ -10,41 +10,50 @@ function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showFeaturePopup, setShowFeaturePopup] = useState(false);
   const [pageLoaded, setPageLoaded] = useState(false);
+  
+  // FIX: Added isMobileView state to track screen size
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
   // --- Add hooks for navigation and authentication ---
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   
-  // API Base URL configuration - this is the key fix
+  // API Base URL configuration
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
     ? 'https://airaware-app-gcw7.onrender.com' 
     : 'http://localhost:8000';
+
+  // FIX: Added useEffect to handle window resizing for isMobileView
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Page load tracking
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoaded(true);
-    }, 1000); // Give the page 1 second to fully load
-    
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
-  // Enhanced feature popup logic - only show after page is loaded and data is fetched
+  // Enhanced feature popup logic
   useEffect(() => {
-    if (!pageLoaded || loading) return; // Don't show popup while loading
-    
+    if (!pageLoaded || loading) return;
     const hasSeenPopup = localStorage.getItem('hasSeenAirAwareFeaturePopup');
     if (!hasSeenPopup) {
       const timer = setTimeout(() => {
         setShowFeaturePopup(true);
         localStorage.setItem('hasSeenAirAwareFeaturePopup', 'true');
-        
-        // Auto-hide after 15 seconds
         setTimeout(() => {
           setShowFeaturePopup(false);
         }, 15000);
-      }, 3000); // Show after 3 seconds of page being fully loaded
-      
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [pageLoaded, loading]);
@@ -53,23 +62,19 @@ function HomePage() {
     setShowFeaturePopup(false);
   };
 
-  // The corrected function with proper API URL
+  // Fetch data function
   const fetchHomeData = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     const fetchData = async (url) => {
       try {
-        console.log('Fetching from:', url); // Debug log
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`Server responded with ${response.status}`);
         }
         const data = await response.json();
-        console.log('Received data:', data); // Debug log
         setHomeData(data);
       } catch (err) {
-        console.error('Fetch error:', err); // Debug log
         setError(err.message);
       } finally {
         setLoading(false);
@@ -77,82 +82,70 @@ function HomePage() {
     };
 
     if (navigator.geolocation) {
-      // Try to get user's location
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          // If successful, fetch data with location parameters using full URL
           fetchData(`${API_BASE_URL}/api/home/?lat=${latitude}&lng=${longitude}`);
         },
-        (error) => {
-          console.warn("Could not get user location:", error.message);
-          // If it fails (e.g., user denies permission), fetch data without location using full URL
+        () => {
           fetchData(`${API_BASE_URL}/api/home/`);
         },
-        { timeout: 10000 } // Add a timeout for the location request
+        { timeout: 10000 }
       );
     } else {
-      // If the browser doesn't support geolocation, fetch without location using full URL
       fetchData(`${API_BASE_URL}/api/home/`);
     }
   }, [API_BASE_URL]);
 
   useEffect(() => {
     fetchHomeData();
-    const interval = setInterval(fetchHomeData, 60000); // Refresh every 60 seconds
+    const interval = setInterval(fetchHomeData, 60000);
     return () => clearInterval(interval);
   }, [fetchHomeData]);
   
-  // --- Define event handler functions ---
+  // --- Event handler functions ---
   const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
   const handleMapNavigation = useCallback(() => {
-    setIsMenuOpen(false); // Close menu when navigating
+    setIsMenuOpen(false);
     navigate('/map');
   }, [navigate]);
   const handleDashboardNavigation = useCallback(() => {
-    setIsMenuOpen(false); // Close menu when navigating
+    setIsMenuOpen(false);
     user ? navigate('/dashboard') : navigate('/login');
   }, [user, navigate]);
   const handleLogout = useCallback(() => {
     logout();
-    setIsMenuOpen(false); // Close menu when logging out
+    setIsMenuOpen(false);
     navigate('/');
   }, [logout, navigate]);
-
   const handleAdminPortalClick = useCallback(() => {
-    // Clear any existing admin session to force login
     localStorage.removeItem('admin_user');
     navigate('/admin/login');
   }, [navigate]);
 
-  // Close menu when clicking outside
+  // Close menu on outside click or scroll
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isMenuOpen && !event.target.closest('.navbar')) {
         setIsMenuOpen(false);
       }
     };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [isMenuOpen]);
-
-  // Close menu on scroll
-  useEffect(() => {
     const handleScroll = () => {
       if (isMenuOpen) {
         setIsMenuOpen(false);
       }
     };
-
+    document.addEventListener('click', handleClickOutside);
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [isMenuOpen]);
 
   const aqiStatus = useMemo(() => {
     if (loading && !homeData) return { status: 'LOADING...', icon: 'fas fa-spinner fa-spin', color: '#9ca3af' };
     if (error || !homeData?.highest_sub_index) return { status: 'NO DATA', icon: 'fas fa-exclamation-triangle', color: '#ef4444' };
-    
     const value = parseInt(homeData.highest_sub_index, 10);
     if (value <= 50) return { status: 'GOOD', icon: 'fas fa-smile', color: '#10b981' };
     if (value <= 100) return { status: 'MODERATE', icon: 'fas fa-meh', color: '#f59e0b' };
@@ -171,7 +164,7 @@ function HomePage() {
       <nav className="navbar">
         <div className="navbar-content">
           <Link to="/" className="navbar-brand">
-           {/*--- <img src="/aqi.webp" alt="AQM Logo" loading="lazy" width="40" height="40" />---*/}
+            <img src="/aqi.webp" alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
             AirAware
           </Link>
           <div className="menu-toggle" onClick={toggleMenu}>
@@ -481,7 +474,7 @@ function HomePage() {
         </div>
       </footer>
 
-      {/* Enhanced Feature Popup - Only shows after page load */}
+      {/* Enhanced Feature Popup */}
       {showFeaturePopup && pageLoaded && !loading && (
         <div className="feature-popup-overlay" onClick={closeFeaturePopup}>
           <div className="feature-popup" onClick={(e) => e.stopPropagation()}>
@@ -499,55 +492,39 @@ function HomePage() {
 
             <div className="features-showcase">
               <div className="feature-item" onClick={() => {closeFeaturePopup(); navigate('/map');}}>
-                <div className="feature-icon">
-                  <i className="fas fa-map-marked-alt"></i>
-                </div>
+                <div className="feature-icon"><i className="fas fa-map-marked-alt"></i></div>
                 <div className="feature-content">
                   <h3>Live Interactive Map</h3>
                   <p>Real-time AQI data from multiple monitoring stations</p>
                 </div>
-                <div className="feature-arrow">
-                  <i className="fas fa-arrow-right"></i>
-                </div>
+                <div className="feature-arrow"><i className="fas fa-arrow-right"></i></div>
               </div>
 
               <div className="feature-item" onClick={() => {closeFeaturePopup(); user ? navigate('/dashboard') : navigate('/login');}}>
-                <div className="feature-icon">
-                  <i className="fas fa-heartbeat"></i>
-                </div>
+                <div className="feature-icon"><i className="fas fa-heartbeat"></i></div>
                 <div className="feature-content">
                   <h3>Personal Health Insights</h3>
                   <p>Get personalized recommendations based on your location</p>
                 </div>
-                <div className="feature-arrow">
-                  <i className="fas fa-arrow-right"></i>
-                </div>
+                <div className="feature-arrow"><i className="fas fa-arrow-right"></i></div>
               </div>
 
               <div className="feature-item" onClick={() => {closeFeaturePopup(); navigate('/map');}}>
-                <div className="feature-icon">
-                  <i className="fas fa-chart-line"></i>
-                </div>
+                <div className="feature-icon"><i className="fas fa-chart-line"></i></div>
                 <div className="feature-content">
                   <h3>AQI Forecasting</h3>
                   <p>AI-powered predictions for better planning</p>
                 </div>
-                <div className="feature-arrow">
-                  <i className="fas fa-arrow-right"></i>
-                </div>
+                <div className="feature-arrow"><i className="fas fa-arrow-right"></i></div>
               </div>
 
               <div className="feature-item">
-                <div className="feature-icon">
-                  <i className="fas fa-satellite-dish"></i>
-                </div>
+                <div className="feature-icon"><i className="fas fa-satellite-dish"></i></div>
                 <div className="feature-content">
                   <h3>24/7 Monitoring</h3>
                   <p>Continuous tracking of 7 key air pollutants</p>
                 </div>
-                <div className="feature-badge">
-                  <span>LIVE</span>
-                </div>
+                <div className="feature-badge"><span>LIVE</span></div>
               </div>
             </div>
 

@@ -613,12 +613,12 @@ function HealthReport() {
                         <div className="metadata-item">
                             <strong>Location:</strong> {currentDataInfo?.is_interpolated ? 'Your Current Location' : 'Nearest Real Station Data'}
                         </div>
-                        
+                        {/*}
                         {currentDataInfo?.stations_used_for_calculation && (
                             <div className="metadata-item">
                                 <strong>Calculation Method:</strong> Interpolated from {currentDataInfo.stations_used_for_calculation.join(', ')}
                             </div>
-                        )}
+                        )}*/}
                     </div>
                 </div>
 
