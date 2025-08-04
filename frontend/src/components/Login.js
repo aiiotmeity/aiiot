@@ -10,6 +10,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
   
   const navigate = useNavigate();
 
@@ -19,17 +20,7 @@ function Login() {
     : 'http://localhost:8000';
 
 
-  console.log('Login component loaded');
-  useEffect(() => {
-          const handleResize = () => {
-              const width = window.innerWidth;
-              setIsMobile(width <= 768);
-          };
   
-          window.addEventListener('resize', handleResize);
-          return () => window.removeEventListener('resize', handleResize);
-      }, []);
-
   // Simple particles without complex animations
   const createParticles = () => {
     const particles = [];
@@ -112,6 +103,15 @@ function Login() {
     setOtp(value);
     clearMessages();
   };
+  useEffect(() => {
+          const handleResize = () => {
+              const width = window.innerWidth;
+              setIsMobile(width <= 768);
+          };
+  
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
+      }, []);
 
   // Handle sending OTP
   const handleSendOTP = async (e) => {
