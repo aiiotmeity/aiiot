@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'reac
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../App';
 import './css/HealthReport.css';
+import logoImage from '../assets/aqi.webp';
 
 const LazyChart = React.lazy(() => import('./LazyChart'));
 
@@ -269,7 +270,7 @@ function HealthReport() {
     const [interpolatedData, setInterpolatedData] = useState(null);
     const [locationStatus, setLocationStatus] = useState('initializing');
     const [currentDataInfo, setCurrentDataInfo] = useState(null);
-    
+    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
     // --- Forecast parameter selection ---
     const [selectedParameter, setSelectedParameter] = useState('pm25');
 
@@ -283,6 +284,15 @@ function HealthReport() {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobileView(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+        }, []);
 
     const fetchReportData = useCallback(async () => {
         if (!username) { navigate('/login'); return; }
@@ -545,9 +555,10 @@ function HealthReport() {
             <nav className="navbar">
                 <div className="navbar-content">
                     <Link to="/" className="navbar-brand">
-                        <img src="/aqi.webp" alt="AQM Logo" width="40" height="40" style={{ marginRight: '12px' }} />
-                        AirAware Kerala
-                    </Link>
+                                {/* 2. USE THE IMPORTED VARIABLE */}
+                                <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                                AirAware
+                              </Link>
 
                     <div className="menu-toggle" onClick={toggleMenu}>☰</div>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../App';
 import './css/FamilyPage.css';
+import logoImage from '../assets/aqi.webp'; 
 
 function FamilyPage() {
     const { user, logout } = useAuth();
@@ -31,6 +32,7 @@ function FamilyPage() {
     ? 'https://airaware-app-gcw7.onrender.com' 
     : 'http://localhost:8000';
 
+    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
     const fetchFamilyMembers = useCallback(async () => {
         if (!username) {
@@ -63,6 +65,15 @@ function FamilyPage() {
         }
     }, [username, navigate, API_BASE_URL]);
 
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobileView(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+        }, []);
     useEffect(() => {
         fetchFamilyMembers();
     }, [fetchFamilyMembers]);
@@ -257,9 +268,10 @@ function FamilyPage() {
             <nav className="navbar">
                 <div className="navbar-content">
                     <Link to="/" className="navbar-brand">
-                        <img src="/aqi.webp" alt="AQM Logo" width="40" height="40" style={{ marginRight: '12px' }} />
-                        AirAware Kerala
-                    </Link>
+                                {/* 2. USE THE IMPORTED VARIABLE */}
+                                <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                                AirAware
+                              </Link>
 
                     <div className="menu-toggle" onClick={toggleMenu}>☰</div>
 

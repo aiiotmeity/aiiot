@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './css/HealthAssessment.css';
+import logoImage from '../assets/aqi.webp'; 
 
 function HealthAssessment() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -20,6 +21,7 @@ function HealthAssessment() {
   const [error, setError] = useState('');
   const [username, setUsername] = useState('');
   const [saveStatus, setSaveStatus] = useState('');
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
   const navigate = useNavigate();
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -32,6 +34,15 @@ function HealthAssessment() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setUsername(user.name || 'User');
   }, []);
+   useEffect(() => {
+        const handleResize = () => {
+          setIsMobileView(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+          window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
   // Memoize particles to prevent recreation on every render
   const particles = useMemo(() => {
@@ -457,10 +468,11 @@ function HealthAssessment() {
         
         <div className="navbar">
           <div className="navbar-content">
-            <a href="/" className="navbar-brand">
-              <img src="/aqi.webp" alt="AQM Logo" />
-              AirAware
-            </a>
+            <Link to="/" className="navbar-brand">
+                        {/* 2. USE THE IMPORTED VARIABLE */}
+                        <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                        AirAware
+                      </Link>
           </div>
         </div>
 

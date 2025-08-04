@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState,  useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './css/Signup.css';
+import logoImage from '../assets/aqi.webp'; 
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -10,13 +11,22 @@ function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
   const navigate = useNavigate();
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
     ? 'https://airaware-app-gcw7.onrender.com' 
     : 'http://localhost:8000';
 
-
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
   // Memoize particles to prevent recreation on every render
   const particles = useMemo(() => {
     const particleElements = [];
@@ -180,10 +190,11 @@ function Signup() {
       {/* Navbar */}
       <nav className="navbar">
         <div className="navbar-content">
-          <a href="/" className="navbar-brand">
-            <img src="/aqi.webp" alt="AQM Logo" />
-            AirAware
-          </a>
+          <Link to="/" className="navbar-brand">
+                      {/* 2. USE THE IMPORTED VARIABLE */}
+                      <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                      AirAware
+                    </Link>
         </div>
       </nav>
 

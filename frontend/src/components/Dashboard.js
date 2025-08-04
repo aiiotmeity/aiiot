@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom'; // Import Link
 import './css/Dashboard.css';
+import logoImage from '../assets/aqi.webp'; 
 
 // Lazy loading components
 const LazyMap = React.lazy(() =>
@@ -721,9 +722,10 @@ function Dashboard() {
       <nav className="navbar">
         <div className="navbar-content">
           <Link to="/" className="navbar-brand">
-            <img src="/aqi.webp" alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
-            AirAware
-          </Link>
+                      {/* 2. USE THE IMPORTED VARIABLE */}
+                      <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                      AirAware
+                    </Link>
           <div className="menu-toggle" onClick={toggleMenu}>
             {isMenuOpen ? '✕' : '☰'}
           </div>

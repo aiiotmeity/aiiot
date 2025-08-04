@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Line } from 'react-chartjs-2';
+import logoImage from '../assets/aqi.webp'; 
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -132,6 +133,7 @@ const MapPage = () => {
     const mapRef = useRef(null);
     const markersRef = useRef({});
     const userLocationMarkerRef = useRef(null);
+    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
     
     // Hooks
     const navigate = useNavigate();
@@ -190,7 +192,16 @@ const MapPage = () => {
         }
         return () => { if (map) map.remove(); };
     }, []);
-    
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobileView(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+        }, []);
+            
     // === CORRECTED IDW INTERPOLATION - ONLY REAL STATIONS ===
     const calculateIDWInterpolation = useCallback((locationData, stations) => {
         console.log('🔍 Starting IDW calculation with ONLY real stations...');
@@ -887,9 +898,10 @@ const MapPage = () => {
             <nav className="navbar">
                 <div className="navbar-content">
                     <Link to="/" className="navbar-brand">
-                        <img src="/aqi.webp" alt="Logo" width="32" height="32" />
-                        <span>AirAware</span>
-                    </Link>
+                                {/* 2. USE THE IMPORTED VARIABLE */}
+                                <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                                AirAware
+                              </Link>
                     
                     {!isMobile && (
                         <div className="nav-center">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import './css/AdminLogin.css';
+import logoImage from '../assets/aqi.webp'; 
 
 function AdminLogin() {
     const [username, setUsername] = useState('');
