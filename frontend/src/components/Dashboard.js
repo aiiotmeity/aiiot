@@ -645,14 +645,14 @@ function Dashboard() {
         case 'failed':
           return (
             <span style={{ color: '#ef4444' }}>
-              📍 Location detection failed - Using default station data
+              
               <button onClick={getUserLocation} className="retry-location-btn">
-                🔄 Retry
+                
               </button>
             </span>
           );
         default:
-          return <span style={{ color: '#6b7280' }}>📍 Default location</span>;
+          return <span style={{ color: '#6b7280' }}>📍 </span>;
       }
     };
     return <div className="location-info">{getLocationDisplay()}</div>;
@@ -663,7 +663,7 @@ function Dashboard() {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return '0';
     return metric === 'co' ? numValue.toFixed(1) : Math.round(numValue);
-  }, []);
+  }, [])
 
   const metricIcons = useMemo(() => ({
     pm25: '🌱', pm10: '🍃', so2: '🏭', no2: '💨',
@@ -804,9 +804,9 @@ function Dashboard() {
           {locationStatus === 'failed' && (
             <button onClick={handleEnableLocation} className="action-btn primary">📍 Enable Location for Personalized Data</button>
           )}
-          <button onClick={handleRefreshData} className="action-btn secondary" disabled={loading}>
+          {/*<button onClick={handleRefreshData} className="action-btn secondary" disabled={loading}>
             {loading ? '🔄 Refreshing...' : '🔄 Refresh Data'}
-          </button>
+          </button>*/}
         </div>
 
         <div className="metrics-section">
