@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './css/Login.css';
 import logoImage from '../assets/aqi.webp'; 
@@ -106,7 +106,7 @@ function Login() {
   useEffect(() => {
           const handleResize = () => {
               const width = window.innerWidth;
-              setIsMobile(width <= 768);
+              setIsMobileView(width <= 768);
           };
   
           window.addEventListener('resize', handleResize);
