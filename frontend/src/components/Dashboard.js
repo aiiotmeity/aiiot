@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Import Link
+import { useNavigate, Link } from 'react-router-dom';
 import './css/Dashboard.css';
 import logoImage from '../assets/aqi.webp'; 
 
@@ -60,7 +60,7 @@ const KNOWN_LOCATIONS = {
     display_name: 'Kalady Town, Kerala',
     city: 'Kalady',
     state: 'Kerala',
-    country: 'India'
+    country: 'India'  
   },
   '10.1765_76.4285': {
     display_name: 'Kalady Railway Station Area',
@@ -106,50 +106,54 @@ const getLocationName = async (lat, lng) => {
     }
   }
 
-  // Strategy 3: Try multiple geocoding services
-  const geocodingResults = await Promise.allSettled([
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1&accept-language=en`)
-      .then(res => res.json())
+  // Strategy 3: Try multiple geocoding services with timeout and error handling
+  const geocodingPromises = [
+    // OpenStreetMap Nominatim
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1&accept-language=en`, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'AirAware/1.0'
+      }
+    })
+      .then(res => res.ok ? res.json() : null)
       .then(data => ({
         service: 'OpenStreetMap',
         data: data,
         location: parseOpenStreetMapResult(data)
-      })),
+      }))
+      .catch(() => null),
 
+    // BigDataCloud (free tier)
     fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : null)
       .then(data => ({
         service: 'BigDataCloud',
         data: data,
         location: parseBigDataCloudResult(data)
-      })),
-
-    fetch(`https://us1.locationiq.com/v1/reverse.php?key=demo&lat=${lat}&lon=${lng}&format=json`)
-      .then(res => res.json())
-      .then(data => ({
-        service: 'LocationIQ',
-        data: data,
-        location: parseLocationIQResult(data)
       }))
       .catch(() => null)
-  ]);
+  ];
 
-  const validResults = geocodingResults
-    .filter(result => result.status === 'fulfilled' && result.value && result.value.location)
-    .map(result => result.value);
+  try {
+    const geocodingResults = await Promise.allSettled(geocodingPromises);
+    const validResults = geocodingResults
+      .filter(result => result.status === 'fulfilled' && result.value && result.value.location)
+      .map(result => result.value);
 
-  console.log('🔍 Geocoding results:', validResults);
+    console.log('🔍 Geocoding results:', validResults);
 
-  // CORRECTED: Smart logic to find the best location name
-  if (validResults.length > 0) {
-    const bestResult = validResults.find(r => r.location && r.location.city) || validResults[0];
-    console.log('✅ Using best available geocoding result from:', bestResult.service, bestResult.location.display_name);
-    return bestResult.location;
+    if (validResults.length > 0) {
+      const bestResult = validResults.find(r => r.location && r.location.city) || validResults[0];
+      console.log('✅ Using best available geocoding result from:', bestResult.service, bestResult.location.display_name);
+      return bestResult.location;
+    }
+  } catch (error) {
+    console.warn('Geocoding services failed:', error);
   }
 
   // Strategy 4: Intelligent regional fallback
   const regionalFallback = getRegionalFallback(lat, lng);
-  console.log('⚠️ ', regionalFallback.display_name);
+  console.log('⚠️ Using regional fallback:', regionalFallback.display_name);
   return regionalFallback;
 };
 
@@ -178,19 +182,6 @@ const parseBigDataCloudResult = (data) => {
     city: data.locality,
     state: data.principalSubdivision || 'Kerala',
     country: data.countryName || 'India'
-  };
-};
-
-// Parse LocationIQ result
-const parseLocationIQResult = (data) => {
-  if (!data || !data.address) return null;
-  const addr = data.address;
-  const primaryLocation = addr.village || addr.town || addr.city || addr.county;
-  return {
-    display_name: `${primaryLocation}, ${addr.state || 'Kerala'}`,
-    city: primaryLocation,
-    state: addr.state || 'Kerala',
-    country: addr.country || 'India'
   };
 };
 
@@ -245,6 +236,7 @@ function Dashboard() {
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const [healthData, setHealthData] = useState(null);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
 
   const navigate = useNavigate();
   const API_BASE_URL = process.env.NODE_ENV === 'production'
@@ -315,21 +307,45 @@ function Dashboard() {
     };
   }, [isMenuOpen, isMobileView, closeMenu]);
 
-  // ===== GET USER LOCATION =====
+  // ===== ENHANCED GET USER LOCATION WITH HTTPS CHECK =====
   const getUserLocation = useCallback(() => {
     return new Promise((resolve, reject) => {
+      // Check if geolocation is available
       if (!navigator.geolocation) {
-        reject(new Error('Geolocation not supported'));
+        console.error('Geolocation not supported by this browser');
+        reject(new Error('Location services not supported by your browser'));
         return;
       }
+
+      // Check if we're on HTTPS (required for geolocation on deployed sites)
+      const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+      if (!isSecure) {
+        console.error('Geolocation requires HTTPS');
+        reject(new Error('Location access requires a secure connection (HTTPS)'));
+        return;
+      }
+
       setLocationStatus('detecting');
       setIsLocationUpdating(true);
+      setLocationPermissionDenied(false);
+
       const timeout = setTimeout(() => {
-        reject(new Error('Location detection timeout'));
-      }, 10000);
+        setLocationStatus('timeout');
+        setIsLocationUpdating(false);
+        reject(new Error('Location detection timed out. Please try again.'));
+      }, 15000); // Increased timeout for better reliability
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 300000 // 5 minutes cache
+      };
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           clearTimeout(timeout);
+          console.log('✅ GPS coordinates received:', position.coords);
+          
           const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
@@ -337,36 +353,62 @@ function Dashboard() {
             source: 'gps',
             timestamp: Date.now()
           };
-          if (isNaN(location.lat) || isNaN(location.lng)) {
-            reject(new Error('Invalid GPS coordinates'));
+
+          // Validate coordinates
+          if (isNaN(location.lat) || isNaN(location.lng) || 
+              Math.abs(location.lat) > 90 || Math.abs(location.lng) > 180) {
+            console.error('Invalid GPS coordinates received');
+            setLocationStatus('failed');
+            setIsLocationUpdating(false);
+            reject(new Error('Invalid location coordinates received'));
             return;
           }
+
           try {
+            console.log('🔍 Getting location name...');
             const locationName = await getLocationName(location.lat, location.lng);
             setUserLocationName(locationName);
             console.log('📍 Location name resolved:', locationName.display_name);
           } catch (nameError) {
-            console.log('❌ Failed to get location name:', nameError);
+            console.warn('❌ Failed to get location name:', nameError);
             const fallbackName = getRegionalFallback(location.lat, location.lng);
             setUserLocationName(fallbackName);
           }
+
           setUserLocation(location);
           setLocationStatus('gps_detected');
           setIsLocationUpdating(false);
+          console.log('✅ Location detection successful');
           resolve(location);
         },
         (error) => {
           clearTimeout(timeout);
-          setLocationStatus('failed');
           setIsLocationUpdating(false);
-          console.log('GPS error:', error.message);
-          reject(error);
+          
+          console.error('GPS error:', error);
+          
+          // Handle different types of errors
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              setLocationStatus('permission_denied');
+              setLocationPermissionDenied(true);
+              reject(new Error('Location access denied. Please enable location permission in your browser settings.'));
+              break;
+            case error.POSITION_UNAVAILABLE:
+              setLocationStatus('unavailable');
+              reject(new Error('Location information is unavailable. Please check your GPS settings.'));
+              break;
+            case error.TIMEOUT:
+              setLocationStatus('timeout');
+              reject(new Error('Location request timed out. Please try again.'));
+              break;
+            default:
+              setLocationStatus('failed');
+              reject(new Error('Unable to retrieve your location. Please try again.'));
+              break;
+          }
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000
-        }
+        options
       );
     });
   }, []);
@@ -375,19 +417,27 @@ function Dashboard() {
   const fetchDashboardData = useCallback(async (locationData = null) => {
     setLoading(true);
     setError(null);
+    
     try {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      
       const controller = new AbortController();
       abortControllerRef.current = controller;
+      
       const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
       const url = new URL(`${API_BASE_URL}/api/dashboard/`);
       url.searchParams.append('username', username);
+      
       if (locationData) {
         url.searchParams.append('lat', locationData.lat.toString());
         url.searchParams.append('lng', locationData.lng.toString());
       }
+
+      console.log('📡 Fetching dashboard data from:', url.toString());
+      
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
@@ -395,22 +445,34 @@ function Dashboard() {
           'Accept': 'application/json'
         }
       });
+      
       clearTimeout(timeoutId);
+      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`Server error: ${response.status}. Please try again later.`);
       }
+      
       const data = await response.json();
       console.log('✅ Dashboard data received:', data);
+      
       if (data.health_data) {
         console.log('✅ Health data found:', data.health_data);
         setHealthData(data.health_data);
       }
+      
       processDashboardData(data, locationData);
       setLastUpdateTime(new Date());
       setError(null);
+      
     } catch (error) {
       console.error('❌ Error fetching dashboard data:', error);
+      
       if (error.name !== 'AbortError') {
+        if (error.message.includes('Failed to fetch')) {
+          setError('Unable to connect to server. Please check your internet connection.');
+        } else {
+          setError(error.message);
+        }
         loadSampleData();
       }
     } finally {
@@ -424,9 +486,11 @@ function Dashboard() {
       console.warn('No station data received');
       return;
     }
+    
     setDashboardData(data);
     const stations = data.stations;
     const stationIds = Object.keys(stations);
+    
     if (locationData && stationIds.length > 0) {
       const stationDistances = {};
       stationIds.forEach(stationId => {
@@ -442,43 +506,48 @@ function Dashboard() {
           station: station
         };
       });
+      
       const nearestStationId = Object.keys(stationDistances).reduce((nearest, current) =>
         stationDistances[current].distance < stationDistances[nearest].distance ? current : nearest
       );
+      
       const nearestDistance = stationDistances[nearestStationId].distance;
       const nearestStation = stationDistances[nearestStationId].station;
+      
       setNearestStationInfo({
         id: nearestStationId,
         name: nearestStation.station_info.name,
         distance: nearestDistance,
         aqi: nearestStation.highest_sub_index || 50
       });
+      
       const isWithinSensorRange = Object.values(stationDistances).some(s => s.distance <= 1.0);
+      
       if (isWithinSensorRange || nearestDistance <= 1.0) {
-        const idwResult = calculateIDWInterpolation(locationData, stations);
+        const smartResult = calculateSmartEstimation(locationData, stations);
         setCurrentDataInfo({
-          method: 'location_interpolation',
-          source: 'interpolated',
-          explanation: `You are ${nearestDistance.toFixed(1)}km from the nearest sensor. Showing calculated air quality for your exact location using data from nearby monitoring stations.`,
-          values: idwResult.interpolated_values,
-          aqi: idwResult.interpolated_aqi,
+          method: 'smart_estimation',
+          source: 'calculated',
+          explanation: `You are ${nearestDistance.toFixed(1)}km from the nearest sensor. We're showing calculated air quality readings specifically for your location using data from nearby sensors.`,
+          values: smartResult.estimated_values,
+          aqi: smartResult.estimated_aqi,
           station_name: `Your Location (${userLocationName?.city || 'Current Position'})`,
-          is_interpolated: true,
+          is_estimated: true,
           show_distance_message: true,
-          distance_message: `📍 You are within sensor range (${nearestDistance.toFixed(1)}km from nearest), showing calculated values for your exact location`,
-          data_type: 'Your Location Data (Calculated)'
+          distance_message: `📍 You are within sensor range (${nearestDistance.toFixed(1)}km away), showing calculated readings for your exact location`,
+          data_type: 'Personalized Air Quality Data'
         });
       } else {
         setCurrentDataInfo({
           method: 'nearest_station',
           source: 'nearest_station',
-          explanation: `You are ${nearestDistance.toFixed(1)}km from the nearest sensor. Showing data from ${nearestStation.station_info.name} (nearest monitoring station).`,
+          explanation: `You are ${nearestDistance.toFixed(1)}km from the nearest sensor. Showing readings from ${nearestStation.station_info.name} (the closest monitoring station to you).`,
           values: nearestStation.averages || {},
           aqi: nearestStation.highest_sub_index || 50,
           station_name: nearestStation.station_info.name,
-          is_interpolated: false,
+          is_estimated: false,
           show_distance_message: true,
-          distance_message: `📍 You are ${nearestDistance.toFixed(1)}km from the nearest sensor node, so you are seeing data from ${nearestStation.station_info.name}`,
+          distance_message: `📍 You are ${nearestDistance.toFixed(1)}km from the nearest sensor, so you're seeing data from ${nearestStation.station_info.name}`,
           data_type: 'Nearest Station Data'
         });
       }
@@ -491,17 +560,18 @@ function Dashboard() {
         values: defaultStation.averages || {},
         aqi: defaultStation.highest_sub_index || 50,
         station_name: defaultStation.station_info?.name || 'ASIET Campus Station',
-        is_interpolated: false,
+        is_estimated: false,
         show_distance_message: false,
         distance_message: null,
         data_type: 'Default Station Data'
       });
     }
+    
     console.log('📊 Dashboard data processed successfully');
   }, [userLocationName]);
 
-  // ===== IDW INTERPOLATION CALCULATION =====
-  const calculateIDWInterpolation = useCallback((locationData, stations) => {
+  // ===== SMART ESTIMATION CALCULATION (User-friendly name for IDW) =====
+  const calculateSmartEstimation = useCallback((locationData, stations) => {
     const stationIds = Object.keys(stations);
     let totalWeight = 0;
     const weightedValues = {
@@ -509,6 +579,7 @@ function Dashboard() {
       co: 0, o3: 0, nh3: 0, temp: 0, hum: 0, pre: 0
     };
     let weightedAqi = 0;
+    
     stationIds.forEach(stationId => {
       const station = stations[stationId];
       const distance = calculateDistance(
@@ -517,29 +588,35 @@ function Dashboard() {
         station.station_info.lat,
         station.station_info.lng
       );
+      
       const safeDistance = Math.max(distance, 0.001);
       const weight = 1.0 / (safeDistance ** 2);
       totalWeight += weight;
+      
       const averages = station.averages || {};
       Object.keys(weightedValues).forEach(param => {
         if (averages[param] !== undefined) {
           weightedValues[param] += averages[param] * weight;
         }
       });
+      
       weightedAqi += (station.highest_sub_index || 0) * weight;
     });
-    const interpolated_values = {};
+    
+    const estimated_values = {};
     Object.keys(weightedValues).forEach(param => {
-      interpolated_values[param] = totalWeight > 0 ?
+      estimated_values[param] = totalWeight > 0 ?
         Math.round((weightedValues[param] / totalWeight) * 100) / 100 : 0;
     });
-    const interpolated_aqi = totalWeight > 0 ?
+    
+    const estimated_aqi = totalWeight > 0 ?
       Math.round(weightedAqi / totalWeight) : 50;
+    
     return {
-      interpolated_values,
-      interpolated_aqi,
+      estimated_values,
+      estimated_aqi,
       stations_used: stationIds.length,
-      method: 'idw'
+      method: 'smart_estimation'
     };
   }, []);
 
@@ -580,7 +657,7 @@ function Dashboard() {
     setHealthData(sampleData.health_data);
     processDashboardData(sampleData, userLocation);
     setLastUpdateTime(new Date());
-    console.log('');
+    console.log('✅ Sample data loaded');
   }, [userLocation, processDashboardData]);
 
   // ===== INITIALIZATION =====
@@ -588,16 +665,19 @@ function Dashboard() {
     const initializeDashboard = async () => {
       console.log('⚡ Initializing dashboard...');
       await fetchDashboardData();
+      
       try {
         const location = await getUserLocation();
         console.log('📍 Location obtained:', location);
         await fetchDashboardData(location);
       } catch (locationError) {
-        console.log('📍 Location detection failed:', locationError);
+        console.log('📍 Location detection failed:', locationError.message);
         setLocationStatus('failed');
       }
     };
+    
     initializeDashboard();
+    
     return () => {
       if (locationTimeoutRef.current) clearTimeout(locationTimeoutRef.current);
       if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -615,16 +695,16 @@ function Dashboard() {
     return { status: 'HAZARDOUS', color: '#7c2d12', class: 'hazardous' };
   }, [currentAQI]);
 
-  // ===== LOCATION STATUS COMPONENT =====
+  // ===== ENHANCED LOCATION STATUS COMPONENT =====
   const LocationStatus = useMemo(() => {
     const getLocationDisplay = () => {
       switch (locationStatus) {
         case 'initializing':
-          return <span style={{ color: '#6b7280' }}>📍 Initializing location detection...</span>;
+          return <span style={{ color: '#6b7280' }}>📍 Setting up location detection...</span>;
         case 'detecting':
           return (
             <span style={{ color: '#f59e0b' }}>
-              📍 Detecting your location...
+              📍 Finding your location...
               {isLocationUpdating && <span className="location-spinner">⟳</span>}
             </span>
           );
@@ -636,26 +716,53 @@ function Dashboard() {
               📍 {locationName} {accuracy && `(${accuracy})`}
               {nearestStationInfo && (
                 <span style={{ color: '#6b7280', fontSize: '0.9em' }}>
-                  {' '} → Nearest: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}km)
+                  {' '} → Nearest sensor: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}km)
                 </span>
               )}
             </span>
           );
+        case 'permission_denied':
+          return (
+            <span style={{ color: '#ef4444' }}>
+              📍 Location access denied - Please enable location permission in your browser
+              <button onClick={handleEnableLocation} style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                Try Again
+              </button>
+            </span>
+          );
+        case 'unavailable':
+          return <span style={{ color: '#ef4444' }}>📍 Location unavailable - Please check your GPS settings</span>;
+        case 'timeout':
+          return (
+            <span style={{ color: '#f59e0b' }}>
+              📍 Location detection timed out
+              <button onClick={handleEnableLocation} style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                Retry
+              </button>
+            </span>
+          );
         case 'failed':
-            return null;
+          return (
+            <span style={{ color: '#6b7280' }}>
+              📍 Using default location
+              <button onClick={handleEnableLocation} style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: '#6b7280', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                Enable Location
+              </button>
+            </span>
+          );
         default:
-          return <span style={{ color: '#6b7280' }}>📍 </span>;
+          return <span style={{ color: '#6b7280' }}>📍 Location services</span>;
       }
     };
     return <div className="location-info">{getLocationDisplay()}</div>;
-  }, [locationStatus, userLocationName, userLocation, nearestStationInfo, isLocationUpdating, getUserLocation]);
+  }, [locationStatus, userLocationName, userLocation, nearestStationInfo, isLocationUpdating]);
 
   // ===== UI HELPER FUNCTIONS =====
   const formatValue = useCallback((value, metric) => {
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return '0';
     return metric === 'co' ? numValue.toFixed(1) : Math.round(numValue);
-  }, [])
+  }, []);
 
   const metricIcons = useMemo(() => ({
     pm25: '🌱', pm10: '🍃', so2: '🏭', no2: '💨',
@@ -673,8 +780,12 @@ function Dashboard() {
           <div className="metric-value">{formatValue(value, key)}</div>
           <div className="metric-label">{key.toUpperCase()}</div>
           <div className="metric-unit">{key === 'co' ? 'mg/m³' : 'µg/m³'}</div>
-          {currentDataInfo?.is_interpolated && (<div className="metric-badge interpolated-badge">🎯 Your Location</div>)}
-          {!currentDataInfo?.is_interpolated && (<div className="metric-badge nearest-badge">📍 Nearest Station</div>)}
+          {currentDataInfo?.is_estimated && (
+            <div className="metric-badge interpolated-badge">🎯 Your Location</div>
+          )}
+          {!currentDataInfo?.is_estimated && (
+            <div className="metric-badge nearest-badge">📍 Nearest Station</div>
+          )}
         </div>
       );
     });
@@ -691,10 +802,12 @@ function Dashboard() {
   const handleRefreshData = useCallback(() => fetchDashboardData(userLocation), [fetchDashboardData, userLocation]);
   const handleEnableLocation = useCallback(async () => {
     try {
+      setLocationPermissionDenied(false);
       const location = await getUserLocation();
       await fetchDashboardData(location);
     } catch (error) {
       console.error('Failed to get location:', error);
+      // Error is already handled in getUserLocation
     }
   }, [getUserLocation, fetchDashboardData]);
 
@@ -711,13 +824,19 @@ function Dashboard() {
         </div>
       )}
 
+      {locationPermissionDenied && (
+        <div className="error-banner" style={{ background: '#fef3c7', color: '#92400e', borderColor: '#f59e0b' }}>
+          📍 To get personalized air quality data for your exact location, please enable location permission in your browser settings.
+          <button onClick={() => setLocationPermissionDenied(false)} className="error-close">✕</button>
+        </div>
+      )}
+
       <nav className="navbar">
         <div className="navbar-content">
           <Link to="/" className="navbar-brand">
-                      {/* 2. USE THE IMPORTED VARIABLE */}
-                      <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
-                      AirAware
-                    </Link>
+            <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+            AirAware
+          </Link>
           <div className="menu-toggle" onClick={toggleMenu}>
             {isMenuOpen ? '✕' : '☰'}
           </div>
@@ -758,11 +877,11 @@ function Dashboard() {
             </div>
             <div className="aqi-overview">
               <div className="aqi-value" style={{ color: aqiStatus.color }}>{Math.round(currentAQI)}</div>
-              <div className="aqi-status">{currentDataInfo?.is_interpolated ? 'Your Location AQI' : 'Nearest Station AQI'}</div>
+              <div className="aqi-status">{currentDataInfo?.is_estimated ? 'Your Location AQI' : 'Nearest Station AQI'}</div>
               <div className="aqi-badge">
                 {currentDataInfo?.station_name || 'Your Location'}
-                {currentDataInfo?.is_interpolated && <span className="location-indicator"> 🎯 Your Location</span>}
-                {!currentDataInfo?.is_interpolated && <span className="nearest-indicator"> 📍 Nearest</span>}
+                {currentDataInfo?.is_estimated && <span className="location-indicator"> 🎯 Your Location</span>}
+                {!currentDataInfo?.is_estimated && <span className="nearest-indicator"> 📍 Nearest</span>}
               </div>
               <div className="last-updated">Last updated: {lastUpdateTime.toLocaleTimeString()}</div>
             </div>
@@ -772,9 +891,11 @@ function Dashboard() {
         {currentDataInfo?.show_distance_message && (
           <div className="location-context-banner-horizontal">
             <div className="location-main-content">
-              <div className="location-icon-section" style={{ color: currentDataInfo.is_interpolated ? '#10b981' : '#3b82f6' }}>
-                <div className="location-icon-large"><i className={`fas ${currentDataInfo.is_interpolated ? 'fa-crosshairs' : 'fa-map-marker-alt'}`}></i></div>
-                <div className="location-badge-large">{currentDataInfo.is_interpolated ? '🎯 Your Location' : '📍 Nearest Station'}</div>
+              <div className="location-icon-section" style={{ color: currentDataInfo.is_estimated ? '#10b981' : '#3b82f6' }}>
+                <div className="location-icon-large">
+                  <i className={`fas ${currentDataInfo.is_estimated ? 'fa-crosshairs' : 'fa-map-marker-alt'}`}></i>
+                </div>
+                <div className="location-badge-large">{currentDataInfo.is_estimated ? '🎯 Your Location' : '📍 Nearest Station'}</div>
               </div>
               <div className="location-details-section">
                 <div className="location-primary-info">
@@ -782,10 +903,34 @@ function Dashboard() {
                   <p className="location-explanation">{currentDataInfo.explanation}</p>
                 </div>
                 <div className="location-stats-grid">
-                  <div className="location-stat-item"><div className="stat-icon">📍</div><div className="stat-content"><div className="stat-label">Data Source</div><div className="stat-value">{currentDataInfo?.station_name}</div></div></div>
-                  <div className="location-stat-item"><div className="stat-icon">📊</div><div className="stat-content"><div className="stat-label">Method</div><div className="stat-value">{currentDataInfo.is_interpolated ? 'Smart Interpolation' : 'Direct Sensor'}</div></div></div>
-                  <div className="location-stat-item"><div className="stat-icon">🎯</div><div className="stat-content"><div className="stat-label">Current AQI</div><div className="stat-value" style={{ color: aqiStatus.color }}>{Math.round(currentAQI)}</div></div></div>
-                  <div className="location-stat-item"><div className="stat-icon">⏰</div><div className="stat-content"><div className="stat-label">Last Update</div><div className="stat-value">{lastUpdateTime.toLocaleTimeString()}</div></div></div>
+                  <div className="location-stat-item">
+                    <div className="stat-icon">📍</div>
+                    <div className="stat-content">
+                      <div className="stat-label">Data Source</div>
+                      <div className="stat-value">{currentDataInfo?.station_name}</div>
+                    </div>
+                  </div>
+                  <div className="location-stat-item">
+                    <div className="stat-icon">📊</div>
+                    <div className="stat-content">
+                      <div className="stat-label">Method</div>
+                      <div className="stat-value">{currentDataInfo.is_estimated ? 'Smart Calculation' : 'Direct Sensor'}</div>
+                    </div>
+                  </div>
+                  <div className="location-stat-item">
+                    <div className="stat-icon">🎯</div>
+                    <div className="stat-content">
+                      <div className="stat-label">Current AQI</div>
+                      <div className="stat-value" style={{ color: aqiStatus.color }}>{Math.round(currentAQI)}</div>
+                    </div>
+                  </div>
+                  <div className="location-stat-item">
+                    <div className="stat-icon">⏰</div>
+                    <div className="stat-content">
+                      <div className="stat-label">Last Update</div>
+                      <div className="stat-value">{lastUpdateTime.toLocaleTimeString()}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -793,8 +938,10 @@ function Dashboard() {
         )}
 
         <div className="action-buttons">
-          {locationStatus === 'failed' && (
-            <button onClick={handleEnableLocation} className="action-btn primary">📍 Enable Location for Personalized Data</button>
+          {(locationStatus === 'failed' || locationStatus === 'permission_denied' || locationStatus === 'timeout') && (
+            <button onClick={handleEnableLocation} className="action-btn primary">
+              📍 Enable Location for Personalized Air Quality Data
+            </button>
           )}
           <button onClick={handleRefreshData} className="action-btn secondary" disabled={loading}>
             {loading ? '🔄 Refreshing...' : '🔄 Refresh Data'}
@@ -803,9 +950,9 @@ function Dashboard() {
 
         <div className="metrics-section">
           <h2 className="section-title">
-            🌬️ {currentDataInfo?.is_interpolated ? 'Your Location Air Quality' : 'Nearest Station Air Quality'}
-            {currentDataInfo?.is_interpolated && <small> (Calculated for your exact coordinates)</small>}
-            {!currentDataInfo?.is_interpolated && <small> (Data from {currentDataInfo?.station_name})</small>}
+            🌬️ {currentDataInfo?.is_estimated ? 'Your Location Air Quality' : 'Nearest Station Air Quality'}
+            {currentDataInfo?.is_estimated && <small> (Calculated specifically for your location)</small>}
+            {!currentDataInfo?.is_estimated && <small> (Data from {currentDataInfo?.station_name})</small>}
           </h2>
           <div className="metrics-grid">{MetricCards}</div>
         </div>
@@ -815,7 +962,9 @@ function Dashboard() {
             <div className="card-header">
               <h3 className="card-title">🗺️ Live Sensor Network</h3>
               <div className="map-controls">
-                {userLocationName && <div className="location-display">📍 {isMobileView ? userLocationName.city : userLocationName.display_name}</div>}
+                {userLocationName && (
+                  <div className="location-display">📍 {isMobileView ? userLocationName.city : userLocationName.display_name}</div>
+                )}
                 <div className="map-legend">
                   <span className="legend-item"><span className="legend-dot user-location"></span>Your Location</span>
                   <span className="legend-item"><span className="legend-dot sensor-station"></span>Sensor Stations</span>
@@ -823,7 +972,15 @@ function Dashboard() {
               </div>
             </div>
             <div className="map-container">
-              <React.Suspense fallback={<div className="map-fallback"><div className="map-placeholder"><div className="map-icon">🗺️</div><p>Loading interactive map...</p><div className="loading-spinner"></div></div></div>}>
+              <React.Suspense fallback={
+                <div className="map-fallback">
+                  <div className="map-placeholder">
+                    <div className="map-icon">🗺️</div>
+                    <p>Loading interactive map...</p>
+                    <div className="loading-spinner"></div>
+                  </div>
+                </div>
+              }>
                 <LazyMap
                   userLocation={userLocation}
                   stations={dashboardData?.stations}
@@ -837,7 +994,7 @@ function Dashboard() {
             <div className="map-info">
               <div className="map-status">
                 <span className="status-indicator">🔴 LIVE • {Object.keys(dashboardData?.stations || {}).length} stations active</span>
-                {currentDataInfo?.is_interpolated && <span className="smart-badge">🎯 Smart Interpolation Active</span>}
+                {currentDataInfo?.is_estimated && <span className="smart-badge">🎯 Smart Calculation Active</span>}
               </div>
               <div className="map-description">Blue marker shows your location • Tower markers show monitoring stations • Click any marker for detailed readings</div>
             </div>
@@ -853,14 +1010,27 @@ function Dashboard() {
             </div>
             <div className="forecast-controls">
               {['pm25', 'pm10', 'no2', 'o3', 'so2', 'co', 'nh3'].map(param => (
-                <button key={param} className={`param-btn ${selectedParameter === param ? 'active' : ''}`} onClick={() => handleParameterChange(param)} title={`View ${param.toUpperCase()} forecast`}>
+                <button 
+                  key={param} 
+                  className={`param-btn ${selectedParameter === param ? 'active' : ''}`} 
+                  onClick={() => handleParameterChange(param)} 
+                  title={`View ${param.toUpperCase()} forecast`}
+                >
                   {param.toUpperCase()}
                 </button>
               ))}
             </div>
             <div className="forecast-content">
               <div className="chart-section">
-                <React.Suspense fallback={<div className="chart-fallback"><div className="chart-placeholder"><div className="chart-icon">📊</div><p>Loading forecast chart...</p><div className="loading-spinner"></div></div></div>}>
+                <React.Suspense fallback={
+                  <div className="chart-fallback">
+                    <div className="chart-placeholder">
+                      <div className="chart-icon">📊</div>
+                      <p>Loading forecast chart...</p>
+                      <div className="loading-spinner"></div>
+                    </div>
+                  </div>
+                }>
                   <LazyChart
                     forecastData={nearestStationInfo ? dashboardData?.forecasts?.[nearestStationInfo.id] : dashboardData?.forecasts?.['lora-v1']}
                     selectedParameter={selectedParameter}
@@ -869,7 +1039,13 @@ function Dashboard() {
               </div>
               <div className="forecast-table-section">
                 <table className="forecast-table">
-                  <thead><tr><th>📅 Day</th><th>📈 Max {selectedParameter.toUpperCase()}</th><th>📊 Unit</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>📅 Day</th>
+                      <th>📈 Max {selectedParameter.toUpperCase()}</th>
+                      <th>📊 Unit</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {(nearestStationInfo && dashboardData?.forecasts?.[nearestStationInfo.id] || dashboardData?.forecasts?.['lora-v1'] || []).map((item, index) => (
                       <tr key={index}>
@@ -891,17 +1067,28 @@ function Dashboard() {
               <div className="health-chart-section">
                 <div className="card-header"><h3 className="card-title">❤️ Health Status Monitor</h3></div>
                 <div className="health-display">
-                  <div className="health-score-circle"><div className="health-score-value">{healthData.score}</div><div className="health-score-label">Health Score</div></div>
+                  <div className="health-score-circle">
+                    <div className="health-score-value">{healthData.score}</div>
+                    <div className="health-score-label">Health Score</div>
+                  </div>
                   <div className="health-details">
                     <div className={`risk-level ${healthData.risk_level.toLowerCase()}`}>{healthData.risk_level} Risk</div>
-                    <div className="health-recommendations">{healthData.recommendations?.map((rec, index) => <div key={index} className="recommendation">• {rec}</div>)}</div>
+                    <div className="health-recommendations">
+                      {healthData.recommendations?.map((rec, index) => (
+                        <div key={index} className="recommendation">• {rec}</div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
               <div className="health-advisory">
                 <h3><i className="fas fa-shield-alt"></i> Health Advisory</h3>
                 <p>People with asthma, heart disease, older adults, and young children are more susceptible to air pollution. Please follow health advisories closely and seek medical attention if you experience any adverse symptoms.</p>
-                {healthData.risk_level === 'High' && <div className="emergency-contact"><strong>Emergency Contact:</strong> Kerala Pollution Control Board – 0471-2418566</div>}
+                {healthData.risk_level === 'High' && (
+                  <div className="emergency-contact">
+                    <strong>Emergency Contact:</strong> Kerala Pollution Control Board – 0471-2418566
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -910,71 +1097,85 @@ function Dashboard() {
         <div className="weather-section">
           <h2 className="section-title">🌤️ Weather Conditions</h2>
           <div className="weather-grid">
-            <div className="weather-card"><div className="weather-icon">🌡️</div><div className="weather-content"><div className="weather-value">{formatValue(currentValues.temp || 28, 'temp')}°C</div><div className="weather-label">Temperature</div></div></div>
-            <div className="weather-card"><div className="weather-icon">💧</div><div className="weather-content"><div className="weather-value">{formatValue(currentValues.hum || 65, 'hum')}%</div><div className="weather-label">Humidity</div></div></div>
-            <div className="weather-card"><div className="weather-icon">📏</div><div className="weather-content"><div className="weather-value">{formatValue(currentValues.pre || 1013, 'pre')} hPa</div><div className="weather-label">Atmospheric Pressure</div></div></div>
+            <div className="weather-card">
+              <div className="weather-icon">🌡️</div>
+              <div className="weather-content">
+                <div className="weather-value">{formatValue(currentValues.temp || 28, 'temp')}°C</div>
+                <div className="weather-label">Temperature</div>
+              </div>
+            </div>
+            <div className="weather-card">
+              <div className="weather-icon">💧</div>
+              <div className="weather-content">
+                <div className="weather-value">{formatValue(currentValues.hum || 65, 'hum')}%</div>
+                <div className="weather-label">Humidity</div>
+              </div>
+            </div>
+            <div className="weather-card">
+              <div className="weather-icon">📏</div>
+              <div className="weather-content">
+                <div className="weather-value">{formatValue(currentValues.pre || 1013, 'pre')} hPa</div>
+                <div className="weather-label">Atmospheric Pressure</div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="data-source-section">
           <h3>⚡ System Status & Data Source</h3>
           <div className="status-grid">
-            <div className="status-item"><div className="status-icon">📍</div><div className="status-content"><div className="status-title">Location Status</div><div className="status-value">{locationStatus === 'gps_detected' ? 'GPS Active' : locationStatus === 'detecting' ? 'Detecting...' : locationStatus === 'failed' ? 'Failed' : 'Default'}</div></div></div>
-            <div className="status-item"><div className="status-icon">📊</div><div className="status-content"><div className="status-title">Data Method</div><div className="status-value">{currentDataInfo?.is_interpolated ? 'Smart Interpolation' : 'Direct Sensor'}</div></div></div>
-            <div className="status-item"><div className="status-icon">📡</div><div className="status-content"><div className="status-title">Data Source</div><div className="status-value">{currentDataInfo?.station_name || 'Default Station'}</div></div></div>
-            <div className="status-item"><div className="status-icon">🔄</div><div className="status-content"><div className="status-title">Last Update</div><div className="status-value">{lastUpdateTime.toLocaleTimeString()}</div></div></div>
+            <div className="status-item">
+              <div className="status-icon">📍</div>
+              <div className="status-content">
+                <div className="status-title">Location Status</div>
+                <div className="status-value">
+                  {locationStatus === 'gps_detected' ? 'GPS Active' : 
+                   locationStatus === 'detecting' ? 'Detecting...' : 
+                   locationStatus === 'permission_denied' ? 'Permission Denied' :
+                   locationStatus === 'timeout' ? 'Timed Out' :
+                   locationStatus === 'failed' ? 'Using Default' : 'Initializing'}
+                </div>
+              </div>
+            </div>
+            <div className="status-item">
+              <div className="status-icon">📊</div>
+              <div className="status-content">
+                <div className="status-title">Data Method</div>
+                <div className="status-value">{currentDataInfo?.is_estimated ? 'Smart Calculation' : 'Direct Sensor'}</div>
+              </div>
+            </div>
+            <div className="status-item">
+              <div className="status-icon">📡</div>
+              <div className="status-content">
+                <div className="status-title">Data Source</div>
+                <div className="status-value">{currentDataInfo?.station_name || 'Default Station'}</div>
+              </div>
+            </div>
+            <div className="status-item">
+              <div className="status-icon">🔄</div>
+              <div className="status-content">
+                <div className="status-title">Last Update</div>
+                <div className="status-value">{lastUpdateTime.toLocaleTimeString()}</div>
+              </div>
+            </div>
           </div>
           {currentDataInfo && (
             <div className="data-explanation">
-              <h4>📋 Current Data Source Explanation:</h4>
+              <h4>📋 How We Get Your Air Quality Data:</h4>
               <p>{currentDataInfo.explanation}</p>
-              {currentDataInfo.is_interpolated && (
+              {currentDataInfo.is_estimated && (
                 <div className="interpolation-details">
-                  <strong>🎯 Spatial Interpolation Method:</strong>
+                  <strong>🎯 Smart Calculation Method:</strong>
                   <ul>
-                    <li>Using Inverse Distance Weighting (IDW) algorithm</li>
-                    <li>Data from {Object.keys(dashboardData?.stations || {}).length} monitoring stations</li>
-                    <li>Personalized estimates for your exact coordinates</li>
+                    <li>We use advanced calculations to estimate air quality specifically for your location</li>
+                    <li>Data comes from {Object.keys(dashboardData?.stations || {}).length} nearby monitoring stations</li>
+                    <li>Gives you personalized air quality readings based on your exact coordinates</li>
                     <li>Automatically updates when you move to a new location</li>
                   </ul>
                 </div>
               )}
             </div>
           )}
-        </div>
-
-        <div className="quick-actions">
-          <h3>⚡ Quick Actions</h3>
-          <div className="quick-actions-grid">
-            <button onClick={handleEnableLocation} className="quick-action-btn" disabled={locationStatus === 'gps_detected'}>
-              <div className="quick-action-icon">📍</div>
-              <div className="quick-action-text">
-                <div className="quick-action-title">{locationStatus === 'gps_detected' ? 'Location Active' : 'Enable Location'}</div>
-                <div className="quick-action-desc">{locationStatus === 'gps_detected' ? 'GPS location is active' : 'Get personalized air quality data'}</div>
-              </div>
-            </button>
-            <button onClick={handleRefreshData} className="quick-action-btn" disabled={loading}>
-              <div className="quick-action-icon">🔄</div>
-              <div className="quick-action-text">
-                <div className="quick-action-title">{loading ? 'Refreshing...' : 'Refresh Data'}</div>
-                <div className="quick-action-desc">Get latest air quality readings</div>
-              </div>
-            </button>
-            <button onClick={() => document.getElementById('map-section')?.scrollIntoView({ behavior: 'smooth' })} className="quick-action-btn">
-              <div className="quick-action-icon">🗺️</div>
-              <div className="quick-action-text">
-                <div className="quick-action-title">View Map</div>
-                <div className="quick-action-desc">See sensor locations and coverage</div>
-              </div>
-            </button>
-            <button onClick={() => window.open('/health-assessment', '_self')} className="quick-action-btn">
-              <div className="quick-action-icon">📋</div>
-              <div className="quick-action-text">
-                <div className="quick-action-title">Health Assessment</div>
-                <div className="quick-action-desc">Update your health profile</div>
-              </div>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -986,8 +1187,7 @@ function Dashboard() {
               <p>Smart Air Quality Monitoring System</p>
               <p>Real-time data • Personalized insights • Health-focused</p>
               <div className="social-links">
-                <a href="#" className="social-link">📘</a>
-                <a href="#" className="social-link">🐦</a>
+                <a href="#" className="social-link">📘</a>               
                 <a href="#" className="social-link">💼</a>
                 <a href="#" className="social-link">📷</a>
               </div>
@@ -1005,7 +1205,7 @@ function Dashboard() {
               <ul>
                 <li>ASIET Campus Station (Direct Sensor)</li>
                 <li>Mattoor Junction Station (Direct Sensor)</li>
-                <li>Advanced spatial interpolation algorithms</li>
+                <li>Advanced smart calculation algorithms</li>
                 <li>Weather integration</li>
               </ul>
             </div>
@@ -1024,7 +1224,7 @@ function Dashboard() {
           </div>
           <div className="footer-bottom">
             <p>&copy; 2025 AirAware Kerala - Smart Air Quality Monitoring System</p>
-            <p>Powered by real sensor data • Advanced interpolation • Government approved</p>
+            <p>Powered by real sensor data • Advanced calculations • Government approved</p>
           </div>
         </div>
       </footer>
