@@ -266,6 +266,7 @@ function Login() {
                 : 'Welcome back! Please log in to your account.'
               }
             </p>
+            <li><a href="/">🏠 Home</a></li>
           </div>
 
           {/* Success message */}

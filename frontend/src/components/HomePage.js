@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App'; // Make sure this path is correct
 import './css/HomePage.css';
+import logoImage from '../assets/aqi.webp'; // Correct path
 
 function HomePage() {
   const [homeData, setHomeData] = useState(null);
@@ -164,7 +165,8 @@ function HomePage() {
       <nav className="navbar">
         <div className="navbar-content">
           <Link to="/" className="navbar-brand">
-            <img src="/aqi.webp" alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+            {/* 2. USE THE IMPORTED VARIABLE */}
+            <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
             AirAware
           </Link>
           <div className="menu-toggle" onClick={toggleMenu}>
