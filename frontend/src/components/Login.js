@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './css/Login.css';
+import logoImage from '../assets/aqi.webp'; 
 
 function Login() {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -19,6 +20,15 @@ function Login() {
 
 
   console.log('Login component loaded');
+  useEffect(() => {
+          const handleResize = () => {
+              const width = window.innerWidth;
+              setIsMobile(width <= 768);
+          };
+  
+          window.addEventListener('resize', handleResize);
+          return () => window.removeEventListener('resize', handleResize);
+      }, []);
 
   // Simple particles without complex animations
   const createParticles = () => {
