@@ -1,4 +1,4 @@
-/* HealthReport.css - Clean White Background Design */
+/* HealthReport.css - Clean White Background Design with Mobile Forecast Fix */
 
 /* Global Styles */
 * {
@@ -605,6 +605,8 @@ body {
   margin-top: 10px;
   font-weight: 600;
 }
+
+/* Dashboard Grid with Mobile Forecast Fix */
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -634,14 +636,17 @@ body {
   border-bottom: 2px solid #f3f4f6;
 }
 
-/* Smaller Forecast Card */
+/* Forecast Card - Mobile Optimized */
 .forecast-card {
-  max-height: 400px;
+  min-height: 350px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .forecast-info {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  flex-shrink: 0;
 }
 
 .forecast-source {
@@ -653,6 +658,33 @@ body {
 .forecast-update {
   font-size: 11px;
   color: #9ca3af;
+}
+
+/* Forecast Chart Container - Fixed for Mobile */
+.forecast-chart-container {
+  flex: 1;
+  min-height: 280px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.forecast-chart-container > div {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 280px;
+}
+
+/* Chart responsive fixes */
+.forecast-chart-container .recharts-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.forecast-chart-container .recharts-surface {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 280px;
 }
 
 /* Health Details Card */
@@ -1017,7 +1049,7 @@ body {
   transform: translateY(-2px);
 }
 
-/* Responsive Design */
+/* Responsive Design - Enhanced Mobile Support */
 @media (max-width: 768px) {
   .menu-toggle {
     display: block;
@@ -1048,8 +1080,34 @@ body {
     grid-template-columns: 1fr;
   }
   
+  /* Mobile Dashboard Grid Fix */
   .dashboard-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  /* Mobile Forecast Card Optimization */
+  .forecast-card {
+    min-height: 320px;
+    padding: 15px;
+  }
+  
+  .forecast-chart-container {
+    min-height: 250px;
+    overflow: visible;
+  }
+  
+  .forecast-chart-container > div {
+    min-height: 250px !important;
+  }
+  
+  /* Chart scaling for mobile */
+  .forecast-chart-container .recharts-wrapper {
+    font-size: 11px;
+  }
+  
+  .forecast-chart-container .recharts-cartesian-axis-tick-value {
+    font-size: 10px;
   }
   
   .recommendations-grid {
@@ -1078,6 +1136,23 @@ body {
   .footer-content {
     grid-template-columns: 1fr;
     text-align: center;
+  }
+
+  /* Emergency contacts mobile layout */
+  .emergency-contacts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Health details mobile optimization */
+  .health-detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .detail-value {
+    text-align: left;
+    max-width: 100%;
   }
 }
 
@@ -1112,6 +1187,92 @@ body {
   .station-aqi {
     font-size: 28px;
   }
+  
+  /* Extra small mobile forecast optimization */
+  .forecast-card {
+    min-height: 300px;
+    padding: 12px;
+  }
+  
+  .forecast-chart-container {
+    min-height: 220px;
+  }
+  
+  .forecast-chart-container > div {
+    min-height: 220px !important;
+  }
+  
+  /* Smaller chart text for very small screens */
+  .forecast-chart-container .recharts-wrapper {
+    font-size: 10px;
+  }
+  
+  .forecast-chart-container .recharts-cartesian-axis-tick-value {
+    font-size: 9px;
+  }
+  
+  /* Compact emergency contacts for small screens */
+  .emergency-contact-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 15px;
+  }
+  
+  .contact-icon {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+  
+  /* Compact recommendations for mobile */
+  .recommendation-card {
+    padding: 15px;
+  }
+  
+  .rec-text {
+    font-size: 13px;
+  }
+  
+  /* Guidelines banner mobile */
+  .guidelines-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 12px;
+  }
+  
+  .guidelines-icon {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+}
+
+/* Extra responsive fixes for very small screens */
+@media (max-width: 360px) {
+  .forecast-card {
+    min-height: 280px;
+    padding: 10px;
+  }
+  
+  .forecast-chart-container {
+    min-height: 200px;
+  }
+  
+  .forecast-chart-container > div {
+    min-height: 200px !important;
+  }
+  
+  /* Ultra-compact chart for tiny screens */
+  .forecast-chart-container .recharts-wrapper {
+    font-size: 9px;
+  }
+  
+  .forecast-info {
+    margin-bottom: 10px;
+  }
+  
+  .forecast-source,
+  .forecast-update {
+    font-size: 10px;
+  }
 }
 
 /* Print Styles */
@@ -1134,5 +1295,21 @@ body {
   .realtime-status {
     background: #000 !important;
     color: white !important;
+  }
+  
+  /* Optimize forecast chart for printing */
+  .forecast-chart-container {
+    height: 300px !important;
+    min-height: 300px !important;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    page-break-inside: avoid;
+  }
+  
+  .dashboard-card {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
   }
 }

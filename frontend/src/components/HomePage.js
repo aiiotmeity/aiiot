@@ -254,7 +254,7 @@ function HomePage() {
           </div>
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-number">2</div>
+              <div className="stat-number">5</div>
               <div className="stat-label">Active Monitoring Stations</div>
             </div>
             <div className="stat-card">
@@ -471,7 +471,7 @@ function HomePage() {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 AirQuality Kerala. All rights reserved. Developed by ASIET AI & IoT Lab.</p>
+            <p>&copy; 2025 AirQuality Kerala. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
           </div>
         </div>
       </footer>

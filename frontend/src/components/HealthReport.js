@@ -2,11 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'reac
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../App';
 import './css/HealthReport.css';
-import logoImage from '../assets/aqi.webp';
 
 const LazyChart = React.lazy(() => import('./LazyChart'));
 
-// --- Helper Functions ---
+// --- Helper Functions (same as Dashboard.js) ---
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // km
     const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
@@ -29,130 +28,33 @@ const getAQIStatus = (aqi) => {
     return 'Hazardous';
 };
 
-// --- CORRECTED: IDW Interpolation Function ---
-const calculateIDWInterpolation = (userLocation, stations) => {
-    console.log('🔍 Health Report: Starting IDW calculation...');
+// Function to get user-friendly station names
+const getFriendlyStationName = (stationName) => {
+    if (!stationName) return 'Local Monitoring Station';
     
-    if (!userLocation || !stations || Object.keys(stations).length === 0) {
-        console.warn('⚠️ Health Report: No valid data for interpolation');
-        return {
-            interpolated_values: {},
-            interpolated_aqi: 50,
-            stations_used: 0,
-            method: 'fallback'
-        };
+    // Remove technical terms and make user-friendly
+    const cleanName = stationName
+        .replace(/lora|LoRa|LORA/gi, '')
+        .replace(/v1|v2|V1|V2/gi, '')
+        .replace(/dev|DEV|development/gi, '')
+        .replace(/node|NODE/gi, '')
+        .replace(/sensor|SENSOR/gi, '')
+        .replace(/station|STATION/gi, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    
+    // If name becomes too short or empty, provide a generic name
+    if (cleanName.length < 3) {
+        return 'Local Air Quality Monitor';
     }
     
-    // Use real stations only
-    const realStationIds = ['lora-v1', 'loradev2'];
-    const realStations = {};
-    
-    realStationIds.forEach(id => {
-        if (stations[id]) {
-            realStations[id] = stations[id];
-        }
-    });
-    
-    console.log('📊 Health Report: Real stations for interpolation:', Object.keys(realStations));
-    
-    if (Object.keys(realStations).length === 0) {
-        console.warn('⚠️ Health Report: No real stations available for interpolation');
-        return {
-            interpolated_values: {},
-            interpolated_aqi: 50,
-            stations_used: 0,
-            method: 'fallback'
-        };
-    }
-    
-    let totalWeight = 0;
-    const weightedValues = {
-        pm25: 0, pm10: 0, so2: 0, no2: 0, 
-        co: 0, o3: 0, nh3: 0, temp: 0, hum: 0, pre: 0
-    };
-    let weightedAqi = 0;
-
-    Object.entries(realStations).forEach(([stationId, station]) => {
-        const distance = calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            station.station_info.lat,
-            station.station_info.lng
-        );
-
-        console.log(`📍 Health Report: Station ${stationId}: ${distance.toFixed(2)}km away`);
-
-        const safeDistance = Math.max(distance, 0.001);
-        const weight = 1.0 / (safeDistance ** 2);
-        totalWeight += weight;
-
-        const averages = station.averages || {};
-        Object.keys(weightedValues).forEach(param => {
-            if (averages[param] !== undefined) {
-                weightedValues[param] += averages[param] * weight;
-            }
-        });
-
-        weightedAqi += (station.highest_sub_index || 0) * weight;
-    });
-
-    const interpolated_values = {};
-    Object.keys(weightedValues).forEach(param => {
-        interpolated_values[param] = totalWeight > 0 ? 
-            Math.round((weightedValues[param] / totalWeight) * 100) / 100 : 0;
-    });
-
-    const interpolated_aqi = totalWeight > 0 ? 
-        Math.round(weightedAqi / totalWeight) : 50;
-
-    console.log('✅ Health Report: IDW Result:', {
-        interpolated_aqi,
-        stations_used: Object.keys(realStations).length
-    });
-
-    return {
-        interpolated_values,
-        interpolated_aqi,
-        stations_used: Object.keys(realStations).length,
-        method: 'idw'
-    };
-};
-
-// --- Get User Location Function ---
-const getUserLocation = () => {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error('Geolocation not supported'));
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const location = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    accuracy: position.coords.accuracy,
-                    source: 'gps',
-                    timestamp: Date.now()
-                };
-                
-                if (isNaN(location.lat) || isNaN(location.lng)) {
-                    reject(new Error('Invalid GPS coordinates'));
-                    return;
-                }
-                
-                resolve(location);
-            },
-            (error) => {
-                reject(error);
-            },
-            { 
-                enableHighAccuracy: true, 
-                timeout: 10000, 
-                maximumAge: 300000
-            }
-        );
-    });
+    // Capitalize properly
+    return cleanName
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ') + ' Area';
 };
 
 // Health Recommendations based on AQI and Health Risk Level
@@ -264,35 +166,19 @@ function HealthReport() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     
-    // --- State for location and interpolation ---
+    // --- State for location and interpolation (same as Dashboard) ---
     const [userLocation, setUserLocation] = useState(null);
     const [nearestStation, setNearestStation] = useState(null);
     const [interpolatedData, setInterpolatedData] = useState(null);
-    const [locationStatus, setLocationStatus] = useState('initializing');
-    const [currentDataInfo, setCurrentDataInfo] = useState(null);
-    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
-    // --- Forecast parameter selection ---
-    const [selectedParameter, setSelectedParameter] = useState('pm25');
 
     const navigate = useNavigate();
-    const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://airaware-app-gcw7.onrender.com' 
-    : 'http://localhost:8000';
+    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
     // Update time every minute
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobileView(window.innerWidth <= 768);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-        }, []);
 
     const fetchReportData = useCallback(async () => {
         if (!username) { navigate('/login'); return; }
@@ -314,150 +200,44 @@ function HealthReport() {
         }
     }, [username, navigate, API_BASE_URL]);
 
-    // --- Get user location ---
-    const getUserLocationForReport = useCallback(async () => {
-        try {
-            setLocationStatus('detecting');
-            const location = await getUserLocation();
-            setUserLocation(location);
-            setLocationStatus('gps_detected');
-            console.log('📍 Health Report: Location obtained:', location);
-        } catch (error) {
-            console.log('📍 Health Report: Location detection failed:', error);
-            setLocationStatus('failed');
-        }
-    }, []);
-
     useEffect(() => {
         fetchReportData();
-        getUserLocationForReport();
-    }, [fetchReportData, getUserLocationForReport]);
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                (err) => console.warn("Geolocation failed.")
+            );
+        }
+    }, [fetchReportData]);
 
-    // --- Process location and interpolation ---
+    // --- EXACT SAME LOGIC as Dashboard.js for consistency ---
     useEffect(() => {
         if (userLocation && reportData?.stations) {
-            console.log('🔄 Health Report: Processing location and stations data...');
-            
-            const stations = reportData.stations;
-            
-            // Use real stations only for calculations
-            const realStationIds = ['lora-v1', 'loradev2'];
-            const realStations = {};
-            
-            realStationIds.forEach(id => {
-                if (stations[id]) {
-                    realStations[id] = stations[id];
-                }
-            });
-            
-            if (Object.keys(realStations).length === 0) {
-                console.warn('⚠️ Health Report: No real stations available');
-                return;
-            }
-            
-            // Find nearest real station - FIXED NULL CHECK
+            const stations = Object.entries(reportData.stations);
             let nearestDist = Infinity, nearestId = null;
-            Object.entries(realStations).forEach(([id, station]) => {
-                if (station && station.station_info) {
-                    const dist = calculateDistance(
-                        userLocation.lat, 
-                        userLocation.lng, 
-                        station.station_info.lat, 
-                        station.station_info.lng
-                    );
-                    if (dist < nearestDist) { 
-                        nearestDist = dist; 
-                        nearestId = id; 
-                    }
-                }
+            stations.forEach(([id, station]) => {
+                const dist = calculateDistance(userLocation.lat, userLocation.lng, station.station_info.lat, station.station_info.lng);
+                if (dist < nearestDist) { nearestDist = dist; nearestId = id; }
             });
+            setNearestStation({ id: nearestId, distance: nearestDist });
             
-            if (nearestId && realStations[nearestId]) {
-                setNearestStation({ 
-                    id: nearestId, 
-                    distance: nearestDist,
-                    station: realStations[nearestId]
-                });
-
-                console.log(`📍 Health Report: Nearest real station: ${nearestId} at ${nearestDist.toFixed(2)}km`);
-
-                // Check if user is within 1km of any real station
-                const isWithinSensorRange = nearestDist <= 1.0;
-                
-                if (isWithinSensorRange) {
-                    // User is within 1km - use interpolation
-                    const idwResult = calculateIDWInterpolation(userLocation, realStations);
-                    
-                    setInterpolatedData({ 
-                        aqi: idwResult.interpolated_aqi,
-                        values: idwResult.interpolated_values
-                    });
-                    
-                    setCurrentDataInfo({
-                        method: 'location_interpolation',
-                        source: 'interpolated',
-                        explanation: `You are ${nearestDist.toFixed(1)}km from the nearest real sensor. Showing calculated air quality for your exact location using data from the 2 real monitoring stations only.`,
-                        values: idwResult.interpolated_values,
-                        aqi: idwResult.interpolated_aqi,
-                        station_name: `Your Location (Calculated from Real Stations)`,
-                        is_interpolated: true,
-                        distance: nearestDist,
-                        data_type: 'Your Location Data (Real Sensor Interpolation)',
-                        stations_used_for_calculation: Object.keys(realStations)
-                    });
-                    
-                    console.log('✅ Health Report: Using interpolated data from real stations - AQI:', idwResult.interpolated_aqi);
-                } else {
-                    // User is >1km away - use nearest real station
-                    const nearestStationData = realStations[nearestId];
-                    
-                    setCurrentDataInfo({
-                        method: 'nearest_station',
-                        source: 'nearest_station',
-                        explanation: `You are ${nearestDist.toFixed(1)}km from the nearest real sensor. Too far for accurate interpolation - showing data from ${nearestStationData.station_info.name} (nearest real monitoring station).`,
-                        values: nearestStationData.averages || {},
-                        aqi: nearestStationData.highest_sub_index || 50,
-                        station_name: nearestStationData.station_info.name,
-                        is_interpolated: false,
-                        distance: nearestDist,
-                        data_type: 'Nearest Real Station Data',
-                        distance_warning: nearestDist > 1.0 ? `You are ${nearestDist.toFixed(1)}km away from real sensors, so you cannot get interpolated values for your exact location.` : null
-                    });
-                    
-                    console.log('✅ Health Report: Using nearest real station data - AQI:', nearestStationData.highest_sub_index);
-                }
+            let weightedSum = 0, weightSum = 0;
+            stations.forEach(([, station]) => {
+                const dist = calculateDistance(userLocation.lat, userLocation.lng, station.station_info.lat, station.station_info.lng);
+                const weight = 1 / Math.pow(dist === 0 ? 0.001 : dist, 2);
+                weightedSum += (station.highest_sub_index || 0) * weight;
+                weightSum += weight;
+            });
+            if (weightSum > 0) {
+                setInterpolatedData({ aqi: Math.round(weightedSum / weightSum) });
             }
-        } else if (reportData?.stations) {
-            // No location - use default station (prefer real station)
-            const stations = reportData.stations;
-            const defaultStation = stations['lora-v1'] || stations['loradev2'] || stations[Object.keys(stations)[0]] || {};
-            
-            setCurrentDataInfo({
-                method: 'default_station',
-                source: 'default',
-                explanation: 'Location not available. Showing data from default real monitoring station.',
-                values: defaultStation.averages || {},
-                aqi: defaultStation.highest_sub_index || 50,
-                station_name: defaultStation.station_info?.name || 'ASIET Campus Station',
-                is_interpolated: false,
-                distance: null,
-                data_type: 'Default Real Station Data'
-            });
-            
-            console.log('✅ Health Report: Using default real station data');
         }
     }, [userLocation, reportData]);
 
-    // --- Memoized calculations ---
+    // Memoized calculations
     const displayAqi = useMemo(() => {
-        if (currentDataInfo?.is_interpolated && interpolatedData) {
-            return interpolatedData.aqi;
-        } else if (currentDataInfo?.aqi) {
-            return currentDataInfo.aqi;
-        } else {
-            return Object.values(reportData?.stations || {})[0]?.highest_sub_index || 0;
-        }
-    }, [currentDataInfo, interpolatedData, reportData]);
+        return interpolatedData?.aqi || Object.values(reportData?.stations || {})[0]?.highest_sub_index || 0;
+    }, [interpolatedData, reportData]);
 
     const healthRecommendations = useMemo(() => {
         if (!reportData?.health_assessment) return null;
@@ -474,24 +254,13 @@ function HealthReport() {
         return { status, color };
     }, [displayAqi]);
 
-    // --- FIXED: Format forecast data with proper date handling ---
-    const forecastData = useMemo(() => {
-        if (!nearestStation || !reportData?.forecasts) return [];
-        
-        const forecast = reportData.forecasts[nearestStation.id];
-        if (!forecast || !forecast.data) return [];
-        
-        // Add proper date formatting
-        return forecast.data.map((item, index) => ({
-            ...item,
-            displayDay: index === 0 ? 'Today' : 
-                      index === 1 ? 'Tomorrow' : 
-                      `Day ${index + 1}`,
-            formattedDate: item.day ? new Date(item.day).toLocaleDateString('en-IN', { 
-                month: 'short', 
-                day: 'numeric' 
-            }) : `Day ${index + 1}`
-        }));
+    // Get user-friendly station name
+    const friendlyStationName = useMemo(() => {
+        if (nearestStation && reportData?.stations) {
+            const stationName = reportData.stations[nearestStation.id]?.station_info?.name;
+            return getFriendlyStationName(stationName);
+        }
+        return 'Local Air Quality Monitor';
     }, [nearestStation, reportData]);
 
     // Event handlers
@@ -503,62 +272,34 @@ function HealthReport() {
 
     const handleRefresh = useCallback(() => {
         fetchReportData();
-        getUserLocationForReport();
-    }, [fetchReportData, getUserLocationForReport]);
-
+    }, [fetchReportData]);
 
     const handlePrint = useCallback(() => {
         window.print();
     }, []);
 
-    const handleParameterChange = useCallback((param) => {
-        setSelectedParameter(param);
-    }, []);
-
     if (loading) return <div className="panel-loader"><h2>🏥 Generating Your Health Report...</h2><div className="loading-spinner"></div></div>;
-
-    if (error) return (
-      <div className="error-message">
-        <h2>⚠️ Error</h2>
-        <p>{error}</p>
-        <button onClick={() => navigate('/dashboard')} className="retry-btn">
-          📊 Go to Dashboard
-        </button>
-      </div>
-    );
-
+    if (error) return <div className="error-message"><h2>⚠️ Error</h2><p>{error}</p><button onClick={handleRefresh} className="retry-btn">🔄 Try Again</button></div>;
     if (!reportData) return <div className="error-message"><h2>📊 No Report Data</h2><p>Unable to generate your health report at this time.</p></div>;
 
-    // --- FIX [START]: Add a loading check for currentDataInfo ---
-    // This ensures derived data is ready before rendering the report body.
-    if (!currentDataInfo) {
-        return (
-            <div className="panel-loader">
-                <h2>🔄 Processing Location Data...</h2>
-                <div className="loading-spinner"></div>
-            </div>
-        );
-    }
-    // --- FIX [END] ---
-
     const { health_assessment, stations, forecasts } = reportData;
+    const forecastForNearest = nearestStation ? forecasts[nearestStation.id] : null;
 
     return (
         <div className="report-page">
             {/* Real-time Status Bar */}
             <div className="realtime-status">
                 🔴 LIVE HEALTH REPORT • Updated: {currentTime.toLocaleTimeString('en-IN')} • 
-                {currentDataInfo?.is_interpolated ? ' Smart Real Sensor Analysis' : ' Government Standards Applied'}
+                {interpolatedData ? ' Location-Based Analysis' : ' Government Standards Applied'}
             </div>
 
-            {/* Navigation */}
+            {/* Navigation (same as Dashboard) */}
             <nav className="navbar">
                 <div className="navbar-content">
                     <Link to="/" className="navbar-brand">
-                                {/* 2. USE THE IMPORTED VARIABLE */}
-                                <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
-                                AirAware
-                              </Link>
+                        <img src="/aqi.webp" alt="AQM Logo" width="40" height="40" style={{ marginRight: '12px' }} />
+                        AirAware Kerala
+                    </Link>
 
                     <div className="menu-toggle" onClick={toggleMenu}>☰</div>
 
@@ -585,17 +326,12 @@ function HealthReport() {
                 </div>
             )}
 
-            {/* Alert Banner */}
+            {/* AQI Alert Banner */}
             <div className={`alert-banner ${aqiStatus.status.toLowerCase()}`} style={{ backgroundColor: getAQIColor(displayAqi) + '20', borderBottom: `3px solid ${getAQIColor(displayAqi)}` }}>
                 ℹ️ <span>
                     <strong>CURRENT AIR QUALITY:</strong> 
-                    {currentDataInfo?.is_interpolated ? ' Your Location (Real Sensors)' : ' Nearest Real Station'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
-                    {currentDataInfo?.distance && ` • Distance: ${currentDataInfo.distance.toFixed(1)}km from nearest real sensor`}
-                    {currentDataInfo?.distance_warning && (
-                        <div className="distance-warning-inline">
-                            ⚠️ {currentDataInfo.distance_warning}
-                        </div>
-                    )}
+                    {interpolatedData ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
+                    {nearestStation && ` • Distance: ${nearestStation.distance.toFixed(1)}km from nearest monitor`}
                 </span>
             </div>
 
@@ -612,24 +348,21 @@ function HealthReport() {
                     <h1>🏥 Official Air Quality Health Report</h1>
                     <p>
                         Personalized health assessment based on your location's air quality and personal health profile.
-                        {currentDataInfo?.is_interpolated && ' Using advanced spatial interpolation from real sensors only for precise location analysis.'}
+                        {interpolatedData && ' Using advanced location analysis for precise monitoring.'}
                     </p>
                     <div className="report-metadata">
                         <div className="metadata-item">
                             <strong>Generated:</strong> {new Date().toLocaleString('en-IN')}
                         </div>
                         <div className="metadata-item">
-                            <strong>Name:</strong> {username}
+                            <strong>Patient:</strong> {username}
                         </div>
                         <div className="metadata-item">
-                            <strong>Location:</strong> {currentDataInfo?.is_interpolated ? 'Your Current Location' : 'Nearest Real Station Data'}
+                            <strong>Location:</strong> {interpolatedData ? 'Your Current Location' : 'Nearest Monitor Data'}
                         </div>
-                        {/*}
-                        {currentDataInfo?.stations_used_for_calculation && (
-                            <div className="metadata-item">
-                                <strong>Calculation Method:</strong> Interpolated from {currentDataInfo.stations_used_for_calculation.join(', ')}
-                            </div>
-                        )}*/}
+                        <div className="metadata-item">
+                            <strong>Data Source:</strong> {friendlyStationName}
+                        </div>
                     </div>
                 </div>
 
@@ -654,10 +387,10 @@ function HealthReport() {
                         <div className="overview-card aqi-card">
                             <h4>🌬️ Current Air Quality</h4>
                             <div className="station-name">
-                                {currentDataInfo?.is_interpolated ? '🎯 Your Location (Real Sensors)' : `📍 ${currentDataInfo?.station_name || 'Default Station'}`}
-                                {currentDataInfo?.distance && (
+                                {interpolatedData ? '🎯 Your Location' : `📍 ${friendlyStationName}`}
+                                {nearestStation && (
                                     <div className="distance-info">
-                                        Distance: {currentDataInfo.distance.toFixed(1)}km from nearest real sensor
+                                        Distance: {nearestStation.distance.toFixed(1)}km
                                     </div>
                                 )}
                             </div>
@@ -671,9 +404,9 @@ function HealthReport() {
                             }}>
                                 {aqiStatus.status}
                             </div>
-                            {currentDataInfo?.is_interpolated && (
+                            {interpolatedData && (
                                 <div className="interpolation-badge">
-                                    🎯 Calculated for Your Location (Real Sensors Only)
+                                    🎯 Calculated for Your Location
                                 </div>
                             )}
                         </div>
@@ -806,156 +539,22 @@ function HealthReport() {
                     </div>
                 )}
                 
-                {/* Location Context Banner */}
-                {currentDataInfo && (
-                    <div className="location-context-banner">
-                        <div className="location-context-content">
-                            <div className="location-icon-section" style={{ color: currentDataInfo.is_interpolated ? '#10b981' : '#3b82f6' }}>
-                                <div className="location-icon-large">
-                                    <i className={`fas ${currentDataInfo.is_interpolated ? 'fa-crosshairs' : 'fa-map-marker-alt'}`}></i>
-                                </div>
-                                <div className="location-badge-large">
-                                    {currentDataInfo.is_interpolated ? '🎯 Your Location Data (Real Sensors)' : '📍 Nearest Real Station Data'}
-                                </div>
-                            </div>
-                            
-                            <div className="location-details-section">
-                                <div className="location-primary-info">
-                                    <h3>{currentDataInfo.explanation}</h3>
-                                    {locationStatus === 'gps_detected' && currentDataInfo.distance && (
-                                        <p className="distance-info">
-                                            📍 You are {currentDataInfo.distance.toFixed(1)}km from the nearest real monitoring station
-                                        </p>
-                                    )}
-                                    {locationStatus === 'failed' && (
-                                        <p className="location-warning">
-                                            ⚠️ Location detection failed - Using default real station data for health recommendations
-                                        </p>
-                                    )}
-                                    {currentDataInfo.distance_warning && (
-                                        <p className="distance-warning">
-                                            ⚠️ {currentDataInfo.distance_warning}
-                                        </p>
-                                    )}
-                                </div>
-                                
-                                <div className="location-method-info">
-                                    <div className="method-item">
-                                        <strong>Data Method:</strong> {currentDataInfo.is_interpolated ? 'Smart Interpolation (Real Sensors Only)' : 'Direct Real Sensor Reading'}
-                                    </div>
-                                    <div className="method-item">
-                                        <strong>Source:</strong> {currentDataInfo.station_name}
-                                    </div>
-                                    <div className="method-item">
-                                        <strong>Accuracy:</strong> {currentDataInfo.is_interpolated ? 'Calculated for your exact location using only real sensor data' : 'Direct from real monitoring station'}
-                                    </div>
-                                    {currentDataInfo.stations_used_for_calculation && (
-                                        <div className="method-item">
-                                            <strong>Real Stations Used:</strong> {currentDataInfo.stations_used_for_calculation.join(', ')}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                
-                {/* FIXED: Dashboard Grid with Mobile-Optimized Forecast */}
+                {/* Dashboard Grid - Mobile Optimized */}
                 <div className="dashboard-grid">
                     <div className="dashboard-card forecast-card">
-                        <div className="card-header">
-                            <h3>📊 4-Day Air Quality Forecast</h3>
-                            <div className="forecast-info">
-                                <div className="forecast-source">
-                                    Data from: {currentDataInfo?.station_name || 'ASIET Campus Station'}
-                                </div>
-                                <div className="forecast-update">
-                                    Last updated: {currentTime.toLocaleTimeString()}
-                                </div>
+                        <h3>📊 4-Day Air Quality Forecast</h3>
+                        <div className="forecast-info">
+                            <div className="forecast-source">
+                                Data from: {friendlyStationName}
+                            </div>
+                            <div className="forecast-update">
+                                Last updated: {currentTime.toLocaleTimeString()}
                             </div>
                         </div>
-
-                        {/* IMPROVED: Horizontal Scrollable Parameter Selection */}
-                        <div className="forecast-controls-wrapper">
-                            <div className="forecast-controls">
-                                {['pm25', 'pm10', 'no2', 'o3', 'so2', 'co', 'nh3'].map(param => (
-                                    <button 
-                                        key={param}
-                                        className={`param-btn ${selectedParameter === param ? 'active' : ''}`}
-                                        onClick={() => handleParameterChange(param)}
-                                        title={`View ${param.toUpperCase()} forecast`}
-                                    >
-                                        {param.toUpperCase()}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* FIXED: Chart and Table Section */}
-                        <div className="forecast-content">
-                            <div className="chart-section">
-                                <Suspense fallback={<div className="panel-loader">📊 Loading forecast chart...</div>}>
-                                    <LazyChart 
-                                        forecastData={forecastData}
-                                        selectedParameter={selectedParameter}
-                                    />
-                                </Suspense>
-                            </div>
-                            
-                            {/* FIXED: Forecast Data Table with Proper Dates */}
-                            <div className="forecast-table-section">
-                                <div className="forecast-table-container">
-                                    <table className="forecast-table">
-                                        <thead>
-                                            <tr>
-                                                <th>📅 Day</th>
-                                                <th>📈 Max {selectedParameter.toUpperCase()}</th>
-                                                <th>📊 Unit</th>
-                                                <th>📍 Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {forecastData && forecastData.length > 0 ? (
-                                                forecastData.map((item, index) => (
-                                                    <tr key={index}>
-                                                        <td className="day-cell">
-                                                            <div className="day-label">{item.displayDay}</div>
-                                                        </td>
-                                                        <td className="value-cell">
-                                                            <div className="value-display">
-                                                                {item[`${selectedParameter}_max`] ? 
-                                                                    (selectedParameter === 'co' ? 
-                                                                        parseFloat(item[`${selectedParameter}_max`]).toFixed(1) : 
-                                                                        Math.round(item[`${selectedParameter}_max`])
-                                                                    ) : 'N/A'
-                                                                }
-                                                            </div>
-                                                        </td>
-                                                        <td className="unit-cell">
-                                                            <div className="unit-display">
-                                                                {selectedParameter === 'co' ? 'mg/m³' : 'µg/m³'}
-                                                            </div>
-                                                        </td>
-                                                        <td className="date-cell">
-                                                            <div className="date-display">
-                                                                {item.formattedDate}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan="4" className="no-data-cell">
-                                                        <div className="no-data-message">
-                                                            📊 Forecast data not available for {currentDataInfo?.station_name || 'this station'}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                        <div className="forecast-chart-container">
+                            <Suspense fallback={<div className="panel-loader">📊 Loading forecast chart...</div>}>
+                                <LazyChart forecastData={forecastForNearest?.data} selectedParameter={'pm25'} />
+                            </Suspense>
                         </div>
                     </div>
                     
@@ -988,10 +587,7 @@ function HealthReport() {
 
                 {/* Action Buttons */}
                 <div className="action-buttons">
-                    <button onClick={handleRefresh} className="action-btn primary">
-                        🔄 Refresh Report & Location Data
-                    </button>
-                    <button onClick={handlePrint} className="action-btn secondary">
+                    <button onClick={handlePrint} className="action-btn primary">
                         🖨️ Print Report
                     </button>
                     <button onClick={() => navigate('/health-assessment')} className="action-btn secondary">
@@ -1011,17 +607,10 @@ function HealthReport() {
                             <div className="source-content">
                                 <div className="source-title">Location Analysis</div>
                                 <div className="source-desc">
-                                    {locationStatus === 'gps_detected' ? (
-                                        currentDataInfo?.is_interpolated ? 
-                                        `Smart interpolation used - you are ${currentDataInfo.distance?.toFixed(1)}km from nearest real sensor` :
-                                        `Using data from nearest real monitoring station (${currentDataInfo.distance?.toFixed(1)}km away)`
-                                    ) : locationStatus === 'detecting' ? (
-                                        'Detecting your location for personalized air quality analysis...'
-                                    ) : locationStatus === 'failed' ? (
-                                        'Location detection failed - using default real station data'
-                                    ) : (
-                                        'Initializing location services...'
-                                    )}
+                                    {interpolatedData ? 
+                                        `Location-based calculation - you are ${nearestStation?.distance.toFixed(1)}km from nearest air quality monitor` :
+                                        `Using data from nearest monitoring station (${nearestStation?.distance.toFixed(1)}km away)`
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -1039,18 +628,6 @@ function HealthReport() {
                                 <div className="source-desc">Following CPCB standards and Kerala Health Department protocols</div>
                             </div>
                         </div>
-                        <div className="source-item">
-                            <div className="source-icon">🎯</div>
-                            <div className="source-content">
-                                <div className="source-title">AQI Calculation</div>
-                                <div className="source-desc">
-                                    {currentDataInfo?.is_interpolated ? 
-                                        'Personalized AQI calculated using Inverse Distance Weighting (IDW) from real sensors only (lora-v1, loradev2)' :
-                                        'Direct AQI reading from nearest real monitoring station'
-                                    }
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -1058,13 +635,11 @@ function HealthReport() {
                 <div className="disclaimer-section">
                     <h3>📄 Official Disclaimer</h3>
                     <div className="disclaimer-content">
-                        <p><strong>🏛️ Data Authority:</strong> Air quality data sourced from Government of Kerala real monitoring stations operated under Central Pollution Control Board (CPCB) guidelines.</p>
+                        <p><strong>🏛️ Data Authority:</strong> Air quality data sourced from Government of Kerala monitoring stations operated under Central Pollution Control Board (CPCB) guidelines.</p>
                         <p><strong>⚕️ Health Advisory:</strong> Recommendations are based on standard government health guidelines. Consult healthcare professionals for personalized medical advice.</p>
-                        <p><strong>📊 Data Accuracy:</strong> Air quality readings are updated every 30 seconds from certified real monitoring equipment. {currentDataInfo?.is_interpolated && 'Enhanced spatial interpolation uses only real sensor data for location-specific calculations.'}</p>
+                        <p><strong>📊 Data Accuracy:</strong> Air quality readings are updated every 30 seconds from certified monitoring equipment. {interpolatedData && 'Enhanced location analysis provides area-specific calculations.'}</p>
                         <p><strong>🔄 Updates:</strong> This report reflects current conditions. Air quality can change rapidly - check live updates frequently.</p>
                         <p><strong>📞 Emergency:</strong> In case of severe health symptoms related to air pollution, immediately contact medical emergency services (108) or Kerala Pollution Control Board (0471-2418566).</p>
-                        <p><strong>📍 Location Services:</strong> {locationStatus === 'gps_detected' ? 'Your location has been detected and used for personalized air quality calculations using real sensor data only.' : 'Enable location services for more accurate, personalized health recommendations based on real sensor data.'}</p>
-                        <p><strong>🎯 Sensor Network:</strong> Calculations use only real monitoring stations (lora-v1: ASIET Campus, loradev2: Mattoor Junction) for maximum accuracy. Simulated stations are excluded from health calculations.</p>
                     </div>
                 </div>
             </div>
@@ -1095,9 +670,9 @@ function HealthReport() {
             <div className="footer-section">
               <h4>Data Sources</h4>
               <ul>
-                <li>ASIET Campus Station (Real Sensor)</li>
-                <li>Mattoor Junction Station (Real Sensor)</li>
-                <li>Advanced spatial interpolation algorithms (Real Data Only)</li>
+                <li>Campus Air Quality Monitor (Direct)</li>
+                <li>Mattoor Junction Monitor (Direct)</li>
+                <li>Advanced location analysis algorithms</li>
                 <li>Weather integration</li>
               </ul>
             </div>
@@ -1116,12 +691,11 @@ function HealthReport() {
           </div>
           <div className="footer-bottom">
             <p>&copy; 2025 AirAware Kerala - Smart Air Quality Monitoring System</p>
-            <p>Powered by real sensor data • Advanced interpolation • Government approved</p>
+            <p>Powered by real monitor data • Advanced location analysis • Government approved</p>
           </div>
         </div>
       </footer>
     </div>
   );
 }
-
 export default HealthReport;
