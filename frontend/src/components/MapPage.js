@@ -48,14 +48,36 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
     return R * c;
 };
 
-const createAqiIcon = (aqi) => {
-    const color = getAQIColor(aqi);
-    const iconHtml = `<div style="background-color: ${color};" class="aqi-marker-icon"><div class="aqi-marker-icon-inner">${Math.round(aqi) || 'N/A'}</div></div>`;
+const createAqiIcon = (aqi, isComingSoon = false) => {
+    const color = isComingSoon ? '#cbd5e1' : getAQIColor(aqi);
+    const displayValue = isComingSoon ? '?' : (Math.round(aqi) || 'N/A');
+    const iconHtml = `<div style="background-color: ${color};" class="aqi-marker-icon ${isComingSoon ? 'coming-soon' : ''}"><div class="aqi-marker-icon-inner">${displayValue}</div></div>`;
     return window.L.divIcon({ html: iconHtml, className: 'custom-div-icon', iconSize: [40, 40], iconAnchor: [20, 40] });
 };
 
 // Enhanced popup content creator
 const createStationPopupContent = (station, stationId) => {
+    const isRealStation = ['lora-v1', 'loradev2'].includes(stationId);
+    const isComingSoon = stationId.startsWith('temp-');
+
+    if (isComingSoon) {
+        return `
+            <div class="map-station-popup coming-soon-popup">
+                <div class="popup-header">
+                    <div class="popup-station-name">${station.station_info.name}</div>
+                    <div class="coming-soon-badge">
+                        <span class="coming-soon-icon">🚧</span>
+                        <span class="coming-soon-text">Coming Soon</span>
+                    </div>
+                </div>
+                <div class="coming-soon-message">
+                    <p>This monitoring station is under development and will be operational soon.</p>
+                    <p>Stay tuned for real-time air quality data from this location!</p>
+                </div>
+            </div>
+        `;
+    }
+
     const { station_info, averages, highest_sub_index } = station;
     const pollutants = [
         { key: 'pm25', name: 'PM2.5', unit: 'µg/m³' },
@@ -90,6 +112,7 @@ const createStationPopupContent = (station, stationId) => {
                         ${Math.round(highest_sub_index) || 'N/A'}
                     </div>
                     <div class="popup-aqi-status">${getAQIStatus(highest_sub_index)}</div>
+                    <div class="real-sensor-badge">🟢 Live Data</div>
                 </div>
             </div>
             <div class="popup-readings">
@@ -121,39 +144,107 @@ const MapPage = () => {
     const [userLocation, setUserLocation] = useState(null);
     const [userLocationData, setUserLocationData] = useState(null);
     const [nearestStation, setNearestStation] = useState(null);
-    const [showLocationPrompt, setShowLocationPrompt] = useState(false);
     const [isLocationLoading, setIsLocationLoading] = useState(false);
     
     // Mobile-specific states
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
-    const [activeTab, setActiveTab] = useState('stations'); // 'stations', 'details', 'user'
+    const [activeTab, setActiveTab] = useState('stations');
 
     // Refs
     const mapRef = useRef(null);
     const markersRef = useRef({});
     const userLocationMarkerRef = useRef(null);
-    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
     
     // Hooks
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { user, logout, loading: authLoading } = useAuth();
+    const [authInitialized, setAuthInitialized] = useState(false);
     const API_BASE_URL = process.env.NODE_ENV === 'production' 
         ? 'https://airaware-app-gcw7.onrender.com' 
         : 'http://localhost:8000';
+
+    // === USER LOCATION TRACKING - FIXED ===
+    const trackUserLocation = useCallback(() => {
+        // Only track if user is authenticated and browser supports geolocation
+        if (!user) {
+            console.log('User not authenticated for location tracking');
+            return;
+        }
+
+        if (navigator.geolocation) {
+            setIsLocationLoading(true);
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    setUserLocation(loc);
+                    setIsLocationLoading(false);
+                    
+                    if (mapInstance) {
+                        mapInstance.setView(loc, 15);
+                        
+                        const userIcon = window.L.divIcon({
+                            html: '<div class="user-location-marker"><i class="fas fa-user"></i></div>',
+                            className: 'custom-user-icon',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        });
+                        
+                        if (userLocationMarkerRef.current) {
+                            userLocationMarkerRef.current.setLatLng(loc);
+                        } else {
+                            userLocationMarkerRef.current = window.L.marker(loc, { icon: userIcon }).addTo(mapInstance);
+                        }
+                    }
+                },
+                (err) => {
+                    setIsLocationLoading(false);
+                    console.warn(`Geolocation error: ${err.message}`);
+                    alert("Could not get your location. Please enable location services in your browser.");
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000 // 5 minutes
+                }
+            );
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    }, [mapInstance, user]);
+
+    // Initialize auth state properly
+    useEffect(() => {
+        // Wait for auth to finish loading before showing UI
+        if (!authLoading) {
+            setAuthInitialized(true);
+        }
+    }, [authLoading]);
+
+    // Auto-track location when user logs in and map is ready
+    useEffect(() => {
+        if (user && !userLocation && mapInstance && authInitialized) {
+            setTimeout(() => {
+                trackUserLocation();
+            }, 500); // Small delay to ensure map is ready
+        }
+    }, [user, userLocation, mapInstance, authInitialized, trackUserLocation]);
 
     // Make component instance available globally for popup callbacks
     useEffect(() => {
         window.mapPageInstance = {
             handleStationSelect: (stationId, fromPopup = false) => {
-                setSelectedStationId(stationId);
-                if (isMobile) {
-                    setActiveTab('details');
-                    setShowMobileMenu(true);
-                }
-                if (fromPopup && mapInstance && stations[stationId]) {
-                    const { lat, lng } = stations[stationId].station_info;
-                    mapInstance.setView([lat, lng], 15);
+                // Only allow selection of real stations
+                if (['lora-v1', 'loradev2'].includes(stationId)) {
+                    setSelectedStationId(stationId);
+                    if (isMobile) {
+                        setActiveTab('details');
+                        setShowMobileMenu(true);
+                    }
+                    if (fromPopup && mapInstance && stations[stationId]) {
+                        const { lat, lng } = stations[stationId].station_info;
+                        mapInstance.setView([lat, lng], 15);
+                    }
                 }
             }
         };
@@ -192,15 +283,6 @@ const MapPage = () => {
         }
         return () => { if (map) map.remove(); };
     }, []);
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobileView(window.innerWidth <= 768);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-        }, []);
             
     // === CORRECTED IDW INTERPOLATION - ONLY REAL STATIONS ===
     const calculateIDWInterpolation = useCallback((locationData, stations) => {
@@ -211,7 +293,7 @@ const MapPage = () => {
         const realStations = {};
         
         realStationIds.forEach(id => {
-            if (stations[id]) {
+            if (stations[id] && stations[id].averages) {
                 realStations[id] = stations[id];
             }
         });
@@ -231,7 +313,7 @@ const MapPage = () => {
         let totalWeight = 0;
         const weightedValues = {
             pm25: 0, pm10: 0, so2: 0, no2: 0, 
-            co: 0, o3: 0, nh3: 0, temp: 0, hum: 0, pre: 0
+            co: 0, o3: 0, nh3: 0
         };
         let weightedAqi = 0;
 
@@ -245,7 +327,7 @@ const MapPage = () => {
 
             console.log(`📍 Station ${stationId}: ${distance.toFixed(2)}km away`);
 
-            // Avoid division by zero - same as Dashboard.js
+            // Avoid division by zero
             const safeDistance = Math.max(distance, 0.001);
             const weight = 1.0 / (safeDistance ** 2);
             totalWeight += weight;
@@ -288,50 +370,7 @@ const MapPage = () => {
         };
     }, []);
     
-    // === USER LOCATION TRACKING ===
-    const trackUserLocation = useCallback(() => {
-        if (!user) {
-            setShowLocationPrompt(true);
-            return;
-        }
-
-        if (navigator.geolocation) {
-            setIsLocationLoading(true);
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
-                    setUserLocation(loc);
-                    setIsLocationLoading(false);
-                    
-                    if (mapInstance) {
-                        mapInstance.setView(loc, 15);
-                        
-                        const userIcon = window.L.divIcon({
-                            html: '<div class="user-location-marker"><i class="fas fa-user"></i></div>',
-                            className: 'custom-user-icon',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
-                        });
-                        
-                        if (userLocationMarkerRef.current) {
-                            userLocationMarkerRef.current.setLatLng(loc);
-                        } else {
-                            userLocationMarkerRef.current = window.L.marker(loc, { icon: userIcon }).addTo(mapInstance);
-                        }
-                    }
-                },
-                (err) => {
-                    setIsLocationLoading(false);
-                    console.warn(`Geolocation error: ${err.message}`);
-                    alert("Could not get your location. Please enable location services in your browser.");
-                }
-            );
-        } else {
-            alert("Geolocation is not supported by this browser.");
-        }
-    }, [mapInstance, user]);
-
-    // === DATA FETCHING ===
+    // === DATA FETCHING - CORRECTED ===
     const fetchRealtimeData = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -339,10 +378,38 @@ const MapPage = () => {
             if (!response.ok) throw new Error('Failed to fetch data');
             
             const data = await response.json();
-            setStations(data.stations);
             
-            if (!selectedStationId && Object.keys(data.stations).length > 0) {
-                setSelectedStationId(Object.keys(data.stations)[0]);
+            // FIXED: Only show real stations with data, and coming soon stations without data
+            const processedStations = {};
+            
+            // Add real stations with data
+            if (data.stations['lora-v1']) {
+                processedStations['lora-v1'] = data.stations['lora-v1'];
+            }
+            if (data.stations['loradev2']) {
+                processedStations['loradev2'] = data.stations['loradev2'];
+            }
+            
+            // Add coming soon stations (location only)
+            ['temp-1', 'temp-2', 'temp-3'].forEach(id => {
+                if (data.stations[id]) {
+                    processedStations[id] = {
+                        station_info: data.stations[id].station_info,
+                        averages: null,
+                        highest_sub_index: null,
+                        is_coming_soon: true
+                    };
+                }
+            });
+            
+            setStations(processedStations);
+            
+            // Set default selection to first real station
+            if (!selectedStationId) {
+                const realStations = Object.keys(processedStations).filter(id => !id.startsWith('temp-'));
+                if (realStations.length > 0) {
+                    setSelectedStationId(realStations[0]);
+                }
             }
         } catch (err) {
             setError(err.message);
@@ -359,7 +426,7 @@ const MapPage = () => {
 
     // === CORRECTED USER LOCATION DATA CALCULATION - ONLY REAL STATIONS ===
     useEffect(() => {
-        if (userLocation && Object.keys(stations).length > 0 && user) {
+        if (userLocation && Object.keys(stations).length > 0) {
             console.log('🔍 Calculating user location data with ONLY real stations for interpolation...');
             
             // FIXED: Only use real stations for distance calculation and interpolation
@@ -367,7 +434,7 @@ const MapPage = () => {
             const realStations = {};
             
             realStationIds.forEach(id => {
-                if (stations[id]) {
+                if (stations[id] && stations[id].averages) {
                     realStations[id] = stations[id];
                 }
             });
@@ -378,7 +445,6 @@ const MapPage = () => {
             }
             
             // Calculate distances to ONLY real stations
-            const stationDistances = {};
             let nearestDist = Infinity;
             let nearestId = null;
             
@@ -389,11 +455,6 @@ const MapPage = () => {
                     station.station_info.lat, 
                     station.station_info.lng
                 );
-                
-                stationDistances[id] = {
-                    distance: dist,
-                    station: station
-                };
                 
                 if (dist < nearestDist) { 
                     nearestDist = dist; 
@@ -409,56 +470,48 @@ const MapPage = () => {
 
             console.log(`📍 Nearest real station: ${nearestId} at ${nearestDist.toFixed(2)}km`);
             
-            // Check if user is within 1km of any real station
-            const isWithinSensorRange = Object.values(stationDistances).some(s => s.distance <= 1.0);
-            
-            if (isWithinSensorRange || nearestDist <= 1.0) {
-                // Within 1km - use interpolation with ONLY real stations
+            // Check if user is within 2km of any real station for interpolation
+            if (nearestDist <= 2.0) {
+                // Within 2km - use interpolation with ONLY real stations
                 const idwResult = calculateIDWInterpolation(userLocation, realStations);
                 
                 setUserLocationData({
                     method: 'location_interpolation',
                     source: 'interpolated',
-                    explanation: `You are ${nearestDist.toFixed(1)}km from the nearest sensor. Showing calculated air quality for your exact location using data from the 2 real monitoring stations.`,
                     values: idwResult.interpolated_values,
                     aqi: idwResult.interpolated_aqi,
-                    station_name: `Your Location (Calculated from Real Stations)`,
+                    station_name: `Your Location`,
                     is_interpolated: true,
-                    show_distance_message: true,
-                    distance_message: `📍 You are within sensor range (${nearestDist.toFixed(1)}km from nearest), showing calculated values for your exact location using only real sensor data`,
-                    data_type: 'Your Location Data (Real Sensor Interpolation)',
+                    distance_to_nearest: nearestDist,
                     nearest_station_name: realStations[nearestId]?.station_info?.name,
                     stations_used_for_calculation: Object.keys(realStations)
                 });
                 
                 console.log('✅ Using interpolated data from real stations:', idwResult);
             } else {
-                // Beyond 1km from all real sensors - show nearest real station data
+                // Beyond 5km from all real sensors - show nearest real station data
                 const nearestStationData = realStations[nearestId];
                 
                 setUserLocationData({
                     method: 'nearest_station',
                     source: 'nearest_station',
-                    explanation: `You are ${nearestDist.toFixed(1)}km from the nearest real sensor. Too far for accurate interpolation - showing data from ${nearestStationData.station_info.name} (nearest real monitoring station).`,
                     values: nearestStationData.averages || {},
                     aqi: nearestStationData.highest_sub_index || 50,
                     station_name: nearestStationData.station_info.name,
                     is_interpolated: false,
-                    show_distance_message: true,
-                    distance_message: `📍 You are ${nearestDist.toFixed(1)}km from the nearest real sensor (beyond 1km interpolation range), showing data from ${nearestStationData.station_info.name}`,
-                    data_type: 'Nearest Real Station Data',
+                    distance_to_nearest: nearestDist,
                     nearest_station_name: nearestStationData.station_info.name,
-                    distance_warning: nearestDist > 1.0 ? `You are ${nearestDist.toFixed(1)}km away from sensors, so you cannot get interpolated values for your exact location.` : null
+                    distance_warning: `You are ${nearestDist.toFixed(1)}km away from sensors (beyond 2km interpolation range)`
                 });
                 
-                console.log('✅ Using nearest real station data (beyond 1km):', nearestStationData.station_info.name);
+                console.log('✅ Using nearest real station data (beyond 2km):', nearestStationData.station_info.name);
             }
         }
-    }, [userLocation, stations, user, calculateIDWInterpolation]);
+    }, [userLocation, stations, calculateIDWInterpolation]);
     
     // === FORECAST DATA FETCHING ===
     useEffect(() => {
-        if (!selectedStationId) return;
+        if (!selectedStationId || selectedStationId.startsWith('temp-')) return;
         
         const fetchForecast = async () => {
             setIsForecastLoading(true);
@@ -489,24 +542,31 @@ const MapPage = () => {
 
         Object.entries(stations).forEach(([id, station]) => {
             const { lat, lng } = station.station_info;
+            const isComingSoon = station.is_coming_soon;
+            
             const marker = window.L.marker([lat, lng], { 
-                icon: createAqiIcon(station.highest_sub_index) 
+                icon: createAqiIcon(station.highest_sub_index, isComingSoon) 
             }).addTo(mapInstance);
             
-            // Enhanced popup with detailed information
+            // Enhanced popup with different content for coming soon vs real stations
             const popupContent = createStationPopupContent(station, id);
             marker.bindPopup(popupContent, {
                 maxWidth: 300,
-                className: 'enhanced-station-popup'
+                className: isComingSoon ? 'coming-soon-popup' : 'real-station-popup'
             });
             
             marker.on('click', () => {
-                setSelectedStationId(id);
-                if (isMobile) {
-                    setActiveTab('details');
-                    setShowMobileMenu(true);
+                if (isComingSoon) {
+                    // Show coming soon message
+                    alert(`${station.station_info.name} is coming soon! This station is under development.`);
+                } else {
+                    setSelectedStationId(id);
+                    if (isMobile) {
+                        setActiveTab('details');
+                        setShowMobileMenu(true);
+                    }
+                    mapInstance.setView([lat, lng], 15);
                 }
-                mapInstance.setView([lat, lng], 15);
             });
             
             markersRef.current[id] = marker;
@@ -526,11 +586,20 @@ const MapPage = () => {
     }, [logout]);
 
     const handleStationSelect = useCallback((stationId) => {
-        setSelectedStationId(stationId);
-        if (isMobile) {
-            setActiveTab('details');
+        // Only allow selection of real stations
+        if (['lora-v1', 'loradev2'].includes(stationId)) {
+            setSelectedStationId(stationId);
+            if (isMobile) {
+                setActiveTab('details');
+            }
+        } else {
+            // Show coming soon message for temp stations
+            const station = stations[stationId];
+            if (station) {
+                alert(`${station.station_info.name} is coming soon! This station is under development and will be operational soon.`);
+            }
         }
-    }, [isMobile]);
+    }, [isMobile, stations]);
 
     // === DATA PROCESSING ===
     const selectedStationData = stations[selectedStationId];
@@ -607,72 +676,88 @@ const MapPage = () => {
         }
     }), [isMobile]);
 
+    // Filter real stations vs coming soon stations
+    const realStations = Object.entries(stations).filter(([id, station]) => !station.is_coming_soon);
+    const comingSoonStations = Object.entries(stations).filter(([id, station]) => station.is_coming_soon);
+
     // Mobile Tab Content Renderer
     const renderMobileTabContent = () => {
         switch (activeTab) {
             case 'stations':
                 return (
                     <div className="mobile-tab-content">
-                        <div className="mobile-section-header">
-                            <h3>
-                                <i className="fas fa-satellite-dish"></i>
-                                Monitoring Stations
-                            </h3>
-                        </div>
-                        {isLoading ? (
-                            <div className="mobile-loader">
-                                <div className="loading-spinner"></div>
-                                <p>Loading stations...</p>
+                        <div className="mobile-section">
+                            <div className="section-header">
+                                <h3><i className="fas fa-broadcast-tower"></i> Live Stations</h3>
+                                <span className="live-indicator">🔴 LIVE</span>
                             </div>
-                        ) : error ? (
-                            <div className="mobile-error">
-                                <i className="fas fa-exclamation-triangle"></i>
-                                <p>Error: {error}</p>
-                                <button onClick={fetchRealtimeData} className="retry-btn">
-                                    Retry
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="mobile-station-list">
-                                {Object.entries(stations).map(([id, station]) => (
-                                    <button 
-                                        key={id} 
-                                        className={`mobile-station-card ${selectedStationId === id ? 'active' : ''}`} 
-                                        onClick={() => handleStationSelect(id)}
-                                    >
-                                        <div className="station-info">
-                                            <h4>{station.station_info.name}</h4>
-                                            <div className="station-meta">
-                                                <span>Last updated: {station.last_updated_on || 'N/A'}</span>
-                                                {['lora-v1', 'loradev2'].includes(id) && (
-                                                    <span className="real-station-badge">🟢 Real Sensor</span>
-                                                )}
-                                                {id.startsWith('temp-') && (
-                                                    <span className="simulated-station-badge">🔮 Simulated</span>
-                                                )}
+                            
+                            {isLoading ? (
+                                <div className="mobile-loader">
+                                    <div className="loading-spinner"></div>
+                                    <p>Loading stations...</p>
+                                </div>
+                            ) : error ? (
+                                <div className="mobile-error">
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                    <p>Error: {error}</p>
+                                    <button onClick={fetchRealtimeData} className="retry-btn">Retry</button>
+                                </div>
+                            ) : (
+                                <div className="station-grid">
+                                    {realStations.map(([id, station]) => (
+                                        <button 
+                                            key={id} 
+                                            className={`station-card ${selectedStationId === id ? 'active' : ''}`} 
+                                            onClick={() => handleStationSelect(id)}
+                                        >
+                                            <div className="station-header">
+                                                <h4>{station.station_info.name}</h4>
+                                                <div className="live-badge">🟢 LIVE</div>
                                             </div>
+                                            <div className="station-aqi-badge" style={{ backgroundColor: getAQIColor(station.highest_sub_index) }}>
+                                                <span className="aqi-number">{Math.round(station.highest_sub_index) || 'N/A'}</span>
+                                                <span className="aqi-status">{getAQIStatus(station.highest_sub_index)}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mobile-section">
+                            <div className="section-header">
+                                <h3><i className="fas fa-clock"></i> Coming Soon</h3>
+                                <span className="coming-soon-count">{comingSoonStations.length} stations</span>
+                            </div>
+                            
+                            <div className="coming-soon-grid">
+                                {comingSoonStations.map(([id, station]) => (
+                                    <div key={id} className="coming-soon-card" onClick={() => handleStationSelect(id)}>
+                                        <div className="station-header">
+                                            <h4>{station.station_info.name}</h4>
+                                            <div className="coming-soon-badge">🚧 Soon</div>
                                         </div>
-                                        <div className="station-aqi-badge" style={{ backgroundColor: getAQIColor(station.highest_sub_index) }}>
-                                            <span className="aqi-number">{Math.round(station.highest_sub_index) || 'N/A'}</span>
-                                            <span className="aqi-status">{getAQIStatus(station.highest_sub_index)}</span>
+                                        <div className="coming-soon-info">
+                                            <span>Under Development</span>
                                         </div>
-                                    </button>
+                                    </div>
                                 ))}
                             </div>
-                        )}
+                        </div>
                     </div>
                 );
 
             case 'details':
                 return (
                     <div className="mobile-tab-content">
-                        {selectedStationData ? (
+                        {selectedStationData && !selectedStationData.is_coming_soon ? (
                             <>
                                 <div className="mobile-section-header">
-                                    <h3>
-                                        <i className="fas fa-chart-bar"></i>
-                                        {selectedStationData.station_info.name}
-                                    </h3>
+                                    <div className="station-title">
+                                        <h3><i className="fas fa-chart-bar"></i> {selectedStationData.station_info.name}</h3>
+                                        <div className="live-badge">🟢 LIVE</div>
+                                    </div>
                                     <div className="mobile-aqi-display">
                                         <span 
                                             className="mobile-aqi-value"
@@ -688,7 +773,7 @@ const MapPage = () => {
 
                                 {/* Current Readings */}
                                 <div className="mobile-readings-section">
-                                    <h4>Current Readings</h4>
+                                    <h4><i className="fas fa-thermometer-half"></i> Current Readings</h4>
                                     <div className="mobile-readings-grid">
                                         {pollutants.map(p => (
                                             <div className="mobile-reading-card" key={p.key}>
@@ -705,7 +790,7 @@ const MapPage = () => {
                                 {/* Forecast */}
                                 <div className="mobile-forecast-section">
                                     <div className="forecast-header">
-                                        <h4>4-Day Forecast</h4>
+                                        <h4><i className="fas fa-chart-line"></i> 4-Day Forecast</h4>
                                         <select 
                                             className="mobile-parameter-selector"
                                             value={selectedParameter}
@@ -740,14 +825,15 @@ const MapPage = () => {
                             </>
                         ) : (
                             <div className="mobile-no-selection">
-                                <i className="fas fa-map-marker-alt"></i>
-                                <h3>Select a Station</h3>
-                                <p>Choose a monitoring station to view detailed information</p>
+                                <i className="fas fa-satellite-dish"></i>
+                                <h3>Select a Live Station</h3>
+                                <p>Choose a monitoring station with live data to view detailed information</p>
                                 <button 
                                     className="select-station-btn"
                                     onClick={() => setActiveTab('stations')}
                                 >
-                                    View Stations
+                                    <i className="fas fa-broadcast-tower"></i>
+                                    View Live Stations
                                 </button>
                             </div>
                         )}
@@ -758,130 +844,128 @@ const MapPage = () => {
                 return (
                     <div className="mobile-tab-content">
                         <div className="mobile-section-header">
-                            <h3>
-                                <i className="fas fa-user-circle"></i>
-                                Your Location
-                            </h3>
+                            <h3><i className="fas fa-map-marker-alt"></i> Your Location Data</h3>
                         </div>
-                        {user && userLocation && userLocationData && nearestStation ? (
-                            <div className="mobile-user-data">
-                                <div className="mobile-user-aqi">
-                                    <div 
-                                        className="user-aqi-circle"
-                                        style={{ backgroundColor: getAQIColor(userLocationData.aqi) }}
-                                    >
-                                        <span className="aqi-number">
-                                            {Math.round(userLocationData.aqi)}
-                                        </span>
-                                        <span className="aqi-label">AQI</span>
+                        
+                        {user ? (
+                            userLocation && userLocationData && nearestStation ? (
+                                <div className="mobile-user-data">
+                                    <div className="mobile-user-aqi">
+                                        <div 
+                                            className="user-aqi-circle"
+                                            style={{ backgroundColor: getAQIColor(userLocationData.aqi) }}
+                                        >
+                                            <span className="aqi-number">{Math.round(userLocationData.aqi)}</span>
+                                            <span className="aqi-label">AQI</span>
+                                        </div>
+                                        <div className="user-location-info">
+                                            <div className="location-method">
+                                                {userLocationData.is_interpolated ? 
+                                                    '🎯 Calculated for your location' : 
+                                                    `📍 From ${userLocationData.station_name}`
+                                                }
+                                            </div>
+                                            <div className="distance-info">
+                                                📏 {nearestStation.distance.toFixed(1)}km from nearest sensor
+                                            </div>
+                                            {userLocationData.distance_warning && (
+                                                <div className="distance-warning">
+                                                    ⚠️ {userLocationData.distance_warning}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="user-location-info">
-                                        <p><strong>Method:</strong> {userLocationData.is_interpolated ? 'Smart Interpolation (Real Sensors Only)' : 'Nearest Real Station'}</p>
-                                        <p><strong>Data Source:</strong> {userLocationData.station_name}</p>
-                                        <p><strong>Distance:</strong> {nearestStation.distance.toFixed(1)} km from nearest real sensor</p>
-                                        <p><strong>Status:</strong> {userLocationData.is_interpolated ? 'Within sensor range' : 'Beyond interpolation range'}</p>
-                                        {userLocationData.stations_used_for_calculation && (
-                                            <p><strong>Stations Used:</strong> {userLocationData.stations_used_for_calculation.join(', ')}</p>
-                                        )}
-                                        {userLocationData.distance_warning && (
-                                            <div className="distance-warning">
-                                                ⚠️ {userLocationData.distance_warning}
-                                            </div>
-                                        )}
+                                    
+                                    {/* User's readings */}
+                                    <div className="mobile-readings-section">
+                                        <h4><i className="fas fa-user-circle"></i> Your Air Quality</h4>
+                                        <div className="mobile-readings-grid">
+                                            {pollutants.map(p => (
+                                                <div className="mobile-reading-card user-reading" key={p.key}>
+                                                    <div className="reading-label">{p.name}</div>
+                                                    <div className="reading-value">
+                                                        {(userLocationData.values?.[p.key]?.toFixed(2)) ?? 'N/A'}
+                                                        <span>µg/m³</span>
+                                                    </div>
+                                                    <div className="data-source-badge">
+                                                        {userLocationData.is_interpolated ? '🎯' : '📍'}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                {/* CORRECTED: Show user's readings with proper indication */}
-                                <div className="mobile-readings-section">
-                                    <h4>Your Location Readings</h4>
-                                    <div className="mobile-readings-grid">
-                                        {pollutants.map(p => (
-                                            <div className="mobile-reading-card" key={p.key}>
-                                                <div className="reading-label">{p.name}</div>
-                                                <div className="reading-value">
-                                                    {(userLocationData.values?.[p.key]?.toFixed(2)) ?? 'N/A'}
-                                                    <span>µg/m³</span>
-                                                </div>
-                                                {userLocationData.is_interpolated ? (
-                                                    <div className="interpolated-badge">🎯 Calculated</div>
-                                                ) : (
-                                                    <div className="nearest-badge">📍 Nearest</div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                
-                                {/* Distance and methodology info */}
-                                <div className="user-location-methodology">
-                                    <h4>Data Methodology</h4>
-                                    <div className="methodology-info">
-                                        {userLocationData.is_interpolated ? (
-                                            <div className="interpolation-info">
-                                                <div className="info-item">
-                                                    <span className="info-icon">🎯</span>
-                                                    <span>Using smart interpolation from real sensors only</span>
-                                                </div>
-                                                <div className="info-item">
-                                                    <span className="info-icon">📊</span>
-                                                    <span>Calculated from lora-v1 and loradev2 stations</span>
-                                                </div>
-                                                <div className="info-item">
-                                                    <span className="info-icon">📏</span>
-                                                    <span>You are within 1km of real sensors</span>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="nearest-station-info">
-                                                <div className="info-item">
-                                                    <span className="info-icon">📍</span>
-                                                    <span>Using nearest real station data</span>
-                                                </div>
-                                                <div className="info-item">
-                                                    <span className="info-icon">⚠️</span>
-                                                    <span>Beyond 1km from sensors - no interpolation</span>
-                                                </div>
-                                                <div className="info-item">
-                                                    <span className="info-icon">📏</span>
-                                                    <span>{nearestStation.distance.toFixed(1)}km from nearest real sensor</span>
-                                                </div>
-                                            </div>
-                                        )}
+                                    
+                                    {/* Methodology info */}
+                                    <div className="methodology-section">
+                                        <h4><i className="fas fa-info-circle"></i> How We Calculate</h4>
+                                        <div className="methodology-card">
+                                            {userLocationData.is_interpolated ? (
+                                                <>
+                                                    <div className="method-item">
+                                                        <span className="method-icon">🎯</span>
+                                                        <span>Smart interpolation from 2 real sensors</span>
+                                                    </div>
+                                                    <div className="method-item">
+                                                        <span className="method-icon">📊</span>
+                                                        <span>Data sources: lora-v1 & loradev2</span>
+                                                    </div>
+                                                    <div className="method-item">
+                                                        <span className="method-icon">✅</span>
+                                                        <span>You're within 5km of sensors</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="method-item">
+                                                        <span className="method-icon">📍</span>
+                                                        <span>Using nearest station data</span>
+                                                    </div>
+                                                    <div className="method-item">
+                                                        <span className="method-icon">⚠️</span>
+                                                        <span>Beyond 5km - no interpolation</span>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : !user ? (
-                            <div className="mobile-login-prompt">
-                                <i className="fas fa-lock"></i>
-                                <h4>Login Required</h4>
-                                <p>Login to view personalized AQI data for your location</p>
-                                <Link to="/login" className="mobile-login-btn">
-                                    <i className="fas fa-sign-in-alt"></i>
-                                    Login Now
-                                </Link>
-                            </div>
+                            ) : (
+                                <div className="mobile-location-prompt">
+                                    <div className="location-prompt-content">
+                                        <i className="fas fa-map-marker-alt location-icon"></i>
+                                        <h4>Get Your Air Quality Data</h4>
+                                        <p>Enable location to see personalized air quality data calculated from our real sensors</p>
+                                        <button 
+                                            className="mobile-location-btn"
+                                            onClick={trackUserLocation}
+                                            disabled={isLocationLoading}
+                                        >
+                                            {isLocationLoading ? (
+                                                <>
+                                                    <i className="fas fa-spinner fa-spin"></i>
+                                                    Getting Location...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="fas fa-crosshairs"></i>
+                                                    Get My Location
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            )
                         ) : (
-                            <div className="mobile-location-prompt">
-                                <i className="fas fa-map-marker-alt"></i>
-                                <h4>Enable Location</h4>
-                                <p>Get personalized AQI data calculated from real sensors for your current location</p>
-                                <button 
-                                    className="mobile-location-btn"
-                                    onClick={trackUserLocation}
-                                    disabled={isLocationLoading}
-                                >
-                                    {isLocationLoading ? (
-                                        <>
-                                            <i className="fas fa-spinner fa-spin"></i>
-                                            Getting Location...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="fas fa-crosshairs"></i>
-                                            Get My Location
-                                        </>
-                                    )}
-                                </button>
+                            <div className="mobile-login-prompt">
+                                <div className="login-prompt-content">
+                                    <i className="fas fa-lock login-icon"></i>
+                                    <h4>Login Required</h4>
+                                    <p>Login to view personalized AQI data for your location</p>
+                                    <Link to="/login" className="mobile-login-btn">
+                                        <i className="fas fa-sign-in-alt"></i>
+                                        Login Now
+                                    </Link>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -894,14 +978,13 @@ const MapPage = () => {
 
     return (
         <div className="map-page">
-            {/* Enhanced Navbar */}
+            {/* Optimized Navbar */}
             <nav className="navbar">
                 <div className="navbar-content">
                     <Link to="/" className="navbar-brand">
-                                {/* 2. USE THE IMPORTED VARIABLE */}
-                                <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
-                                AirAware
-                              </Link>
+                        <img src={logoImage} alt="AQM Logo" width={isMobile ? "28" : "36"} height={isMobile ? "28" : "36"} />
+                        <span>AirAware</span>
+                    </Link>
                     
                     {!isMobile && (
                         <div className="nav-center">
@@ -910,8 +993,8 @@ const MapPage = () => {
                                 <li><Link to="/map" className="nav-link active">Live Map</Link></li>
                                 {user && (
                                     <>
-                                        <li><Link to="/dashboard" className="nav-link">Profile</Link></li>
-                                        <li><Link to="/add-family" className="nav-link">Add Family</Link></li>
+                                        <li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
+                                        <li><Link to="/add-family" className="nav-link">Family</Link></li>
                                     </>
                                 )}
                             </ul>
@@ -954,7 +1037,7 @@ const MapPage = () => {
                     <button 
                         onClick={trackUserLocation} 
                         className={`my-location-btn ${isLocationLoading ? 'loading' : ''}`}
-                        title={user ? "Find My Location" : "Login to view your location"}
+                        title="Find My Location"
                         disabled={isLocationLoading}
                     >
                         {isLocationLoading ? (
@@ -974,107 +1057,65 @@ const MapPage = () => {
                     )}
                 </div>
 
-                {/* Desktop Panels */}
+                {/* Desktop Layout */}
                 {!isMobile && (
                     <>
-                        {/* LEFT PANEL - User Data + Station List */}
-                        <div className="data-panel">
-                            <div className="data-panel-content">
-                                {/* CORRECTED: User Location Panel with real station indication */}
+                        {/* LEFT PANEL - Optimized */}
+                        <div className="sidebar-panel">
+                            <div className="panel-content">
+                                {/* User Location Panel - Optimized */}
                                 {user && userLocation && userLocationData && nearestStation && (
-                                    <div className="user-location-panel">
-                                        <div className="user-location-header">
+                                    <div className="user-location-section">
+                                        <div className="section-title">
                                             <i className="fas fa-map-marker-alt"></i>
-                                            <span>AQI at Your Location</span>
+                                            <span>Your Location</span>
                                         </div>
-                                        <div className="user-location-body">
-                                            <div className="user-aqi-value" style={{ color: getAQIColor(userLocationData.aqi) }}>
-                                                {Math.round(userLocationData.aqi)}
-                                            </div>
-                                            <div className="user-location-details">
-                                                <div className="location-method">
-                                                    {userLocationData.is_interpolated ? 
-                                                        '🎯 Smart Interpolation from Real Sensors Only' : 
-                                                        '📍 Nearest Real Station Data'
-                                                    }
+                                        <div className="user-aqi-card">
+                                            <div className="user-aqi-main">
+                                                <div className="aqi-circle" style={{ backgroundColor: getAQIColor(userLocationData.aqi) }}>
+                                                    <span className="aqi-value">{Math.round(userLocationData.aqi)}</span>
+                                                    <span className="aqi-label">AQI</span>
                                                 </div>
-                                                <div className="nearest-station">
-                                                    Data source: {userLocationData.station_name}
-                                                </div>
-                                                <div className="distance">
-                                                    Distance to nearest real sensor: {nearestStation.distance.toFixed(1)} km
-                                                </div>
-                                                <div className="data-quality">
-                                                    {userLocationData.is_interpolated ? 
-                                                        `🎯 Calculated for your exact location using lora-v1 and loradev2` : 
-                                                        `📍 Direct reading from ${userLocationData.nearest_station_name}`
-                                                    }
-                                                </div>
-                                                {userLocationData.distance_warning && (
-                                                    <div className="distance-warning">
-                                                        ⚠️ {userLocationData.distance_warning}
+                                                <div className="location-details">
+                                                    <div className="location-status">
+                                                        {userLocationData.is_interpolated ? 
+                                                            '🎯 Calculated for your exact location' : 
+                                                            `📍 From ${userLocationData.nearest_station_name}`
+                                                        }
                                                     </div>
-                                                )}
+                                                    <div className="distance-info">
+                                                        📏 {nearestStation.distance.toFixed(1)}km from nearest sensor
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        
-                                        {/* CORRECTED: Show user's specific readings with proper source indication */}
-                                        <div className="user-readings-summary">
-                                            <h4>Your Location Readings</h4>
-                                            <div className="readings-mini-grid">
-                                                <div className="mini-reading">
-                                                    <span>PM2.5:</span>
+                                            
+                                            {/* Quick readings */}
+                                            <div className="quick-readings">
+                                                <div className="quick-reading">
+                                                    <span>PM2.5</span>
                                                     <span>{userLocationData.values?.pm25?.toFixed(1) || 'N/A'}</span>
-                                                    {userLocationData.is_interpolated ? 
-                                                        <span className="calc-badge">🎯</span> : 
-                                                        <span className="nearest-badge">📍</span>
-                                                    }
+                                                    <span className="data-badge">{userLocationData.is_interpolated ? '🎯' : '📍'}</span>
                                                 </div>
-                                                <div className="mini-reading">
-                                                    <span>PM10:</span>
+                                                <div className="quick-reading">
+                                                    <span>PM10</span>
                                                     <span>{userLocationData.values?.pm10?.toFixed(1) || 'N/A'}</span>
-                                                    {userLocationData.is_interpolated ? 
-                                                        <span className="calc-badge">🎯</span> : 
-                                                        <span className="nearest-badge">📍</span>
-                                                    }
+                                                    <span className="data-badge">{userLocationData.is_interpolated ? '🎯' : '📍'}</span>
                                                 </div>
-                                                <div className="mini-reading">
-                                                    <span>NO₂:</span>
-                                                    <span>{userLocationData.values?.no2?.toFixed(1) || 'N/A'}</span>
-                                                    {userLocationData.is_interpolated ? 
-                                                        <span className="calc-badge">🎯</span> : 
-                                                        <span className="nearest-badge">📍</span>
-                                                    }
-                                                </div>
-                                                <div className="mini-reading">
-                                                    <span>O₃:</span>
-                                                    <span>{userLocationData.values?.o3?.toFixed(1) || 'N/A'}</span>
-                                                    {userLocationData.is_interpolated ? 
-                                                        <span className="calc-badge">🎯</span> : 
-                                                        <span className="nearest-badge">📍</span>
-                                                    }
-                                                </div>
-                                            </div>
-                                            <div className="calc-note">
-                                                {userLocationData.is_interpolated ? 
-                                                    '🎯 Interpolated values using only real sensor data (lora-v1, loradev2)' :
-                                                    `📍 Direct values from nearest real sensor (${userLocationData.nearest_station_name})`
-                                                }
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Login Prompt */}
+                                {/* Login Prompt - Optimized */}
                                 {!user && (
-                                    <div className="login-prompt-panel">
-                                        <div className="login-prompt-header">
-                                            <i className="fas fa-lock"></i>
-                                            <span>Personal Location Data</span>
-                                        </div>
-                                        <div className="login-prompt-body">
-                                            <p>Login to view AQI data at your current location with personalized insights calculated from real sensors.</p>
-                                            <Link to="/login" className="login-prompt-btn">
+                                    <div className="login-section">
+                                        <div className="login-card">
+                                            <div className="login-icon">
+                                                <i className="fas fa-user-circle"></i>
+                                            </div>
+                                            <h3>Personal Location Data</h3>
+                                            <p>Login to view AQI data calculated for your exact location</p>
+                                            <Link to="/login" className="login-cta-btn">
                                                 <i className="fas fa-sign-in-alt"></i>
                                                 Login to Access
                                             </Link>
@@ -1082,22 +1123,21 @@ const MapPage = () => {
                                     </div>
                                 )}
 
-                                {/* Station List Section */}
-                                <div className="station-list-section">
-                                    <div className="station-list-header">
-                                        <h2 className="section-title">
-                                            <i className="fas fa-satellite-dish"></i> 
-                                            Monitoring Stations
-                                        </h2>
+                                {/* Station List - Optimized */}
+                                <div className="stations-section">
+                                    <div className="section-title">
+                                        <i className="fas fa-broadcast-tower"></i>
+                                        <span>Live Monitoring Stations</span>
+                                        <div className="live-indicator">🔴 LIVE</div>
                                     </div>
                                     
                                     {isLoading ? (
-                                        <div className="panel-loader">
+                                        <div className="section-loader">
                                             <div className="loading-spinner"></div>
                                             <p>Loading stations...</p>
                                         </div>
                                     ) : error ? (
-                                        <div className="error-message">
+                                        <div className="section-error">
                                             <i className="fas fa-exclamation-triangle"></i>
                                             <p>Error: {error}</p>
                                             <button onClick={fetchRealtimeData} className="retry-btn">
@@ -1106,101 +1146,98 @@ const MapPage = () => {
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="station-selector">
-                                            {Object.entries(stations).map(([id, station]) => (
-                                                <button 
-                                                    key={id} 
-                                                    className={`station-btn ${selectedStationId === id ? 'active' : ''}`} 
-                                                    onClick={() => handleStationSelect(id)}
-                                                >
-                                                    <div className="station-btn-content">
-                                                        <div className="station-name-container">
-                                                            <span className="station-name">{station.station_info.name}</span>
-                                                            {['lora-v1', 'loradev2'].includes(id) && (
-                                                                <span className="real-station-indicator">🟢</span>
-                                                            )}
-                                                            {id.startsWith('temp-') && (
-                                                                <span className="simulated-station-indicator">🔮</span>
-                                                            )}
+                                        <>
+                                            <div className="station-list">
+                                                {realStations.map(([id, station]) => (
+                                                    <button 
+                                                        key={id} 
+                                                        className={`station-item ${selectedStationId === id ? 'active' : ''}`} 
+                                                        onClick={() => handleStationSelect(id)}
+                                                    >
+                                                        <div className="station-content">
+                                                            <div className="station-name">
+                                                                {station.station_info.name}
+                                                                <span className="live-dot">🟢</span>
+                                                            </div>
+                                                            <div 
+                                                                className="station-aqi" 
+                                                                style={{ backgroundColor: getAQIColor(station.highest_sub_index) }}
+                                                            >
+                                                                {Math.round(station.highest_sub_index) || 'N/A'}
+                                                            </div>
                                                         </div>
-                                                        <span 
-                                                            className="station-aqi" 
-                                                            style={{ backgroundColor: getAQIColor(station.highest_sub_index) }}
-                                                        >
-                                                            {Math.round(station.highest_sub_index) || 'N/A'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="station-type-label">
-                                                        {['lora-v1', 'loradev2'].includes(id) ? 'Real Sensor' : 'Simulated'}
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            
+                                            {/* Coming Soon Stations */}
+                                            <div className="coming-soon-section">
+                                                <div className="section-subtitle">
+                                                    <i className="fas fa-clock"></i>
+                                                    <span>Expanding Soon</span>
+                                                </div>
+                                                <div className="coming-soon-list">
+                                                    {comingSoonStations.map(([id, station]) => (
+                                                        <div key={id} className="coming-soon-item" onClick={() => handleStationSelect(id)}>
+                                                            <div className="station-name">
+                                                                {station.station_info.name}
+                                                                <span className="coming-soon-dot">🚧</span>
+                                                            </div>
+                                                            <div className="coming-soon-status">Soon</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* RIGHT PANEL - Station Details */}
-                        <div className="station-details-panel">
-                            <div className="station-details-content">
-                                {selectedStationData ? (
+                        {/* RIGHT PANEL - Optimized */}
+                        <div className="details-panel">
+                            <div className="panel-content">
+                                {selectedStationData && !selectedStationData.is_coming_soon ? (
                                     <div className="station-details">
-                                        {/* Station Header */}
-                                        <div className="station-header">
-                                            <h3>{selectedStationData.station_info.name}</h3>
-                                            <div className="station-badges">
-                                                {['lora-v1', 'loradev2'].includes(selectedStationId) && (
-                                                    <span className="real-sensor-badge">🟢 Real Sensor</span>
-                                                )}
-                                                {selectedStationId.startsWith('temp-') && (
-                                                    <span className="simulated-sensor-badge">🔮 Simulated</span>
-                                                )}
+                                        {/* Station Header - Compact */}
+                                        <div className="details-header">
+                                            <div className="station-title">
+                                                <h2>{selectedStationData.station_info.name}</h2>
+                                                <div className="live-badge">🟢 LIVE DATA</div>
                                             </div>
-                                        </div>
-
-                                        {/* AQI Section */}
-                                        <div className="aqi-section">
                                             <div className="current-aqi">
-                                                <span className="aqi-label">Current AQI</span>
                                                 <span 
-                                                    className="aqi-value"
-                                                    style={{ color: getAQIColor(selectedStationData.highest_sub_index) }}
+                                                    className="aqi-display"
+                                                    style={{ backgroundColor: getAQIColor(selectedStationData.highest_sub_index) }}
                                                 >
                                                     {Math.round(selectedStationData.highest_sub_index)}
                                                 </span>
-                                                <span className="aqi-status">
+                                                <span className="aqi-status-text">
                                                     {getAQIStatus(selectedStationData.highest_sub_index)}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        {/* Current Readings Section */}
+                                        {/* Current Readings - Compact Grid */}
                                         <div className="readings-section">
-                                            <h4 className="section-title">
-                                                <i className="fas fa-chart-bar"></i>
-                                                Current Readings
-                                            </h4>
-                                            <div className="pollutant-grid">
+                                            <h3><i className="fas fa-thermometer-half"></i> Current Readings</h3>
+                                            <div className="readings-grid">
                                                 {pollutants.map(p => (
-                                                    <div className="metric-card" key={p.key}>
-                                                        <div className="metric-label">{p.name}</div>
-                                                        <div className="metric-value">
+                                                    <div className="reading-card" key={p.key}>
+                                                        <div className="reading-label">{p.name}</div>
+                                                        <div className="reading-value">
                                                             {(selectedStationData.averages?.[p.key]?.toFixed(2)) ?? 'N/A'}
-                                                            <span className="metric-unit">µg/m³</span>
+                                                            <span className="reading-unit">µg/m³</span>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        {/* Enhanced Forecast Section */}
+                                        {/* Forecast Section - Compact */}
                                         <div className="forecast-section">
                                             <div className="forecast-header">
-                                                <h4 className="section-title">
-                                                    <i className="fas fa-chart-line"></i>
-                                                    4-Day Forecast
-                                                </h4>
+                                                <h3><i className="fas fa-chart-line"></i> 4-Day Forecast</h3>
                                                 <select 
                                                     className="parameter-selector"
                                                     value={selectedParameter}
@@ -1216,16 +1253,10 @@ const MapPage = () => {
                                                 </select>
                                             </div>
                                             
-                                            {forecastUpdatedAt && (
-                                                <div className="forecast-update-time">
-                                                    Last updated: {new Date(forecastUpdatedAt).toLocaleString()}
-                                                </div>
-                                            )}
-
                                             <div className="chart-container">
                                                 {isForecastLoading ? (
-                                                    <div className="forecast-loader">
-                                                        <div className="loading-spinner small"></div>
+                                                    <div className="chart-loader">
+                                                        <div className="loading-spinner"></div>
                                                         <p>Loading forecast...</p>
                                                     </div>
                                                 ) : forecastData.length > 0 ? (
@@ -1240,19 +1271,19 @@ const MapPage = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="no-station-selected">
-                                        <div className="no-station-message">
+                                    <div className="no-selection">
+                                        <div className="no-selection-content">
                                             <i className="fas fa-satellite-dish"></i>
-                                            <h3>Select a Station</h3>
-                                            <p>Choose a monitoring station from the left panel or click on a map marker to view detailed air quality data, current readings, and forecast information.</p>
-                                            <div className="station-types-info">
-                                                <div className="station-type-info">
-                                                    <span className="type-indicator real">🟢</span>
-                                                    <span>Real sensors are used for interpolation calculations</span>
+                                            <h2>Select a Live Station</h2>
+                                            <p>Choose a monitoring station from the sidebar to view real-time air quality data, current readings, and forecast information.</p>
+                                            <div className="station-info-grid">
+                                                <div className="info-item">
+                                                    <span className="info-icon">🟢</span>
+                                                    <span>Live stations provide real-time data</span>
                                                 </div>
-                                                <div className="station-type-info">
-                                                    <span className="type-indicator simulated">🔮</span>
-                                                    <span>Simulated stations for network visualization</span>
+                                                <div className="info-item">
+                                                    <span className="info-icon">🚧</span>
+                                                    <span>More stations coming soon</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1263,7 +1294,7 @@ const MapPage = () => {
                     </>
                 )}
 
-                {/* Mobile Bottom Sheet */}
+                {/* Mobile Bottom Sheet - Optimized */}
                 {isMobile && (
                     <div className={`mobile-bottom-sheet ${showMobileMenu ? 'open' : ''}`}>
                         {/* Mobile Tab Navigation */}
@@ -1272,7 +1303,7 @@ const MapPage = () => {
                                 className={`mobile-tab-btn ${activeTab === 'stations' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('stations')}
                             >
-                                <i className="fas fa-satellite-dish"></i>
+                                <i className="fas fa-broadcast-tower"></i>
                                 <span>Stations</span>
                             </button>
                             <button 
@@ -1286,7 +1317,7 @@ const MapPage = () => {
                                 className={`mobile-tab-btn ${activeTab === 'user' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('user')}
                             >
-                                <i className="fas fa-user-circle"></i>
+                                <i className="fas fa-map-marker-alt"></i>
                                 <span>My Data</span>
                             </button>
                         </div>
@@ -1298,38 +1329,6 @@ const MapPage = () => {
                     </div>
                 )}
             </div>
-
-            {/* Location Prompt Modal */}
-            {showLocationPrompt && (
-                <div className="modal-overlay" onClick={() => setShowLocationPrompt(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3><i className="fas fa-map-marker-alt"></i> Location Access</h3>
-                            <button 
-                                className="modal-close" 
-                                onClick={() => setShowLocationPrompt(false)}
-                            >
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <p>To view AQI data calculated from real sensors at your current location, please login first.</p>
-                            <div className="modal-actions">
-                                <Link to="/login" className="modal-btn primary">
-                                    <i className="fas fa-sign-in-alt"></i>
-                                    Login
-                                </Link>
-                                <button 
-                                    className="modal-btn secondary" 
-                                    onClick={() => setShowLocationPrompt(false)}
-                                >
-                                    Maybe Later
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

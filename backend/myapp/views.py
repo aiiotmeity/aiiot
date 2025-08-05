@@ -753,14 +753,18 @@ import random # <-- Add this import at the top of your file
 
 @api_view(['GET'])
 @csrf_exempt
+@api_view(['GET'])
+@csrf_exempt
 def map_realtimedata_api(request):
     """
-    Corrected: Fetches real-time data and simulates 3 additional temporary stations.
+    CORRECTED: Fetches data for 2 real stations and provides location info
+    for 3 upcoming stations without simulated data.
     """
     try:
         if not initialize_aws_resources():
             return Response({'error': 'AWS initialization failed'}, status=500)
 
+        # Fetch data for the two real stations
         lora_v1_items = get_device_data("lora-v1", limit=24)
         loradev2_items = get_device_data("loradev2", limit=24)
 
@@ -777,26 +781,37 @@ def map_realtimedata_api(request):
 
         response_data = {
             'stations': {
-                'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1']},
-                'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2']}
+                'lora-v1': {
+                    'averages': avg_lora_v1, 
+                    'highest_sub_index': high_index_lora_v1, 
+                    'station_info': station_locations['lora-v1']
+                },
+                'loradev2': {
+                    'averages': avg_loradev2, 
+                    'highest_sub_index': high_index_loradev2, 
+                    'station_info': station_locations['loradev2']
+                },
+                # For upcoming stations, only send location info and null data
+                'temp-1': {
+                    'averages': None, 
+                    'highest_sub_index': None, 
+                    'station_info': station_locations['temp-1']
+                },
+                'temp-2': {
+                    'averages': None, 
+                    'highest_sub_index': None, 
+                    'station_info': station_locations['temp-2']
+                },
+                'temp-3': {
+                    'averages': None, 
+                    'highest_sub_index': None, 
+                    'station_info': station_locations['temp-3']
+                }
             }
         }
         
-        def simulate_station_data(base_avg, base_aqi):
-            if not base_avg or not base_aqi: return {}, 50
-            simulated_avg = {k: round(v * random.uniform(0.95, 1.05), 2) for k, v in base_avg.items()}
-            simulated_aqi = round(base_aqi * random.uniform(0.95, 1.05))
-            return simulated_avg, simulated_aqi
-
-        avg1, aqi1 = simulate_station_data(avg_lora_v1, high_index_lora_v1)
-        avg2, aqi2 = simulate_station_data(avg_loradev2, high_index_loradev2)
-        avg3, aqi3 = simulate_station_data(avg_lora_v1, high_index_lora_v1)
-
-        response_data['stations']['temp-1'] = {'averages': avg1, 'highest_sub_index': aqi1, 'station_info': station_locations['temp-1']}
-        response_data['stations']['temp-2'] = {'averages': avg2, 'highest_sub_index': aqi2, 'station_info': station_locations['temp-2']}
-        response_data['stations']['temp-3'] = {'averages': avg3, 'highest_sub_index': aqi3, 'station_info': station_locations['temp-3']}
-        
         return Response(response_data, status=status.HTTP_200_OK)
+
     except Exception as e:
         logger.error(f"Error in map_realtimedata_api: {e}", exc_info=True)
         return Response({'error': 'Failed to fetch real-time data'}, status=500)
@@ -1947,7 +1962,7 @@ def map_realtimedata_api(request):
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
             'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
-            'temp-1': { 'lat': 10.185, 'lng': 76.425, 'name': 'Station 3 (Kalady Town)' },
+            'temp-1': { 'lat': 10.167, 'lng': 76.435, 'name': 'Station 3 (Kalady Grama Panchayath Karyalayam)' },
             'temp-2': { 'lat': 10.175, 'lng': 76.445, 'name': 'Station 4 (Malayattoor Rd)' },
             'temp-3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 5 (Airport Rd)' },
         }

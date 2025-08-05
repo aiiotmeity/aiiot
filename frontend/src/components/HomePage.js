@@ -197,7 +197,7 @@ function HomePage() {
           <div className="hero-text-section">
             <h1 className="hero-title">Air Quality Monitoring</h1>
             <p className="hero-subtitle">Live air quality updates and insights from Kalady, Ernakulam</p>
-            <p className="hero-note">Current AQI from the nearest monitoring station</p>
+            
             
             <div className="hero-actions">
               <button onClick={handleMapNavigation} className="cta-button primary">
@@ -215,6 +215,7 @@ function HomePage() {
             <div className="aqi-display">
               <div className="aqi-header">
                 <div className="aqi-label">Current Air Quality Index</div>
+                <p className="hero-note">Current AQI from the nearest monitoring station</p>
                 <div className="aqi-timestamp">Last Updated: {displayLastUpdate}</div>
               </div>
               
@@ -351,6 +352,46 @@ function HomePage() {
                 <div className="city-name">Mattoor Junction Station</div>
                 <div className="city-type">Urban Area</div>
                 <div className="city-description">Urban junction monitoring station</div>
+              </div>
+              <div className="city-action">
+                <span>View on Map</span>
+                <i className="fas fa-arrow-right"></i>
+              </div>
+            </div>
+            <div className="city-card" onClick={handleMapNavigation}>
+              <div className="city-icon">
+                <i className="fas fa-university"></i>
+              </div>
+              <div className="city-content">
+                <div className="city-name">Kalady Grama Panchayath Karyalayam</div>
+                
+                <div className="city-description">Monitoring station</div>
+              </div>
+              <div className="city-action">
+                <span>View on Map</span>
+                <i className="fas fa-arrow-right"></i>
+              </div>
+            </div>
+            <div className="city-card" onClick={handleMapNavigation}>
+              <div className="city-icon">
+                <i className="fas fa-university"></i>
+              </div>
+              <div className="city-content">
+                <div className="city-name">Malayattoor road</div>
+                <div className="city-description"> Monitoring station</div>
+              </div>
+              <div className="city-action">
+                <span>View on Map</span>
+                <i className="fas fa-arrow-right"></i>
+              </div>
+            </div>
+            <div className="city-card" onClick={handleMapNavigation}>
+              <div className="city-icon">
+                <i className="fas fa-university"></i>
+              </div>
+              <div className="city-content">
+                <div className="city-name">Airport Road</div>
+                <div className="city-description">Monitoring station</div>
               </div>
               <div className="city-action">
                 <span>View on Map</span>

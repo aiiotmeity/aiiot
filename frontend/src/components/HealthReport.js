@@ -28,6 +28,35 @@ const getAQIStatus = (aqi) => {
     return 'Hazardous';
 };
 
+// Function to get user-friendly station names
+const getFriendlyStationName = (stationName) => {
+    if (!stationName) return 'Local Monitoring Station';
+    
+    // Remove technical terms and make user-friendly
+    const cleanName = stationName
+        .replace(/lora|LoRa|LORA/gi, '')
+        .replace(/v1|v2|V1|V2/gi, '')
+        .replace(/dev|DEV|development/gi, '')
+        .replace(/node|NODE/gi, '')
+        .replace(/sensor|SENSOR/gi, '')
+        .replace(/station|STATION/gi, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    
+    // If name becomes too short or empty, provide a generic name
+    if (cleanName.length < 3) {
+        return 'Local Air Quality Monitor';
+    }
+    
+    // Capitalize properly
+    return cleanName
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ') + ' Area';
+};
+
 // Health Recommendations based on AQI and Health Risk Level
 const getHealthRecommendations = (aqi, healthRiskLevel) => {
     const baseRecommendations = {
@@ -141,6 +170,7 @@ function HealthReport() {
     const [userLocation, setUserLocation] = useState(null);
     const [nearestStation, setNearestStation] = useState(null);
     const [interpolatedData, setInterpolatedData] = useState(null);
+    const [currentDataInfo, setCurrentDataInfo] = useState(null);
 
     const navigate = useNavigate();
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -225,6 +255,15 @@ function HealthReport() {
         return { status, color };
     }, [displayAqi]);
 
+    // Get user-friendly station name
+    const friendlyStationName = useMemo(() => {
+        if (nearestStation && reportData?.stations) {
+            const stationName = reportData.stations[nearestStation.id]?.station_info?.name;
+            return getFriendlyStationName(stationName);
+        }
+        return 'Local Air Quality Monitor';
+    }, [nearestStation, reportData]);
+
     // Event handlers
     const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
     const handleLogout = useCallback(() => {
@@ -240,8 +279,17 @@ function HealthReport() {
         window.print();
     }, []);
 
+    // This is the primary fix that prevents the crash.
     if (loading) return <div className="panel-loader"><h2>🏥 Generating Your Health Report...</h2><div className="loading-spinner"></div></div>;
-    if (error) return <div className="error-message"><h2>⚠️ Error</h2><p>{error}</p><button onClick={handleRefresh} className="retry-btn">🔄 Try Again</button></div>;
+    if (error) return (
+  <div className="error-message">
+    <h2>⚠️ Error</h2>
+    <p>{error}</p>
+    <button onClick={() => navigate('/dashboard')} className="retry-btn">
+      📊 Go to Dashboard
+    </button>
+  </div>
+);
     if (!reportData) return <div className="error-message"><h2>📊 No Report Data</h2><p>Unable to generate your health report at this time.</p></div>;
 
     const { health_assessment, stations, forecasts } = reportData;
@@ -252,7 +300,7 @@ function HealthReport() {
             {/* Real-time Status Bar */}
             <div className="realtime-status">
                 🔴 LIVE HEALTH REPORT • Updated: {currentTime.toLocaleTimeString('en-IN')} • 
-                {interpolatedData ? ' Smart Location Analysis' : ' Government Standards Applied'}
+                {interpolatedData ? ' Location-Based Analysis' : ' Government Standards Applied'}
             </div>
 
             {/* Navigation (same as Dashboard) */}
@@ -292,8 +340,8 @@ function HealthReport() {
             <div className={`alert-banner ${aqiStatus.status.toLowerCase()}`} style={{ backgroundColor: getAQIColor(displayAqi) + '20', borderBottom: `3px solid ${getAQIColor(displayAqi)}` }}>
                 ℹ️ <span>
                     <strong>CURRENT AIR QUALITY:</strong> 
-                    {interpolatedData ? ' Your Location' : ' Nearest Station'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
-                    {nearestStation && ` • Distance: ${nearestStation.distance.toFixed(1)}km from nearest sensor`}
+                    {interpolatedData ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
+                    {nearestStation && ` • Distance: ${nearestStation.distance.toFixed(1)}km from nearest monitor`}
                 </span>
             </div>
 
@@ -302,7 +350,6 @@ function HealthReport() {
                 <div className="header-section">
                     <div className="official-seal">🏛️</div>
                     <div className="government-badge">
-                        
                         Air Quality Monitoring
                     </div>
                     <div className="document-id">
@@ -311,7 +358,7 @@ function HealthReport() {
                     <h1>🏥 Official Air Quality Health Report</h1>
                     <p>
                         Personalized health assessment based on your location's air quality and personal health profile.
-                        {interpolatedData && ' Using advanced spatial interpolation for precise location analysis.'}
+                        {interpolatedData && ' Using advanced location analysis for precise monitoring.'}
                     </p>
                     <div className="report-metadata">
                         <div className="metadata-item">
@@ -321,10 +368,10 @@ function HealthReport() {
                             <strong>Patient:</strong> {username}
                         </div>
                         <div className="metadata-item">
-                            <strong>Location:</strong> {interpolatedData ? 'Your Current Location' : 'Nearest Station Data'}
+                            <strong>Location:</strong> {interpolatedData ? 'Your Current Location' : 'Nearest Monitor Data'}
                         </div>
                         <div className="metadata-item">
-                            <strong>Data Source:</strong> {nearestStation ? stations[nearestStation.id].station_info.name : 'ASIET Campus Station'}
+                            <strong>Data Source:</strong> {friendlyStationName}
                         </div>
                     </div>
                 </div>
@@ -350,7 +397,7 @@ function HealthReport() {
                         <div className="overview-card aqi-card">
                             <h4>🌬️ Current Air Quality</h4>
                             <div className="station-name">
-                                {interpolatedData ? '🎯 Your Location' : `📍 ${nearestStation ? stations[nearestStation.id].station_info.name : 'Default Station'}`}
+                                {interpolatedData ? '🎯 Your Location' : `📍 ${friendlyStationName}`}
                                 {nearestStation && (
                                     <div className="distance-info">
                                         Distance: {nearestStation.distance.toFixed(1)}km
@@ -502,21 +549,23 @@ function HealthReport() {
                     </div>
                 )}
                 
-                {/* Dashboard Grid */}
+                {/* Dashboard Grid - Mobile Optimized */}
                 <div className="dashboard-grid">
                     <div className="dashboard-card forecast-card">
                         <h3>📊 4-Day Air Quality Forecast</h3>
                         <div className="forecast-info">
                             <div className="forecast-source">
-                                Data from: {nearestStation ? stations[nearestStation.id].station_info.name : 'ASIET Campus Station'}
+                                Data from: {friendlyStationName}
                             </div>
                             <div className="forecast-update">
                                 Last updated: {currentTime.toLocaleTimeString()}
                             </div>
                         </div>
-                        <Suspense fallback={<div className="panel-loader">📊 Loading forecast chart...</div>}>
-                            <LazyChart forecastData={forecastForNearest?.data} selectedParameter={'pm25'} />
-                        </Suspense>
+                        <div className="forecast-chart-container">
+                            <Suspense fallback={<div className="panel-loader">📊 Loading forecast chart...</div>}>
+                                <LazyChart forecastData={forecastForNearest?.data} selectedParameter={'pm25'} />
+                            </Suspense>
+                        </div>
                     </div>
                     
                     <div className="dashboard-card health-details-card">
@@ -548,7 +597,6 @@ function HealthReport() {
 
                 {/* Action Buttons */}
                 <div className="action-buttons">
-                    
                     <button onClick={handlePrint} className="action-btn primary">
                         🖨️ Print Report
                     </button>
@@ -570,7 +618,7 @@ function HealthReport() {
                                 <div className="source-title">Location Analysis</div>
                                 <div className="source-desc">
                                     {interpolatedData ? 
-                                        `Smart interpolation used - you are ${nearestStation?.distance.toFixed(1)}km from nearest sensor` :
+                                        `Location-based calculation - you are ${nearestStation?.distance.toFixed(1)}km from nearest air quality monitor` :
                                         `Using data from nearest monitoring station (${nearestStation?.distance.toFixed(1)}km away)`
                                     }
                                 </div>
@@ -599,7 +647,7 @@ function HealthReport() {
                     <div className="disclaimer-content">
                         <p><strong>🏛️ Data Authority:</strong> Air quality data sourced from Government of Kerala monitoring stations operated under Central Pollution Control Board (CPCB) guidelines.</p>
                         <p><strong>⚕️ Health Advisory:</strong> Recommendations are based on standard government health guidelines. Consult healthcare professionals for personalized medical advice.</p>
-                        <p><strong>📊 Data Accuracy:</strong> Air quality readings are updated every 30 seconds from certified monitoring equipment. {interpolatedData && 'Enhanced spatial interpolation provides location-specific calculations.'}</p>
+                        <p><strong>📊 Data Accuracy:</strong> Air quality readings are updated every 30 seconds from certified monitoring equipment. {interpolatedData && 'Enhanced location analysis provides area-specific calculations.'}</p>
                         <p><strong>🔄 Updates:</strong> This report reflects current conditions. Air quality can change rapidly - check live updates frequently.</p>
                         <p><strong>📞 Emergency:</strong> In case of severe health symptoms related to air pollution, immediately contact medical emergency services (108) or Kerala Pollution Control Board (0471-2418566).</p>
                     </div>
@@ -625,7 +673,6 @@ function HealthReport() {
               <h4>Quick Links</h4>
               <ul>
                 <li><a href="/">🏠 Home</a></li>
-                
                 <li><a href="/health-report">📄 Health Report</a></li>
                 <li><a href="/add-family">👥 Add Family</a></li>
               </ul>
@@ -633,9 +680,9 @@ function HealthReport() {
             <div className="footer-section">
               <h4>Data Sources</h4>
               <ul>
-                <li>ASIET Campus Station (Direct Sensor)</li>
-                <li>Mattoor Junction Station (Direct Sensor)</li>
-                <li>Advanced spatial interpolation algorithms</li>
+                <li>Campus Air Quality Monitor (Direct)</li>
+                <li>Mattoor Junction Monitor (Direct)</li>
+                <li>Advanced location analysis algorithms</li>
                 <li>Weather integration</li>
               </ul>
             </div>
@@ -654,7 +701,7 @@ function HealthReport() {
           </div>
           <div className="footer-bottom">
             <p>&copy; 2025 AirAware Kerala - Smart Air Quality Monitoring System</p>
-            <p>Powered by real sensor data • Advanced interpolation • Government approved</p>
+            <p>Powered by real monitor data • Advanced location analysis • Government approved</p>
           </div>
         </div>
       </footer>

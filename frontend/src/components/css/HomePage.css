@@ -712,7 +712,10 @@ ul {
   color: var(--text-secondary);
   font-weight: 500;
 }
-
+.login-btn {
+    background: #f21c1c !important;
+    color: #b91c1c !important;
+}
 .aqi-main {
   text-align: center;
 }
@@ -1695,6 +1698,7 @@ ul {
     font-size: 1.5rem;
   }
   
+  
   .navbar-brand img {
     width: 40px;
     height: 40px;
@@ -1784,7 +1788,7 @@ ul {
   }
   
   .nav-link.login-btn:hover {
-    color: white !important;
+    color: rgb(247, 247, 247) !important;
     background: linear-gradient(135deg, var(--primary-dark), #1e40af) !important;
     transform: translateY(-2px);
   }
