@@ -993,8 +993,8 @@ const MapPage = () => {
                                 <li><Link to="/map" className="nav-link active">Live Map</Link></li>
                                 {user && (
                                     <>
-                                        <li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
-                                        <li><Link to="/add-family" className="nav-link">Family</Link></li>
+                                       {/*<li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
+                                        <li><Link to="/add-family" className="nav-link">Family</Link></li>*/}
                                     </>
                                 )}
                             </ul>

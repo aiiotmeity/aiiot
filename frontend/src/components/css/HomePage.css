@@ -1048,7 +1048,13 @@ ul {
 }
 
 .aqi-scale-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-.cities-grid { grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); }
+/* HomePage.css */
+
+.cities-grid { 
+  /* This is the main fix: we specify 5 columns */
+  grid-template-columns: repeat(5, 1fr); 
+  gap: 1.5rem; /* Reduced the gap slightly to help them fit */
+}
 .services-grid { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
 
 .aqi-scale-item, .city-card, .service-card {

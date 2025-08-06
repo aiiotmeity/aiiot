@@ -459,7 +459,6 @@ function Dashboard() {
         setCurrentDataInfo({
           method: 'location_interpolation',
           source: 'interpolated',
-          explanation: `You are ${nearestDistance.toFixed(1)}km from the nearest sensor. Showing calculated air quality for your exact location using data from nearby monitoring stations.`,
           values: idwResult.interpolated_values,
           aqi: idwResult.interpolated_aqi,
           station_name: `Your Location (${userLocationName?.city || 'Current Position'})`,
@@ -472,7 +471,6 @@ function Dashboard() {
         setCurrentDataInfo({
           method: 'nearest_station',
           source: 'nearest_station',
-          explanation: `You are ${nearestDistance.toFixed(1)}km from the nearest sensor. Showing data from ${nearestStation.station_info.name} (nearest monitoring station).`,
           values: nearestStation.averages || {},
           aqi: nearestStation.highest_sub_index || 50,
           station_name: nearestStation.station_info.name,
@@ -796,9 +794,7 @@ function Dashboard() {
           {locationStatus === 'failed' && (
             <button onClick={handleEnableLocation} className="action-btn primary">📍 Enable Location for Personalized Data</button>
           )}
-          <button onClick={handleRefreshData} className="action-btn secondary" disabled={loading}>
-            {loading ? '🔄 Refreshing...' : '🔄 Refresh Data'}
-          </button>
+          
         </div>
 
         <div className="metrics-section">
@@ -920,7 +916,7 @@ function Dashboard() {
           <h3>⚡ System Status & Data Source</h3>
           <div className="status-grid">
             <div className="status-item"><div className="status-icon">📍</div><div className="status-content"><div className="status-title">Location Status</div><div className="status-value">{locationStatus === 'gps_detected' ? 'GPS Active' : locationStatus === 'detecting' ? 'Detecting...' : locationStatus === 'failed' ? 'Failed' : 'Default'}</div></div></div>
-            <div className="status-item"><div className="status-icon">📊</div><div className="status-content"><div className="status-title">Data Method</div><div className="status-value">{currentDataInfo?.is_interpolated ? 'Smart Interpolation' : 'Direct Sensor'}</div></div></div>
+            <div className="status-item"><div className="status-icon">📊</div><div className="status-content"><div className="status-title">Data Method</div><div className="status-value">{currentDataInfo?.is_interpolated ? 'Advanced Data Interpolation' : 'Direct Sensor'}</div></div></div>
             <div className="status-item"><div className="status-icon">📡</div><div className="status-content"><div className="status-title">Data Source</div><div className="status-value">{currentDataInfo?.station_name || 'Default Station'}</div></div></div>
             <div className="status-item"><div className="status-icon">🔄</div><div className="status-content"><div className="status-title">Last Update</div><div className="status-value">{lastUpdateTime.toLocaleTimeString()}</div></div></div>
           </div>
@@ -930,9 +926,8 @@ function Dashboard() {
               <p>{currentDataInfo.explanation}</p>
               {currentDataInfo.is_interpolated && (
                 <div className="interpolation-details">
-                  <strong>🎯 Spatial Interpolation Method:</strong>
+                  <strong>🎯</strong>
                   <ul>
-                    <li>Using Inverse Distance Weighting (IDW) algorithm</li>
                     <li>Data from {Object.keys(dashboardData?.stations || {}).length} monitoring stations</li>
                     <li>Personalized estimates for your exact coordinates</li>
                     <li>Automatically updates when you move to a new location</li>

@@ -22,6 +22,7 @@ function HealthAssessment() {
   const [username, setUsername] = useState('');
   const [saveStatus, setSaveStatus] = useState('');
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+  const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
 
   const navigate = useNavigate();
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -43,6 +44,31 @@ function HealthAssessment() {
           window.removeEventListener('resize', handleResize);
         };
     }, []);
+
+    // In HealthAssessment.js, add this block after your other useEffect hooks
+
+  // CHECK IF USER HAS A COMPLETED ASSESSMENT WHEN THE PAGE LOADS
+  useEffect(() => {
+    const checkAssessmentStatus = async () => {
+      // Get the current user's name from localStorage
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const currentUsername = user.name;
+
+      if (currentUsername && currentUsername !== 'User') {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/health-assessment-status/?username=${currentUsername}`);
+          const data = await response.json();
+          if (response.ok) {
+            setHasCompletedAssessment(data.has_assessment);
+          }
+        } catch (error) {
+          console.error('Failed to check health assessment status:', error);
+        }
+      }
+    };
+
+    checkAssessmentStatus();
+  }, [API_BASE_URL]); // This effect runs once when the component mounts
 
   // Memoize particles to prevent recreation on every render
   const particles = useMemo(() => {
@@ -566,29 +592,35 @@ function HealthAssessment() {
               📋
             </div>
             <h1>Health Assessment Questionnaire</h1>
+            <p><a href="/">🏠 Home</a></p>
             <p>Hello, {username}! Let's evaluate your health status for personalized air quality recommendations.</p>
+            
           </div>
           
           <div className="back-button-container">
-            <button 
-              onClick={() => navigate('/dashboard')} 
-              className="back-button"
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <span>←</span>
-              Back to Profile
-            </button>
-          </div>
+          <button 
+            onClick={() => navigate('/dashboard')} 
+            className="back-button"
+            // The button is now disabled if the user has NOT completed the assessment
+            disabled={!hasCompletedAssessment}
+            // This provides a helpful message when the user hovers over the disabled button
+            title={!hasCompletedAssessment ? "Please complete the assessment to view your profile" : "Back to Profile"}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: hasCompletedAssessment ? '#6c757d' : '#cccccc', // Visual cue for disabled
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: hasCompletedAssessment ? 'pointer' : 'not-allowed', // Change cursor when disabled
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <span>←</span>
+            Back to Profile
+          </button>
+        </div>
         </div>
 
         <div className="progress-container">

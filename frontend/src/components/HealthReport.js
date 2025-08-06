@@ -158,6 +158,32 @@ const getEmergencyContacts = (aqi) => {
 };
 
 function HealthReport() {
+    // In HealthReport.js, add this function near the top with your other helpers.
+
+const calculateInterpolatedAqi = (locationData, stations) => {
+    let totalWeight = 0;
+    let weightedAqi = 0;
+    
+    stations.forEach(station => {
+        const distance = calculateDistance(
+            locationData.lat,
+            locationData.lng,
+            station.station_info.lat,
+            station.station_info.lng
+        );
+        // Use a small minimum distance to avoid division by zero
+        const safeDistance = Math.max(distance, 0.001);
+        const weight = 1.0 / (safeDistance ** 2);
+        totalWeight += weight;
+        weightedAqi += (station.highest_sub_index || 0) * weight;
+    });
+
+    if (totalWeight > 0) {
+        return Math.round(weightedAqi / totalWeight);
+    }
+    // Fallback to the first station's AQI if something goes wrong
+    return stations[0]?.highest_sub_index || 50; 
+};
     const { user } = useAuth();
     const [username] = useState(user?.name || null);
     const [reportData, setReportData] = useState(null);
@@ -181,64 +207,151 @@ function HealthReport() {
         return () => clearInterval(timer);
     }, []);
 
+    // In HealthReport.js, replace the entire fetchReportData function
+
     const fetchReportData = useCallback(async () => {
-        if (!username) { navigate('/login'); return; }
+        if (!username) {
+            navigate('/login');
+            return;
+        }
         setLoading(true);
+        setError(null); // Reset error on new fetch
         try {
             const url = `${API_BASE_URL}/api/health-report/?username=${username}`;
             const response = await fetch(url);
+
+            // THIS IS THE KEY FIX FOR THE "Unexpected token '<'" ERROR
             if (!response.ok) {
-                const errData = await response.json();
-                if (errData.redirect_to) navigate(errData.redirect_to);
-                throw new Error(errData.error);
+                // If the server sends a non-200 response, it might be HTML.
+                // We check if the user should be redirected or just show an error.
+                const errorText = await response.text();
+                try {
+                    // See if the error response is actually JSON with a redirect instruction
+                    const errData = JSON.parse(errorText);
+                    if (errData.redirect_to) {
+                        navigate(errData.redirect_to);
+                        return; // Stop execution
+                    }
+                    throw new Error(errData.error || `Server error: ${response.status}`);
+                } catch (jsonError) {
+                    // If parsing fails, it's definitely not JSON (it's HTML).
+                    // This happens when you are logged out and the server sends a login page.
+                    throw new Error("You are not logged in. Redirecting...");
+                }
             }
+            
             const data = await response.json();
             setReportData(data);
+
         } catch (err) {
             setError(err.message);
+            // If the error indicates a login issue, redirect to the login page.
+            if (err.message.includes("logged in")) {
+                setTimeout(() => navigate('/login'), 2000);
+            }
         } finally {
             setLoading(false);
         }
     }, [username, navigate, API_BASE_URL]);
 
-    useEffect(() => {
-        fetchReportData();
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                (err) => console.warn("Geolocation failed.")
-            );
-        }
-    }, [fetchReportData]);
+   
+    // In HealthReport.js
+// Add this corrected block in place of the two you deleted.
 
-    // --- EXACT SAME LOGIC as Dashboard.js for consistency ---
-    useEffect(() => {
-        if (userLocation && reportData?.stations) {
-            const stations = Object.entries(reportData.stations);
-            let nearestDist = Infinity, nearestId = null;
-            stations.forEach(([id, station]) => {
-                const dist = calculateDistance(userLocation.lat, userLocation.lng, station.station_info.lat, station.station_info.lng);
-                if (dist < nearestDist) { nearestDist = dist; nearestId = id; }
-            });
-            setNearestStation({ id: nearestId, distance: nearestDist });
-            
-            let weightedSum = 0, weightSum = 0;
-            stations.forEach(([, station]) => {
-                const dist = calculateDistance(userLocation.lat, userLocation.lng, station.station_info.lat, station.station_info.lng);
-                const weight = 1 / Math.pow(dist === 0 ? 0.001 : dist, 2);
-                weightedSum += (station.highest_sub_index || 0) * weight;
-                weightSum += weight;
-            });
-            if (weightSum > 0) {
-                setInterpolatedData({ aqi: Math.round(weightedSum / weightSum) });
-            }
+  useEffect(() => {
+    // Start by fetching the main report data
+    fetchReportData();
+
+    // Then, try to get the user's GPS location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          // If successful, update the userLocation state
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => {
+          console.warn("Geolocation failed. Using default station data.");
+          // If GPS fails, set location to null
+          setUserLocation(null);
         }
-    }, [userLocation, reportData]);
+      );
+    } else {
+      // If the browser doesn't support geolocation, set location to null
+      setUserLocation(null);
+    }
+  }, [fetchReportData]); // This effect runs once to fetch data and location
+
+  // --- THIS NEW useEffect PERFORMS THE CALCULATIONS AND FIXES THE BUG ---
+  // In HealthReport.js, replace the entire location-processing useEffect
+
+  useEffect(() => {
+    // Only run this logic if we have the main report data
+    if (!reportData?.stations) return;
+
+    // Use Object.entries to get both the ID and the station data
+    const stationEntries = Object.entries(reportData.stations);
+    if (stationEntries.length === 0) return;
+
+    // --- If we have the user's location (within 1km), calculate their specific AQI ---
+    if (userLocation) {
+      let nearestDist = Infinity;
+      let nearestStationId = null;
+      let nearestStationDetails = null;
+
+      stationEntries.forEach(([id, station]) => {
+        const dist = calculateDistance(userLocation.lat, userLocation.lng, station.station_info.lat, station.station_info.lng);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestStationId = id; // Store the correct ID ('lora-v1')
+          nearestStationDetails = station;
+        }
+      });
+      
+      // Check if the user is within the 1km radius for interpolation
+      if (nearestDist <= 1.0) {
+        const interpolatedAqi = calculateInterpolatedAqi(userLocation, Object.values(reportData.stations));
+        setCurrentDataInfo({
+          is_interpolated: true,
+          aqi: interpolatedAqi,
+          distance: nearestDist,
+          station_name: "Your Exact Location"
+        });
+      } else {
+        // If user is outside 1km, use the nearest station's data
+        setCurrentDataInfo({
+          is_interpolated: false,
+          aqi: nearestStationDetails.highest_sub_index,
+          distance: nearestDist,
+          station_name: nearestStationDetails.station_info.name
+        });
+      }
+      // CRITICAL FIX: Set the nearestStation with the correct ID for the forecast
+      setNearestStation({ id: nearestStationId, distance: nearestDist });
+
+    } else {
+      // --- If we DON'T have a location, use the first station as the default ---
+      const [defaultId, defaultStation] = stationEntries[0];
+      
+      setCurrentDataInfo({
+        is_interpolated: false,
+        aqi: defaultStation.highest_sub_index,
+        distance: null,
+        station_name: defaultStation.station_info.name
+      });
+      // Set nearestStation with the default ID for the forecast
+      setNearestStation({ id: defaultId, distance: null });
+    }
+  }, [reportData, userLocation]); // This effect re-runs whenever data or location changes
+
+
+
 
     // Memoized calculations
     const displayAqi = useMemo(() => {
-        return interpolatedData?.aqi || Object.values(reportData?.stations || {})[0]?.highest_sub_index || 0;
-    }, [interpolatedData, reportData]);
+        // This now directly and reliably gets the calculated AQI
+        return currentDataInfo?.aqi || 0;
+    }, [currentDataInfo]);
+
 
     const healthRecommendations = useMemo(() => {
         if (!reportData?.health_assessment) return null;
@@ -257,12 +370,9 @@ function HealthReport() {
 
     // Get user-friendly station name
     const friendlyStationName = useMemo(() => {
-        if (nearestStation && reportData?.stations) {
-            const stationName = reportData.stations[nearestStation.id]?.station_info?.name;
-            return getFriendlyStationName(stationName);
-        }
-        return 'Local Air Quality Monitor';
-    }, [nearestStation, reportData]);
+        // This now uses the correct station name from currentDataInfo
+        return getFriendlyStationName(currentDataInfo?.station_name);
+    }, [currentDataInfo]);
 
     // Event handlers
     const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
@@ -280,7 +390,10 @@ function HealthReport() {
     }, []);
 
     // This is the primary fix that prevents the crash.
-    if (loading) return <div className="panel-loader"><h2>🏥 Generating Your Health Report...</h2><div className="loading-spinner"></div></div>;
+    // This one-line change prevents the crash
+    if (loading || !currentDataInfo) {
+        return <div className="panel-loader"><h2>🏥 Generating Your Health Report...</h2><div className="loading-spinner"></div></div>;
+    }
     if (error) return (
   <div className="error-message">
     <h2>⚠️ Error</h2>
@@ -341,7 +454,7 @@ function HealthReport() {
                 ℹ️ <span>
                     <strong>CURRENT AIR QUALITY:</strong> 
                     {interpolatedData ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
-                    {nearestStation && ` • Distance: ${nearestStation.distance.toFixed(1)}km from nearest monitor`}
+                    {nearestStation && nearestStation.distance !== null && ` • Distance: ${nearestStation.distance.toFixed(1)}km from nearest monitor`}
                 </span>
             </div>
 
@@ -398,7 +511,7 @@ function HealthReport() {
                             <h4>🌬️ Current Air Quality</h4>
                             <div className="station-name">
                                 {interpolatedData ? '🎯 Your Location' : `📍 ${friendlyStationName}`}
-                                {nearestStation && (
+                                {nearestStation && nearestStation.distance !== null && (
                                     <div className="distance-info">
                                         Distance: {nearestStation.distance.toFixed(1)}km
                                     </div>
@@ -570,8 +683,10 @@ function HealthReport() {
                     
                     <div className="dashboard-card health-details-card">
                         <h3>📋 Your Health Profile Details</h3>
+                       
                         <div className="health-details-list">
-                            {Object.entries(health_assessment.details).map(([key, value]) => (
+                            {/* This check ensures .details exists before we try to use it */}
+                            {health_assessment.details && Object.entries(health_assessment.details).map(([key, value]) => (
                                 <div key={key} className="health-detail-item">
                                     <div className="detail-label">{key}:</div>
                                     <div className="detail-value">
@@ -618,10 +733,10 @@ function HealthReport() {
                                 <div className="source-title">Location Analysis</div>
                                 <div className="source-desc">
                                     {interpolatedData ? 
-                                        `Location-based calculation - you are ${nearestStation?.distance.toFixed(1)}km from nearest air quality monitor` :
-                                        `Using data from nearest monitoring station (${nearestStation?.distance.toFixed(1)}km away)`
-                                    }
-                                </div>
+                                    `Location-based calculation - you are ${nearestStation?.distance?.toFixed(1)}km from nearest air quality monitor` :
+                                    `Using data from nearest monitoring station (${nearestStation?.distance?.toFixed(1)}km away)`
+                                }
+                            </div>
                             </div>
                         </div>
                         <div className="source-item">

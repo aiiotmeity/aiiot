@@ -14,7 +14,7 @@ function HomePage() {
   
   // FIX: Added isMobileView state to track screen size
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
-
+  const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
   // --- Add hooks for navigation and authentication ---
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -35,6 +35,26 @@ function HomePage() {
     };
   }, []);
 
+   useEffect(() => {
+    const checkAssessmentStatus = async () => {
+      // Only check if there is a logged-in user
+      if (user) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/health-assessment-status/?username=${user.name}`);
+          const data = await response.json();
+          if (response.ok) {
+            setHasCompletedAssessment(data.has_assessment);
+          }
+        } catch (error) {
+          console.error('Failed to check health assessment status:', error);
+        }
+      }
+    };
+
+    checkAssessmentStatus();
+  }, [user, API_BASE_URL]); 
+  
+
   // Page load tracking
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -42,6 +62,9 @@ function HomePage() {
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
+  // In src/components/HomePage.js
+
+ // This runs whenever the user logs in or out
 
   // Enhanced feature popup logic
   useEffect(() => {
@@ -110,15 +133,30 @@ function HomePage() {
     setIsMenuOpen(false);
     navigate('/map');
   }, [navigate]);
+
   const handleDashboardNavigation = useCallback(() => {
     setIsMenuOpen(false);
-    user ? navigate('/dashboard') : navigate('/login');
-  }, [user, navigate]);
+    if (user) {
+      // If the user has completed the assessment, go to the dashboard.
+      if (hasCompletedAssessment) {
+        navigate('/dashboard');
+      } else {
+        // Otherwise, send them to the assessment page.
+        navigate('/health-assessment');
+      }
+    } else {
+      // If no user, go to login.
+      navigate('/login');
+    }
+  }, [user, navigate, hasCompletedAssessment]);
+
+
   const handleLogout = useCallback(() => {
     logout();
     setIsMenuOpen(false);
     navigate('/');
   }, [logout, navigate]);
+
   const handleAdminPortalClick = useCallback(() => {
     localStorage.removeItem('admin_user');
     navigate('/admin/login');
@@ -212,35 +250,40 @@ function HomePage() {
           </div>
           
           <div className="aqi-display-section">
-            <div className="aqi-display">
-              <div className="aqi-header">
-                <div className="aqi-label">Current Air Quality Index</div>
-                <p className="hero-note">Current AQI from the nearest monitoring station</p>
-                <div className="aqi-timestamp">Last Updated: {displayLastUpdate}</div>
-              </div>
+          <div className="aqi-display">
+            <div className="aqi-header">
+              <div className="aqi-label">Current Air Quality Index</div>
               
-              <div className="aqi-main">
-                <div className="aqi-value" style={{ color: aqiStatus.color }}>
-                  {displayAQI}
-                </div>
-                <div className="aqi-status-container">
-                  <div className="aqi-status" style={{ color: aqiStatus.color }}>
-                    {aqiStatus.status}
-                  </div>
-                  <div className="aqi-icon" style={{ color: aqiStatus.color }}>
-                    <i className={aqiStatus.icon}></i>
-                  </div>
-                </div>
-              </div>
+              {/* THIS IS THE CORRECTED SECTION */}
+              <p className="hero-note">
+                Live AQI from {displayStationName}
+              </p>
               
-              {error && (
-                <div className="aqi-error">
-                  <i className="fas fa-exclamation-triangle"></i>
-                  {error}
-                </div>
-              )}
+              <div className="aqi-timestamp">Last Updated: {displayLastUpdate}</div>
             </div>
+            
+            <div className="aqi-main">
+              <div className="aqi-value" style={{ color: aqiStatus.color }}>
+                {displayAQI}
+              </div>
+              <div className="aqi-status-container">
+                <div className="aqi-status" style={{ color: aqiStatus.color }}>
+                  {aqiStatus.status}
+                </div>
+                <div className="aqi-icon" style={{ color: aqiStatus.color }}>
+                  <i className={aqiStatus.icon}></i>
+                </div>
+              </div>
+            </div>
+            
+            {error && (
+              <div className="aqi-error">
+                <i className="fas fa-exclamation-triangle"></i>
+                {error}
+              </div>
+            )}
           </div>
+        </div>
         </div>
       </section>
 
@@ -256,7 +299,7 @@ function HomePage() {
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-number">5</div>
-              <div className="stat-label">Active Monitoring Stations</div>
+              <div className="stat-label">Monitoring Stations</div>
             </div>
             <div className="stat-card">
               <div className="stat-number">24/7</div>
@@ -321,86 +364,97 @@ function HomePage() {
       </section>
 
       {/* --- Cities Section --- */}
-      <section className="section cities-section" id="cities">
-        <div className="section-container">
-          <div className="section-header">
-            <h2 className="section-title">Monitoring Locations</h2>
-            <p className="section-subtitle">
-              Air quality data from strategic locations across Ernakulam district
-            </p>
-          </div>
-          <div className="cities-grid">
-            <div className="city-card" onClick={handleMapNavigation}>
-              <div className="city-icon">
-                <i className="fas fa-university"></i>
-              </div>
-              <div className="city-content">
-                <div className="city-name">ASIET Campus Station</div>
-                <div className="city-type">Educational Institution</div>
-                <div className="city-description">Main campus monitoring station</div>
-              </div>
-              <div className="city-action">
-                <span>View on Map</span>
-                <i className="fas fa-arrow-right"></i>
-              </div>
-            </div>
-            <div className="city-card" onClick={handleMapNavigation}>
-              <div className="city-icon">
-                <i className="fas fa-city"></i>
-              </div>
-              <div className="city-content">
-                <div className="city-name">Mattoor Junction Station</div>
-                <div className="city-type">Urban Area</div>
-                <div className="city-description">Urban junction monitoring station</div>
-              </div>
-              <div className="city-action">
-                <span>View on Map</span>
-                <i className="fas fa-arrow-right"></i>
-              </div>
-            </div>
-            <div className="city-card" onClick={handleMapNavigation}>
-              <div className="city-icon">
-                <i className="fas fa-university"></i>
-              </div>
-              <div className="city-content">
-                <div className="city-name">Kalady Grama Panchayath Karyalayam</div>
-                
-                <div className="city-description">Monitoring station</div>
-              </div>
-              <div className="city-action">
-                <span>View on Map</span>
-                <i className="fas fa-arrow-right"></i>
-              </div>
-            </div>
-            <div className="city-card" onClick={handleMapNavigation}>
-              <div className="city-icon">
-                <i className="fas fa-university"></i>
-              </div>
-              <div className="city-content">
-                <div className="city-name">Malayattoor road</div>
-                <div className="city-description"> Monitoring station</div>
-              </div>
-              <div className="city-action">
-                <span>View on Map</span>
-                <i className="fas fa-arrow-right"></i>
-              </div>
-            </div>
-            <div className="city-card" onClick={handleMapNavigation}>
-              <div className="city-icon">
-                <i className="fas fa-university"></i>
-              </div>
-              <div className="city-content">
-                <div className="city-name">Airport Road</div>
-                <div className="city-description">Monitoring station</div>
-              </div>
-              <div className="city-action">
-                <span>View on Map</span>
-                <i className="fas fa-arrow-right"></i>
-              </div>
-            </div>
-          </div>
+      // In src/components/HomePage.js
+
+<section className="section cities-section" id="cities">
+  <div className="section-container">
+    <div className="section-header">
+      <h2 className="section-title">Monitoring Locations</h2>
+      <p className="section-subtitle">
+        Air quality data from strategic locations across Ernakulam district
+      </p>
+    </div>
+    <div className="cities-grid">
+      <div className="city-card" onClick={handleMapNavigation}>
+        <div className="city-icon">
+          <i className="fas fa-university"></i>
         </div>
-      </section>
+        <div className="city-content">
+          <div className="city-name">ASIET Campus Station</div>
+          <div className="city-type">Educational Institution</div>
+          <div className="city-description">Main campus monitoring station</div>
+        </div>
+        <div className="city-action">
+          <span>View on Map</span>
+          <i className="fas fa-arrow-right"></i>
+        </div>
+      </div>
+      <div className="city-card" onClick={handleMapNavigation}>
+        <div className="city-icon">
+          <i className="fas fa-city"></i>
+        </div>
+        <div className="city-content">
+          <div className="city-name">Mattoor Junction Station</div>
+          <div className="city-type">Urban Area</div>
+          <div className="city-description">Urban junction monitoring station</div>
+        </div>
+        <div className="city-action">
+          <span>View on Map</span>
+          <i className="fas fa-arrow-right"></i>
+        </div>
+      </div>
+
+      {/* --- CORRECTED CARDS START HERE --- */}
+      <div className="city-card" onClick={handleMapNavigation}>
+        <div className="city-icon">
+          <i className="fas fa-building-columns"></i>
+        </div>
+        <div className="city-content">
+          <div className="city-name">Kalady Grama Panchayath Karyalayam</div>
+          {/* Added city-type */}
+          <div className="city-type">Civic Center</div>
+          <div className="city-description">Monitoring station</div>
+        </div>
+        <div className="city-action">
+          <span>View on Map</span>
+          <i className="fas fa-arrow-right"></i>
+        </div>
+      </div>
+      <div className="city-card" onClick={handleMapNavigation}>
+        <div className="city-icon">
+          <i className="fas fa-road"></i>
+        </div>
+        <div className="city-content">
+          <div className="city-name">Malayattoor road</div>
+          {/* Added city-type */}
+          <div className="city-type">Residential Area</div>
+          <div className="city-description">Monitoring station</div>
+        </div>
+        <div className="city-action">
+          <span>View on Map</span>
+          <i className="fas fa-arrow-right"></i>
+        </div>
+      </div>
+      <div className="city-card" onClick={handleMapNavigation}>
+        <div className="city-icon">
+          <i className="fas fa-plane-departure"></i>
+        </div>
+        <div className="city-content">
+          <div className="city-name">Airport Road</div>
+          {/* Added city-type */}
+          <div className="city-type">Transportation Hub</div>
+          <div className="city-description">Monitoring station</div>
+        </div>
+        <div className="city-action">
+          <span>View on Map</span>
+          <i className="fas fa-arrow-right"></i>
+        </div>
+      </div>
+      {/* --- CORRECTED CARDS END HERE --- */}
+
+    </div>
+  </div>
+</section>
 
       {/* --- Services Section --- */}
       <section className="section services-section" id="services">
