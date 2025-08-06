@@ -39,7 +39,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
            Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  return R * c * 1000; // Returns distance in meters
 };
 
 // Known accurate locations for the area
@@ -98,7 +98,7 @@ const getLocationName = async (lat, lng) => {
     const [knownLat, knownLng] = key.split('_').map(Number);
     const distance = calculateDistance(lat, lng, knownLat, knownLng);
     if (distance < 2.0) {
-      console.log(`✅ Using nearby known location: ${location.display_name} (${distance.toFixed(2)}km away)`);
+      console.log(`✅ Using nearby known location: ${location.display_name} (${distance.toFixed(2)}m away)`);
       return {
         ...location,
         display_name: distance < 0.5 ? location.display_name : `Near ${location.city}, ${location.state}`
@@ -464,7 +464,7 @@ function Dashboard() {
           station_name: `Your Location (${userLocationName?.city || 'Current Position'})`,
           is_interpolated: true,
           show_distance_message: true,
-          distance_message: `📍 You are within sensor range (${nearestDistance.toFixed(1)}km from nearest), showing calculated values for your exact location`,
+          distance_message: `📍 You are within sensor range (${nearestDistance.toFixed(1)}m from nearest), showing calculated values for your exact location`,
           data_type: 'Your Location Data (Calculated)'
         });
       } else {
@@ -476,7 +476,7 @@ function Dashboard() {
           station_name: nearestStation.station_info.name,
           is_interpolated: false,
           show_distance_message: true,
-          distance_message: `📍 You are ${nearestDistance.toFixed(1)}km from the nearest sensor node, so you are seeing data from ${nearestStation.station_info.name}`,
+          distance_message: `📍 You are ${nearestDistance.toFixed(1)}m from the nearest sensor node, so you are seeing data from ${nearestStation.station_info.name}`,
           data_type: 'Nearest Station Data'
         });
       }
@@ -634,7 +634,7 @@ function Dashboard() {
               📍 {locationName} {accuracy && `(${accuracy})`}
               {nearestStationInfo && (
                 <span style={{ color: '#6b7280', fontSize: '0.9em' }}>
-                  {' '} → Nearest: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}km)
+                  {' '} → Nearest: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}m)
                 </span>
               )}
             </span>
@@ -734,7 +734,7 @@ function Dashboard() {
       <div className={`alert-banner ${aqiStatus.class}`}>
         ℹ️ <span>
           {currentDataInfo?.station_name || 'Your Location'} AQI: {Math.round(currentAQI)} - {aqiStatus.status}
-          {nearestStationInfo && !isMobileView && ` • Distance to nearest sensor: ${nearestStationInfo.distance.toFixed(1)}km`}
+          {nearestStationInfo && !isMobileView && ` • Distance to nearest sensor: ${nearestStationInfo.distance.toFixed(1)}m`}
         </span>
       </div>
 
@@ -920,22 +920,7 @@ function Dashboard() {
             <div className="status-item"><div className="status-icon">📡</div><div className="status-content"><div className="status-title">Data Source</div><div className="status-value">{currentDataInfo?.station_name || 'Default Station'}</div></div></div>
             <div className="status-item"><div className="status-icon">🔄</div><div className="status-content"><div className="status-title">Last Update</div><div className="status-value">{lastUpdateTime.toLocaleTimeString()}</div></div></div>
           </div>
-          {currentDataInfo && (
-            <div className="data-explanation">
-              <h4>📋 Current Data Source Explanation:</h4>
-              <p>{currentDataInfo.explanation}</p>
-              {currentDataInfo.is_interpolated && (
-                <div className="interpolation-details">
-                  <strong>🎯</strong>
-                  <ul>
-                    <li>Data from {Object.keys(dashboardData?.stations || {}).length} monitoring stations</li>
-                    <li>Personalized estimates for your exact coordinates</li>
-                    <li>Automatically updates when you move to a new location</li>
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
+          
         </div>
 
         
@@ -965,8 +950,8 @@ function Dashboard() {
             <div className="footer-section">
               <h4>Data Sources</h4>
               <ul>
-                <li>ASIET Campus Station (Direct Sensor)</li>
-                <li>Mattoor Junction Station (Direct Sensor)</li>
+                <li>ASIET Campus Station </li>
+                <li>Mattoor Junction Station</li>
                 <li>Advanced spatial interpolation algorithms</li>
                 <li>Weather integration</li>
               </ul>

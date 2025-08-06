@@ -45,7 +45,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    return R * c * 1000; // Returns distance in meters
 };
 
 const createAqiIcon = (aqi, isComingSoon = false) => {
@@ -325,7 +325,7 @@ const MapPage = () => {
                 station.station_info.lng
             );
 
-            console.log(`📍 Station ${stationId}: ${distance.toFixed(2)}km away`);
+            console.log(`📍 Station ${stationId}: ${distance.toFixed(2)}m away`);
 
             // Avoid division by zero
             const safeDistance = Math.max(distance, 0.001);
@@ -468,7 +468,7 @@ const MapPage = () => {
                 station: realStations[nearestId]
             });
 
-            console.log(`📍 Nearest real station: ${nearestId} at ${nearestDist.toFixed(2)}km`);
+            console.log(`📍 Nearest real station: ${nearestId} at ${nearestDist.toFixed(2)}m`);
             
             // Check if user is within 2km of any real station for interpolation
             if (nearestDist <= 2.0) {
@@ -501,10 +501,10 @@ const MapPage = () => {
                     is_interpolated: false,
                     distance_to_nearest: nearestDist,
                     nearest_station_name: nearestStationData.station_info.name,
-                    distance_warning: `You are ${nearestDist.toFixed(1)}km away from sensors (beyond 2km interpolation range)`
+                    distance_warning: `You are ${nearestDist.toFixed(1)}m away from sensors (beyond m interpolation range)`
                 });
                 
-                console.log('✅ Using nearest real station data (beyond 2km):', nearestStationData.station_info.name);
+                console.log('✅ Using nearest real station data (beyond 1km):', nearestStationData.station_info.name);
             }
         }
     }, [userLocation, stations, calculateIDWInterpolation]);
@@ -866,7 +866,7 @@ const MapPage = () => {
                                                 }
                                             </div>
                                             <div className="distance-info">
-                                                📏 {nearestStation.distance.toFixed(1)}km from nearest sensor
+                                                📏 {nearestStation.distance.toFixed(1)}m from nearest sensor
                                             </div>
                                             {userLocationData.distance_warning && (
                                                 <div className="distance-warning">
@@ -911,7 +911,7 @@ const MapPage = () => {
                                                     </div>
                                                     <div className="method-item">
                                                         <span className="method-icon">✅</span>
-                                                        <span>You're within 5km of sensors</span>
+                                                        <span>You're within 1m of sensors</span>
                                                     </div>
                                                 </>
                                             ) : (
@@ -922,7 +922,7 @@ const MapPage = () => {
                                                     </div>
                                                     <div className="method-item">
                                                         <span className="method-icon">⚠️</span>
-                                                        <span>Beyond 5km - no interpolation</span>
+                                                        <span>Beyond 1m - no interpolation</span>
                                                     </div>
                                                 </>
                                             )}
@@ -1084,7 +1084,7 @@ const MapPage = () => {
                                                         }
                                                     </div>
                                                     <div className="distance-info">
-                                                        📏 {nearestStation.distance.toFixed(1)}km from nearest sensor
+                                                        📏 {nearestStation.distance.toFixed(1)}m from nearest sensor
                                                     </div>
                                                 </div>
                                             </div>

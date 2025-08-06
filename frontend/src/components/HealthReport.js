@@ -11,7 +11,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    return R * c * 1000;
 };
 
 const getAQIColor = (aqi) => {
@@ -454,7 +454,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                 ℹ️ <span>
                     <strong>CURRENT AIR QUALITY:</strong> 
                     {interpolatedData ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
-                    {nearestStation && nearestStation.distance !== null && ` • Distance: ${nearestStation.distance.toFixed(1)}km from nearest monitor`}
+                    {nearestStation && nearestStation.distance !== null && ` • Distance: ${nearestStation.distance.toFixed(1)}m from nearest monitor`}
                 </span>
             </div>
 
@@ -513,7 +513,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                                 {interpolatedData ? '🎯 Your Location' : `📍 ${friendlyStationName}`}
                                 {nearestStation && nearestStation.distance !== null && (
                                     <div className="distance-info">
-                                        Distance: {nearestStation.distance.toFixed(1)}km
+                                        Distance: {nearestStation.distance.toFixed(1)}m
                                     </div>
                                 )}
                             </div>
@@ -733,8 +733,8 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                                 <div className="source-title">Location Analysis</div>
                                 <div className="source-desc">
                                     {interpolatedData ? 
-                                    `Location-based calculation - you are ${nearestStation?.distance?.toFixed(1)}km from nearest air quality monitor` :
-                                    `Using data from nearest monitoring station (${nearestStation?.distance?.toFixed(1)}km away)`
+                                    `Location-based calculation - you are ${nearestStation?.distance?.toFixed(1)}m from nearest air quality monitor` :
+                                    `Using data from nearest monitoring station (${nearestStation?.distance?.toFixed(1)}m away)`
                                 }
                             </div>
                             </div>
@@ -795,8 +795,8 @@ const calculateInterpolatedAqi = (locationData, stations) => {
             <div className="footer-section">
               <h4>Data Sources</h4>
               <ul>
-                <li>Campus Air Quality Monitor (Direct)</li>
-                <li>Mattoor Junction Monitor (Direct)</li>
+                <li>Campus Air Quality Monitor</li>
+                <li>Mattoor Junction Monitor</li>
                 <li>Advanced location analysis algorithms</li>
                 <li>Weather integration</li>
               </ul>
