@@ -24,4 +24,5 @@ urlpatterns = [
     path('family-members/update/<int:member_id>/', views.update_family_member_api, name='update_family_member_api'),
     path('admin/login/', views.admin_login_api, name='admin_login_api'),
     path('admin/dashboard/', views.admin_dashboard_api, name='admin_dashboard_api'),
+     # <-- ADD THIS LINE
 ]

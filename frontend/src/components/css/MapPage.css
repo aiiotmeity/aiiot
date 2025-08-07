@@ -1,4 +1,4 @@
-/* Optimized MapPage.css - Clean, User-Friendly Design - PROPERLY SCOPED */
+/* Optimized MapPage.css - Clean, User-Friendly Design with Full Screen Mobile Support */
 
 /* === RESET & BASE STYLES === */
 .map-page {
@@ -155,6 +155,19 @@
   height: 100%;
   position: relative;
   background: #ffffff;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* NEW: Full Screen Map Styles */
+.map-page .map-container.full-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  height: 100vh;
+  width: 100vw;
 }
 
 .map-page .map-element {
@@ -202,11 +215,18 @@
   color: #3b82f6;
 }
 
-.map-page .mobile-menu-toggle {
+/* NEW: Mobile Map Controls Container */
+.map-page .mobile-map-controls {
   position: absolute;
   top: 15px;
   right: 15px;
   z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-page .mobile-control-btn {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   color: #4b5563;
@@ -223,10 +243,65 @@
   font-size: 1rem;
 }
 
-.map-page .mobile-menu-toggle:hover {
+.map-page .mobile-control-btn:hover {
   background: #ffffff;
   color: #3b82f6;
   transform: scale(1.05);
+}
+
+.map-page .full-screen-btn {
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  border-color: #3b82f6;
+}
+
+.map-page .full-screen-btn:hover {
+  background: #3b82f6;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* NEW: Full Screen Exit Overlay */
+.map-page .full-screen-exit-overlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1002;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  animation: fadeInDown 0.3s ease-out;
+}
+
+.map-page .full-screen-exit-overlay:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateX(-50%) scale(1.02);
+}
+
+.map-page .full-screen-exit-overlay span {
+  margin: 0;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* === MOBILE BOTTOM SHEET === */
@@ -235,12 +310,12 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 65vh;
+  height: 50vh;
   background: #ffffff;
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
   transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1500;
   display: flex;
   flex-direction: column;
@@ -257,7 +332,6 @@
   border-bottom: 1px solid #e5e7eb;
   padding: 0.5rem;
   gap: 0.25rem;
-  border-radius: 16px 16px 0 0;
   flex-shrink: 0;
 }
 
@@ -293,6 +367,32 @@
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* === MOBILE MENU TOGGLE === */
+.map-page .mobile-menu-toggle {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+  z-index: 1501;
+}
+
+.map-page .mobile-menu-toggle:hover {
+  background: #2563eb;
+  transform: translateX(-50%) scale(1.05);
 }
 
 .map-page .mobile-tab-content {
@@ -1168,6 +1268,11 @@
 
 /* === DESKTOP STYLES (768px and up) === */
 @media (min-width: 768px) {
+  /* Hide mobile controls on desktop */
+  .map-page .mobile-map-controls {
+    display: none;
+  }
+
   /* Show desktop navigation */
   .map-page .nav-center {
     display: flex;
@@ -1207,10 +1312,6 @@
   }
 
   /* Hide mobile components */
-  .map-page .mobile-menu-toggle {
-    display: none;
-  }
-
   .map-page .mobile-bottom-sheet {
     display: none;
   }
@@ -2020,6 +2121,11 @@
   .map-page .user-aqi-circle .aqi-number {
     font-size: 1.6rem;
   }
+
+  /* UPDATED: Better bottom sheet height on very small screens */
+  .map-page .mobile-bottom-sheet {
+    height: 45vh;
+  }
 }
 
 /* === PRINT STYLES === */
@@ -2027,7 +2133,7 @@
   .map-page .navbar,
   .map-page .mobile-bottom-sheet,
   .map-page .my-location-btn,
-  .map-page .mobile-menu-toggle {
+  .map-page .mobile-map-controls {
     display: none !important;
   }
 

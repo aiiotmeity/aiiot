@@ -245,6 +245,8 @@ function Dashboard() {
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const [healthData, setHealthData] = useState(null);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+  const handleParameterChange = useCallback((param) => setSelectedParameter(param), []);
+
 
   const navigate = useNavigate();
   const API_BASE_URL = process.env.NODE_ENV === 'production'
@@ -484,7 +486,7 @@ function Dashboard() {
       const defaultStation = stations['lora-v1'] || stations[stationIds[0]] || {};
       setCurrentDataInfo({
         method: 'default_station',
-        source: 'default',
+        source: '',
         explanation: '',
         values: defaultStation.averages || {},
         aqi: defaultStation.highest_sub_index || 50,
@@ -492,7 +494,7 @@ function Dashboard() {
         is_interpolated: false,
         show_distance_message: false,
         distance_message: null,
-        data_type: 'Default Station Data'
+        data_type: ' Station Data'
       });
     }
     console.log('📊 Dashboard data processed successfully');
@@ -679,13 +681,30 @@ function Dashboard() {
   }, [currentValues, metricIcons, formatValue, currentDataInfo]);
 
   // ===== EVENT HANDLERS =====
-  const handleParameterChange = useCallback((param) => setSelectedParameter(param), []);
-  const handleNavLinkClick = useCallback(() => { if (isMobileView) closeMenu(); }, [isMobileView, closeMenu]);
+  const handleNavLinkClick = useCallback(() => { 
+  if (isMobileView) closeMenu(); 
+}, [isMobileView, closeMenu]);
+
   const handleLogout = useCallback(() => {
     if (isMobileView) closeMenu();
-    localStorage.clear();
-    navigate('/login');
+    
+    // FIXED: Clear storage and navigate properly
+    try {
+      localStorage.clear();
+      // Force a clean navigation to login
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback navigation
+      navigate('/login');
+    }
   }, [navigate, isMobileView, closeMenu]);
+
+
+
+
+
+
   const handleRefreshData = useCallback(() => fetchDashboardData(userLocation), [fetchDashboardData, userLocation]);
   const handleEnableLocation = useCallback(async () => {
     try {

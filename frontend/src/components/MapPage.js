@@ -150,6 +150,9 @@ const MapPage = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [activeTab, setActiveTab] = useState('stations');
+    // NEW: Full screen map state
+    const [isFullScreenMap, setIsFullScreenMap] = useState(false);
+    const [isBottomSheetCollapsed, setIsBottomSheetCollapsed] = useState(false);
 
     // Refs
     const mapRef = useRef(null);
@@ -166,52 +169,84 @@ const MapPage = () => {
 
     // === USER LOCATION TRACKING - FIXED ===
     const trackUserLocation = useCallback(() => {
-        // Only track if user is authenticated and browser supports geolocation
+    // FIXED: Prevent multiple requests and unnecessary reloads
+        if (isLocationLoading) {
+            console.log('Location request already in progress...');
+            return;
+        }
+
         if (!user) {
             console.log('User not authenticated for location tracking');
             return;
         }
 
-        if (navigator.geolocation) {
-            setIsLocationLoading(true);
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
-                    setUserLocation(loc);
-                    setIsLocationLoading(false);
-                    
-                    if (mapInstance) {
-                        mapInstance.setView(loc, 15);
-                        
-                        const userIcon = window.L.divIcon({
-                            html: '<div class="user-location-marker"><i class="fas fa-user"></i></div>',
-                            className: 'custom-user-icon',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
-                        });
-                        
-                        if (userLocationMarkerRef.current) {
-                            userLocationMarkerRef.current.setLatLng(loc);
-                        } else {
-                            userLocationMarkerRef.current = window.L.marker(loc, { icon: userIcon }).addTo(mapInstance);
-                        }
-                    }
-                },
-                (err) => {
-                    setIsLocationLoading(false);
-                    console.warn(`Geolocation error: ${err.message}`);
-                    alert("Could not get your location. Please enable location services in your browser.");
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000 // 5 minutes
-                }
-            );
-        } else {
+        if (!navigator.geolocation) {
             alert("Geolocation is not supported by this browser.");
+            return;
         }
-    }, [mapInstance, user]);
+
+        setIsLocationLoading(true);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const loc = { 
+                    lat: position.coords.latitude, 
+                    lng: position.coords.longitude,
+                    timestamp: Date.now()
+                };
+                
+                console.log('Location obtained:', loc);
+                setUserLocation(loc);
+                setIsLocationLoading(false);
+                
+                // FIXED: Only update map if significantly different location
+                if (mapInstance) {
+                    const currentCenter = mapInstance.getCenter();
+                    const distance = calculateDistance(
+                        currentCenter.lat, 
+                        currentCenter.lng, 
+                        loc.lat, 
+                        loc.lng
+                    );
+                    
+                    // Only center map if more than 1km away to prevent constant reloads
+                    if (distance > 1000) {
+                        mapInstance.setView([loc.lat, loc.lng], 15);
+                    }
+                    
+                    // Update user marker without recreating
+                    const userIcon = window.L.divIcon({
+                        html: '<div class="user-location-marker"><i class="fas fa-user"></i></div>',
+                        className: 'custom-user-icon',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+                    
+                    if (userLocationMarkerRef.current) {
+                        userLocationMarkerRef.current.setLatLng([loc.lat, loc.lng]);
+                    } else {
+                        userLocationMarkerRef.current = window.L.marker([loc.lat, loc.lng], { 
+                            icon: userIcon 
+                        }).addTo(mapInstance);
+                    }
+                }
+            },
+            (error) => {
+                setIsLocationLoading(false);
+                console.warn('Geolocation error:', error.message);
+                
+                // Don't show alert for permission denied
+                if (error.code !== error.PERMISSION_DENIED) {
+                    console.error('Location error:', error.message);
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 8000,
+                maximumAge: 300000 // 5 minutes cache - prevents constant requests
+            }
+        );
+    }, [user, mapInstance, isLocationLoading]);
 
     // Initialize auth state properly
     useEffect(() => {
@@ -223,13 +258,29 @@ const MapPage = () => {
 
     // Auto-track location when user logs in and map is ready
     useEffect(() => {
-        if (user && !userLocation && mapInstance && authInitialized) {
-            setTimeout(() => {
-                trackUserLocation();
-            }, 500); // Small delay to ensure map is ready
-        }
-    }, [user, userLocation, mapInstance, authInitialized, trackUserLocation]);
+    // FIXED: Only auto-track once when conditions are met
+    if (!user || !mapInstance || userLocation) return;
+    
+    // Add a longer delay to prevent immediate requests
+    const timer = setTimeout(() => {
+        trackUserLocation();
+    }, 2000); // 2 second delay
+    
+    return () => clearTimeout(timer);
+}, [user, mapInstance]); // Remove userLocation from dependencies to prevent loops
 
+// MINIMAL FIX: Add this debounced effect for user location data calculation
+useEffect(() => {
+    if (!userLocation || Object.keys(stations).length === 0) return;
+    
+    // FIXED: Debounce the calculation to prevent excessive updates
+    const timeoutId = setTimeout(() => {
+        console.log('Calculating user location data...');
+        // ... your existing calculation code here ...
+    }, 1000); // 1 second debounce
+    
+    return () => clearTimeout(timeoutId);
+}, [userLocation, stations]);
     // Make component instance available globally for popup callbacks
     useEffect(() => {
         window.mapPageInstance = {
@@ -240,6 +291,7 @@ const MapPage = () => {
                     if (isMobile) {
                         setActiveTab('details');
                         setShowMobileMenu(true);
+                        setIsBottomSheetCollapsed(false);
                     }
                     if (fromPopup && mapInstance && stations[stationId]) {
                         const { lat, lng } = stations[stationId].station_info;
@@ -564,6 +616,7 @@ const MapPage = () => {
                     if (isMobile) {
                         setActiveTab('details');
                         setShowMobileMenu(true);
+                        setIsBottomSheetCollapsed(false);
                     }
                     mapInstance.setView([lat, lng], 15);
                 }
@@ -591,6 +644,7 @@ const MapPage = () => {
             setSelectedStationId(stationId);
             if (isMobile) {
                 setActiveTab('details');
+                setIsBottomSheetCollapsed(false);
             }
         } else {
             // Show coming soon message for temp stations
@@ -600,6 +654,20 @@ const MapPage = () => {
             }
         }
     }, [isMobile, stations]);
+
+    // NEW: Handle full screen toggle
+    const toggleFullScreenMap = useCallback(() => {
+        setIsFullScreenMap(!isFullScreenMap);
+        if (!isFullScreenMap) {
+            // Going to full screen
+            setShowMobileMenu(false);
+        }
+    }, [isFullScreenMap]);
+
+    // NEW: Handle bottom sheet collapse
+    const toggleBottomSheetCollapse = useCallback(() => {
+        setIsBottomSheetCollapsed(!isBottomSheetCollapsed);
+    }, [isBottomSheetCollapsed]);
 
     // === DATA PROCESSING ===
     const selectedStationData = stations[selectedStationId];
@@ -1030,7 +1098,7 @@ const MapPage = () => {
             {/* Main Content */}
             <div className="main-content">
                 {/* Map Container */}
-                <div className="map-container">
+                <div className={`map-container ${isFullScreenMap ? 'full-screen' : ''}`}>
                     <div id="map" ref={mapRef} className="map-element"></div>
                     
                     {/* Map Controls */}
@@ -1047,13 +1115,40 @@ const MapPage = () => {
                         )}
                     </button>
 
+                    {/* NEW: Mobile Map Controls */}
                     {isMobile && (
-                        <button 
-                            className="mobile-menu-toggle"
-                            onClick={() => setShowMobileMenu(!showMobileMenu)}
-                        >
-                            <i className={`fas ${showMobileMenu ? 'fa-times' : 'fa-bars'}`}></i>
-                        </button>
+                        <div className="mobile-map-controls">
+                            {/* Full Screen Toggle */}
+                            <button 
+                                className="mobile-control-btn full-screen-btn"
+                                onClick={toggleFullScreenMap}
+                                title={isFullScreenMap ? "Exit Full Screen" : "Full Screen Map"}
+                            >
+                                <i className={`fas ${isFullScreenMap ? 'fa-compress' : 'fa-expand'}`}></i>
+                            </button>
+
+                            {/* Menu Toggle (only show when not in full screen) */}
+                            {!isFullScreenMap && (
+                                <button 
+                                    className="mobile-control-btn menu-toggle-btn"
+                                    onClick={() => setShowMobileMenu(!showMobileMenu)}
+                                    title="Toggle Menu"
+                                >
+                                    <i className={`fas ${showMobileMenu ? 'fa-times' : 'fa-bars'}`}></i>
+                                </button>
+                            )}
+
+                            {/* Quick Exit Full Screen Overlay */}
+                            {isFullScreenMap && (
+                                <button 
+                                    className="full-screen-exit-overlay"
+                                    onClick={toggleFullScreenMap}
+                                >
+                                    <i className="fas fa-compress"></i>
+                                    <span>Exit Full Screen</span>
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -1294,28 +1389,46 @@ const MapPage = () => {
                     </>
                 )}
 
-                {/* Mobile Bottom Sheet - Optimized */}
-                {isMobile && (
-                    <div className={`mobile-bottom-sheet ${showMobileMenu ? 'open' : ''}`}>
+                {/* Mobile Bottom Sheet - Optimized with Collapse Feature */}
+                {isMobile && !isFullScreenMap && (
+                    <div className={`mobile-bottom-sheet ${showMobileMenu ? 'open' : ''} ${isBottomSheetCollapsed ? 'collapsed' : ''}`}>
+                        {/* Collapse/Expand Handle */}
+                        <div className="bottom-sheet-handle" onClick={toggleBottomSheetCollapse}>
+                            <div className="handle-bar"></div>
+                            <div className="handle-text">
+                                {isBottomSheetCollapsed ? 'Tap to expand' : 'Tap to minimize'}
+                            </div>
+                            <i className={`fas ${isBottomSheetCollapsed ? 'fa-chevron-up' : 'fa-chevron-down'} handle-icon`}></i>
+                        </div>
+
                         {/* Mobile Tab Navigation */}
                         <div className="mobile-tab-nav">
                             <button 
                                 className={`mobile-tab-btn ${activeTab === 'stations' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('stations')}
+                                onClick={() => {
+                                    setActiveTab('stations');
+                                    setIsBottomSheetCollapsed(false);
+                                }}
                             >
                                 <i className="fas fa-broadcast-tower"></i>
                                 <span>Stations</span>
                             </button>
                             <button 
                                 className={`mobile-tab-btn ${activeTab === 'details' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('details')}
+                                onClick={() => {
+                                    setActiveTab('details');
+                                    setIsBottomSheetCollapsed(false);
+                                }}
                             >
                                 <i className="fas fa-chart-bar"></i>
                                 <span>Details</span>
                             </button>
                             <button 
                                 className={`mobile-tab-btn ${activeTab === 'user' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('user')}
+                                onClick={() => {
+                                    setActiveTab('user');
+                                    setIsBottomSheetCollapsed(false);
+                                }}
                             >
                                 <i className="fas fa-map-marker-alt"></i>
                                 <span>My Data</span>

@@ -24,6 +24,7 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.utils.timezone import now
 from django.conf import settings
+
 from django.middleware.csrf import get_token
 
 from dotenv import load_dotenv
