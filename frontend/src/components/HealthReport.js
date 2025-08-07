@@ -210,30 +210,27 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     // In HealthReport.js, replace the entire fetchReportData function
 
     const fetchReportData = useCallback(async () => {
-         // Reset error on new fetch
+        setLoading(true);
+        setError(null);
         try {
-            const url = `${API_BASE_URL}/api/health-report/?username=${username}`;
+            if (!user?.name) {
+                // Wait for user object to be available before fetching
+                return;
+            }
+            const url = `${API_BASE_URL}/api/health-report/?username=${user.name}`;
             const response = await fetch(url);
 
-            // THIS IS THE KEY FIX FOR THE "Unexpected token '<'" ERROR
+            // --- START: THE KEY FIX ---
+            // This block checks if the response is valid JSON before parsing.
             if (!response.ok) {
-                // If the server sends a non-200 response, it might be HTML.
-                // We check if the user should be redirected or just show an error.
-                const errorText = await response.text();
-                try {
-                    // See if the error response is actually JSON with a redirect instruction
-                    const errData = JSON.parse(errorText);
-                    if (errData.redirect_to) {
-                        navigate(errData.redirect_to);
-                        return; // Stop execution
-                    }
-                    throw new Error(errData.error || `Server error: ${response.status}`);
-                } catch (jsonError) {
-                    // If parsing fails, it's definitely not JSON (it's HTML).
-                    // This happens when you are logged out and the server sends a login page.
-                    throw new Error("You are not logged in. Redirecting...");
+                // If the status is 401/403, it's an authentication error.
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("Your session has expired. Please log in again.");
                 }
+                // For other errors, give a generic message.
+                throw new Error(`Server returned an error: ${response.status}`);
             }
+            // --- END: THE KEY FIX ---
             
             const data = await response.json();
             setReportData(data);
@@ -241,13 +238,13 @@ const calculateInterpolatedAqi = (locationData, stations) => {
         } catch (err) {
             setError(err.message);
             // If the error indicates a login issue, redirect to the login page.
-            if (err.message.includes("logged in")) {
+            if (err.message.includes("log in")) {
                 setTimeout(() => navigate('/login'), 2000);
             }
         } finally {
             setLoading(false);
         }
-    }, [username, navigate, API_BASE_URL]);
+    }, [user, navigate, API_BASE_URL]);
 
    
     // In HealthReport.js
