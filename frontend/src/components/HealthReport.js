@@ -210,12 +210,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     // In HealthReport.js, replace the entire fetchReportData function
 
     const fetchReportData = useCallback(async () => {
-        if (!username) {
-            navigate('/login');
-            return;
-        }
-        setLoading(true);
-        setError(null); // Reset error on new fetch
+         // Reset error on new fetch
         try {
             const url = `${API_BASE_URL}/api/health-report/?username=${username}`;
             const response = await fetch(url);
@@ -391,21 +386,30 @@ const calculateInterpolatedAqi = (locationData, stations) => {
 
     // This is the primary fix that prevents the crash.
     // This one-line change prevents the crash
-    if (loading || !currentDataInfo) {
+    if (loading) {
         return <div className="panel-loader"><h2>🏥 Generating Your Health Report...</h2><div className="loading-spinner"></div></div>;
     }
-    if (error) return (
-  <div className="error-message">
-    <h2>⚠️ Error</h2>
-    <p>{error}</p>
-    <button onClick={() => navigate('/dashboard')} className="retry-btn">
-      📊 Go to Dashboard
-    </button>
-  </div>
-);
-    if (!reportData) return <div className="error-message"><h2>📊 No Report Data</h2><p>Unable to generate your health report at this time.</p></div>;
 
-    const { health_assessment, stations, forecasts } = reportData;
+    // CORRECTED: Check for an error state second
+    if (error) {
+        return (
+            <div className="error-message">
+                <h2>⚠️ Error Generating Report</h2>
+                <p>{error}</p>
+                <button onClick={() => navigate('/dashboard')} className="retry-btn">
+                    📊 Go to Dashboard
+                </button>
+            </div>
+        );
+    }
+
+    // CORRECTED: Check if data is missing third
+    if (!reportData || !currentDataInfo) {
+        return <div className="error-message"><h2>📊 No Report Data</h2><p>Could not process your report data. Please try again.</p></div>;
+    }
+
+    // If all checks pass, then safely render the page
+    const { health_assessment, forecasts } = reportData;
     const forecastForNearest = nearestStation ? forecasts[nearestStation.id] : null;
 
     return (

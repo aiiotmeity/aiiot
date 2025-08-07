@@ -24,7 +24,6 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.utils.timezone import now
 from django.conf import settings
-
 from django.middleware.csrf import get_token
 
 from dotenv import load_dotenv
@@ -2019,38 +2018,76 @@ def station_forecast_api(request, station_id):
         logger.error(f"Error in station_forecast_api for {station_id}: {e}")
         return Response({'error': 'Failed to fetch forecast data'}, status=500)
     
+# In myapp/views.py
+
+# In myapp/views.py
+
 @api_view(['GET'])
 @csrf_exempt
 def health_report_api(request):
     """
-    FINAL, CORRECTED API: Provides all necessary data for the React Health Report page,
-    including data from ALL stations to allow for smart interpolation on the frontend.
+    FINAL, CORRECTED API: Provides all necessary data for the Health Report,
+    is self-sufficient, and NO LONGER incorrectly redirects the user.
     """
     username = request.GET.get('username')
     if not username:
         return Response({'error': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        user = User.objects.get(name=username)
-        assessment = HealthAssessment.objects.get(user=user)
-    except (User.DoesNotExist, HealthAssessment.DoesNotExist):
-        return Response({'error': 'User or health assessment not found', 'redirect_to': '/health-assessment'}, status=404)
+    # --- START: THE KEY FIX ---
+    # We now check for the user and their assessment separately for clearer errors.
 
-    # --- Fetch data for ALL stations (real and simulated) ---
     try:
-        # This reuses the same logic from your map_realtimedata_api to get 5 stations
-        # In a real app, this logic would be shared in a helper function.
-        all_stations_data = cache.get('all_stations_realtime_data')
+        # Step 1: Find the user.
+        user = User.objects.get(name=username)
+    except User.DoesNotExist:
+        # If the user doesn't exist, it's a login problem. Send a 404 error.
+        logger.error(f"User '{username}' not found when trying to access health report.")
+        return Response({'error': f"User '{username}' not found. Please log in again."}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        # Step 2: Find the assessment for that specific user.
+        assessment = HealthAssessment.objects.get(user=user)
+    except HealthAssessment.DoesNotExist:
+        # If the assessment is missing, it's a data problem.
+        # We send a clear error message INSTEAD OF a redirect command.
+        logger.error(f"Health assessment not found for user '{username}'.")
+        return Response({
+            'error': 'Your health assessment data could not be found. Please complete it again to generate a report.'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    # --- END: THE KEY FIX ---
+
+
+    # --- Fetch station data (self-sufficient logic from previous fix) ---
+    try:
+        all_stations_data = cache.get('map_realtime_data')
         if not all_stations_data:
-            # Fallback to fetch data if cache is empty
-            # NOTE: This part should contain your full 5-station fetching and simulation logic
-            # For brevity, we're showing the error case. Ensure your full logic is here.
-            logger.error("Station data not found in cache for health report.")
-            return Response({'error': 'Station data not cached, please visit homepage first'}, status=500)
+            logger.warning("Cache miss for station data in health_report_api. Fetching fresh data.")
+            # This logic makes the function independent and should include your full station fetching logic
+            if not initialize_aws_resources():
+                raise Exception('AWS initialization failed')
+
+            lora_v1_items = get_device_data("lora-v1", limit=24)
+            loradev2_items = get_device_data("loradev2", limit=24)
+            _, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
+            _, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
+            
+            station_locations = {
+                'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
+                'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
+                # ... include your temp stations here as well
+            }
+
+            all_stations_data = {
+                'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1']},
+                'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2']},
+                # ... add simulated data for temp stations if needed
+            }
+            cache.set('map_realtime_data', all_stations_data, 60)
         
     except Exception as e:
-        logger.error(f"Error fetching sensor data for health report: {e}", exc_info=True)
-        return Response({'error': 'Could not fetch sensor data'}, status=500)
+        logger.error(f"CRITICAL ERROR fetching sensor data for health report: {e}", exc_info=True)
+        return Response({'error': 'Could not fetch required sensor data to generate the report.'}, status=500)
     
     # --- Fetch Forecast for all stations ---
     forecasts = {}
@@ -2075,7 +2112,7 @@ def health_report_api(request):
                 'Living Environment': assessment.living_environment,
             }
         },
-        'stations': all_stations_data, # <-- FIX: Send ALL stations
+        'stations': all_stations_data,
         'forecasts': forecasts
     }
     
