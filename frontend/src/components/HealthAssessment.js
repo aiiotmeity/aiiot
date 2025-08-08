@@ -29,28 +29,25 @@ function HealthAssessment() {
     ? 'https://airaware-app-gcw7.onrender.com' 
     : 'http://localhost:8000';
 
-
   // Get username from localStorage or session
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setUsername(user.name || 'User');
   }, []);
-   useEffect(() => {
-        const handleResize = () => {
-          setIsMobileView(window.innerWidth <= 768);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-          window.removeEventListener('resize', handleResize);
-        };
-    }, []);
 
-    // In HealthAssessment.js, add this block after your other useEffect hooks
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
-  // CHECK IF USER HAS A COMPLETED ASSESSMENT WHEN THE PAGE LOADS
+  // Check if user has a completed assessment when the page loads
   useEffect(() => {
     const checkAssessmentStatus = async () => {
-      // Get the current user's name from localStorage
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const currentUsername = user.name;
 
@@ -68,12 +65,12 @@ function HealthAssessment() {
     };
 
     checkAssessmentStatus();
-  }, [API_BASE_URL]); // This effect runs once when the component mounts
+  }, [API_BASE_URL]);
 
-  // Memoize particles to prevent recreation on every render
+  // Optimized particles with reduced count
   const particles = useMemo(() => {
     const particleElements = [];
-    for (let i = 0; i < 20; i++) { // Reduced from 30
+    for (let i = 0; i < 15; i++) { // Reduced from 20
       particleElements.push(
         <div
           key={i}
@@ -81,8 +78,8 @@ function HealthAssessment() {
           style={{
             left: Math.random() * 100 + '%',
             top: Math.random() * 100 + '%',
-            animationDelay: Math.random() * 3 + 's',
-            animationDuration: (Math.random() * 3 + 2) + 's'
+            animationDelay: Math.random() * 4 + 's',
+            animationDuration: (Math.random() * 2 + 3) + 's'
           }}
         />
       );
@@ -208,31 +205,34 @@ function HealthAssessment() {
         { value: 'Allergies', label: 'Allergies', icon: '🤧' },
         { value: 'Immunocompromised', label: 'Immunocompromised', icon: '🛡️' },
         { value: 'None of the above', label: 'None of the above', icon: '✅' }
-
-        
       ]
     }
   ];
 
+  // FIXED: Simplified and improved option change handler
   const handleOptionChange = (questionId, value, isCheckbox = false) => {
     if (isCheckbox) {
       setFormData(prev => {
         const currentValues = prev[questionId] || [];
         
-        if (value === 'None') {
+        if (value === 'None' || value === 'None of the above') {
+          // If "None" is selected, clear all other selections or toggle off
           return {
             ...prev,
-            [questionId]: currentValues.includes('None') ? [] : ['None']
+            [questionId]: currentValues.includes(value) ? [] : [value]
           };
         } else {
-          const filteredValues = currentValues.filter(v => v !== 'None');
+          // Remove "None" if present and toggle the selected value
+          const filteredValues = currentValues.filter(v => v !== 'None' && v !== 'None of the above');
           
           if (filteredValues.includes(value)) {
+            // Remove the value if already selected
             return {
               ...prev,
               [questionId]: filteredValues.filter(v => v !== value)
             };
           } else {
+            // Add the value
             return {
               ...prev,
               [questionId]: [...filteredValues, value]
@@ -418,30 +418,33 @@ function HealthAssessment() {
     setError('');
     setSaveStatus('Saving...');
 
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+
+    if (!storedUser || !storedUser.user_id) {
+      setError('Could not identify user. Please log in again.');
+      setLoading(false);
+      setSaveStatus('❌ Save failed');
+      return;
+    }
+
     try {
       const score = calculateHealthScore();
       
-      console.log('API_BASE_URL:', API_BASE_URL);
-      console.log('Full API URL:', `${API_BASE_URL}/api/health-assessment/`);
-      console.log('Sending data:', {
+      const payload = {
         ...formData,
         health_score: score,
-        username: username
-      });
+        user_id: storedUser.user_id,
+      };
+      
+      console.log('Sending data with user_id:', payload);
 
       const response = await fetch(`${API_BASE_URL}/api/health-assessment/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          health_score: score,
-          username: username
-        }),
+        body: JSON.stringify(payload),
       });
-
-      console.log('Response status:', response.status);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -455,7 +458,6 @@ function HealthAssessment() {
         setSaveStatus('✅ Saved successfully!');
         setShowResult(true);
         
-        // Redirect to dashboard after 4 seconds
         setTimeout(() => {
           navigate('/dashboard');
         }, 4000);
@@ -465,17 +467,8 @@ function HealthAssessment() {
       }
     } catch (err) {
       console.error('Network error details:', err);
-      
-      if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        setError('Cannot connect to server. Please check if the backend is running.');
-        setSaveStatus('❌ Connection failed');
-      } else if (err.message.includes('HTTP error')) {
-        setError(`Server error: ${err.message}`);
-        setSaveStatus('❌ Server error');
-      } else {
-        setError('Network error. Please try again.');
-        setSaveStatus('❌ Network error');
-      }
+      setError('Network error or server issue. Please try again.');
+      setSaveStatus('❌ Network error');
     } finally {
       setLoading(false);
     }
@@ -495,10 +488,9 @@ function HealthAssessment() {
         <div className="navbar">
           <div className="navbar-content">
             <Link to="/" className="navbar-brand">
-                        {/* 2. USE THE IMPORTED VARIABLE */}
-                        <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
-                        AirAware
-                      </Link>
+              <img src={logoImage} alt="AQM Logo" width={isMobileView ? "26" : "32"} height={isMobileView ? "26" : "32"} />
+              AirAware
+            </Link>
           </div>
         </div>
 
@@ -545,18 +537,6 @@ function HealthAssessment() {
               <button 
                 onClick={() => navigate('/dashboard')}
                 className="btn-primary"
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
               >
                 <span>📊</span>
                 Go to Dashboard Now
@@ -578,10 +558,10 @@ function HealthAssessment() {
       
       <div className="navbar">
         <div className="navbar-content">
-          <a href="/" className="navbar-brand">
-            <img src="/aqi.webp" alt="AQM Logo" />
+          <Link to="/" className="navbar-brand">
+            <img src={logoImage} alt="AQM Logo" width={isMobileView ? "26" : "32"} height={isMobileView ? "26" : "32"} />
             AirAware
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -592,35 +572,21 @@ function HealthAssessment() {
               📋
             </div>
             <h1>Health Assessment Questionnaire</h1>
-            <p><a href="/">🏠 Home</a></p>
+            <p><Link to="/">🏠 Home</Link></p>
             <p>Hello, {username}! Let's evaluate your health status for personalized air quality recommendations.</p>
-            
           </div>
           
           <div className="back-button-container">
-          <button 
-            onClick={() => navigate('/dashboard')} 
-            className="back-button"
-            // The button is now disabled if the user has NOT completed the assessment
-            disabled={!hasCompletedAssessment}
-            // This provides a helpful message when the user hovers over the disabled button
-            title={!hasCompletedAssessment ? "Please complete the assessment to view your profile" : "Back to Profile"}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: hasCompletedAssessment ? '#6c757d' : '#cccccc', // Visual cue for disabled
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: hasCompletedAssessment ? 'pointer' : 'not-allowed', // Change cursor when disabled
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <span>←</span>
-            Back to Profile
-          </button>
-        </div>
+            <button 
+              onClick={() => navigate('/dashboard')} 
+              className="back-button"
+              disabled={!hasCompletedAssessment}
+              title={!hasCompletedAssessment ? "Please complete the assessment to view your profile" : "Back to Profile"}
+            >
+              <span>←</span>
+              Back to Profile
+            </button>
+          </div>
         </div>
 
         <div className="progress-container">
@@ -646,7 +612,7 @@ function HealthAssessment() {
           <div className="question active">
             <div className="question-header">
               <div className="question-icon" style={{ background: `${currentQuestionData.color}20`, color: currentQuestionData.color }}>
-                <span style={{ fontSize: '24px' }}>{currentQuestionData.icon}</span>
+                <span style={{ fontSize: '20px' }}>{currentQuestionData.icon}</span>
               </div>
               <div className="question-text">
                 <h3>{currentQuestionData.title}</h3>
@@ -655,78 +621,65 @@ function HealthAssessment() {
             </div>
 
             {error && (
-              <div className="error-message" style={{
-                backgroundColor: '#f8d7da',
-                color: '#721c24',
-                padding: '12px',
-                borderRadius: '4px',
-                marginBottom: '16px',
-                border: '1px solid #f5c6cb',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
+              <div className="error-message">
                 <span>⚠️</span>
                 {error}
               </div>
             )}
 
             <div className="options">
-              {currentQuestionData.options.map((option, index) => (
-                <div
-                  key={option.value}
-                  className={`${currentQuestionData.type === 'checkbox' ? 'checkbox-option' : 'option'} ${
-                    currentQuestionData.type === 'checkbox'
-                      ? (formData[currentQuestionData.id] || []).includes(option.value) ? 'selected' : ''
-                      : formData[currentQuestionData.id] === option.value ? 'selected' : ''
-                  }`}
-                  style={{ animationDelay: `${index * 0.1}s`, cursor: 'pointer', padding: '16px', border: '1px solid #ddd', borderRadius: '8px', margin: '8px 0', display: 'flex', alignItems: 'center', gap: '12px' }}
-                  onClick={() => handleOptionChange(currentQuestionData.id, option.value, currentQuestionData.type === 'checkbox')}
-                >
-                  <div className="option-icon" style={{ fontSize: '20px' }}>
-                    {option.icon}
-                  </div>
-                  <input
-                    type={currentQuestionData.type === 'checkbox' ? 'checkbox' : 'radio'}
-                    id={`${currentQuestionData.id}-${option.value}`}
-                    name={currentQuestionData.id}
-                    value={option.value}
-                    checked={
-                      currentQuestionData.type === 'checkbox'
-                        ? (formData[currentQuestionData.id] || []).includes(option.value)
-                        : formData[currentQuestionData.id] === option.value
-                    }
-                    onChange={() => {}} // Handled by onClick
-                    style={{ margin: 0 }}
-                  />
-                  <label htmlFor={`${currentQuestionData.id}-${option.value}`} style={{ flex: 1, cursor: 'pointer' }}>
-                    {option.label}
-                  </label>
-                  {((currentQuestionData.type === 'checkbox' && (formData[currentQuestionData.id] || []).includes(option.value)) || 
-                    (currentQuestionData.type !== 'checkbox' && formData[currentQuestionData.id] === option.value)) && (
-                    <div className="option-checkmark" style={{ color: '#10b981' }}>
-                      ✓
+              {currentQuestionData.options.map((option, index) => {
+                const isSelected = currentQuestionData.type === 'checkbox'
+                  ? (formData[currentQuestionData.id] || []).includes(option.value)
+                  : formData[currentQuestionData.id] === option.value;
+
+                return (
+                  <div
+                    key={option.value}
+                    className={`${currentQuestionData.type === 'checkbox' ? 'checkbox-option' : 'option'} ${isSelected ? 'selected' : ''}`}
+                    onClick={() => handleOptionChange(currentQuestionData.id, option.value, currentQuestionData.type === 'checkbox')}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOptionChange(currentQuestionData.id, option.value, currentQuestionData.type === 'checkbox');
+                      }
+                    }}
+                    style={{ animationDelay: `${index * 0.08}s` }}
+                  >
+                    <div className="option-icon">
+                      {option.icon}
                     </div>
-                  )}
-                </div>
-              ))}
+                    <input
+                      type={currentQuestionData.type === 'checkbox' ? 'checkbox' : 'radio'}
+                      id={`${currentQuestionData.id}-${option.value}`}
+                      name={currentQuestionData.id}
+                      value={option.value}
+                      checked={isSelected}
+                      onChange={() => {}} // Handled by parent onClick
+                      tabIndex={-1} // Remove from tab order, parent div handles focus
+                    />
+                    <label htmlFor={`${currentQuestionData.id}-${option.value}`}>
+                      {option.label}
+                    </label>
+                    {isSelected && (
+                      <div className="option-checkmark">
+                        ✓
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="navigation" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px' }}>
+            <div className="navigation">
               <button
                 type="button"
                 className="nav-button prev-button"
                 onClick={prevQuestion}
                 style={{ 
-                  display: currentQuestion === 0 ? 'none' : 'flex',
-                  padding: '12px 24px',
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  alignItems: 'center',
-                  gap: '8px'
+                  display: currentQuestion === 0 ? 'none' : 'flex'
                 }}
               >
                 <span>←</span>
@@ -739,15 +692,7 @@ function HealthAssessment() {
                   className="nav-button next-button"
                   onClick={nextQuestion}
                   style={{ 
-                    background: currentQuestionData.color,
-                    padding: '12px 24px',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
+                    background: currentQuestionData.color
                   }}
                 >
                   Next
@@ -761,14 +706,7 @@ function HealthAssessment() {
                   disabled={loading}
                   style={{ 
                     background: loading ? '#94a3b8' : '#10b981',
-                    padding: '12px 24px',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
+                    cursor: loading ? 'not-allowed' : 'pointer'
                   }}
                 >
                   {loading ? (

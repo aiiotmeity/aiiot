@@ -361,7 +361,7 @@ ul {
   top: 0;
   z-index: 1000;
   transition: var(--transition);
-  padding: 1.25rem 2rem;
+  padding: 1.15rem 2rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
@@ -391,20 +391,25 @@ ul {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
-
 .nav-link.login-btn {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  color: rgb(18, 15, 15);
-  margin-left: 1rem;
+  background: #ef4444 !important; /* Bright, solid red background */
+  color: white !important; /* Bright white text for maximum contrast */
   font-weight: 700;
+  border-radius: 12px; /* Consistent rounded corners */
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  transition: all 0.3s ease;
   border: none;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  margin-left: 1rem;
+  padding: 0.75rem 1.25rem;
 }
 
+/* This creates a visual effect when you hover over the button */
 .nav-link.login-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-  background: linear-gradient(135deg, var(--primary-dark), #1e40af);
+  background: #dc2626 !important; /* A slightly darker red on hover */
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 20px rgba(220, 38, 38, 0.4);
+
 }
 
 .nav-link.login-btn::before {

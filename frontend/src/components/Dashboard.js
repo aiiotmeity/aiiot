@@ -31,16 +31,17 @@ const LazyChart = React.lazy(() =>
 );
 
 // Utility Functions
+// ...
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-           Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-           Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c * 1000; // Returns distance in meters
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    // REMOVED: * 1000 to return km instead of meters
+    return R * c; 
 };
+// ...
 
 // Known accurate locations for the area
 const KNOWN_LOCATIONS = {
@@ -98,7 +99,7 @@ const getLocationName = async (lat, lng) => {
     const [knownLat, knownLng] = key.split('_').map(Number);
     const distance = calculateDistance(lat, lng, knownLat, knownLng);
     if (distance < 2.0) {
-      console.log(`✅ Using nearby known location: ${location.display_name} (${distance.toFixed(2)}m away)`);
+      console.log(`✅ Using nearby known location: ${location.display_name} (${distance.toFixed(2)}km away)`);
       return {
         ...location,
         display_name: distance < 0.5 ? location.display_name : `Near ${location.city}, ${location.state}`
@@ -455,7 +456,7 @@ function Dashboard() {
         distance: nearestDistance,
         aqi: nearestStation.highest_sub_index || 50
       });
-      const isWithinSensorRange = Object.values(stationDistances).some(s => s.distance <= 1.0);
+      const isWithinSensorRange = Object.values(stationDistances).some(s => s.distance <= 2.0);
       if (isWithinSensorRange || nearestDistance <= 1.0) {
         const idwResult = calculateIDWInterpolation(locationData, stations);
         setCurrentDataInfo({
@@ -466,7 +467,7 @@ function Dashboard() {
           station_name: `Your Location (${userLocationName?.city || 'Current Position'})`,
           is_interpolated: true,
           show_distance_message: true,
-          distance_message: `📍 You are within sensor range (${nearestDistance.toFixed(1)}m from nearest), showing calculated values for your exact location`,
+          distance_message: `📍 You are within sensor range (${nearestDistance.toFixed(1)}km from nearest), showing calculated values for your exact location`,
           data_type: 'Your Location Data (Calculated)'
         });
       } else {
@@ -630,16 +631,18 @@ function Dashboard() {
           );
         case 'gps_detected':
           const locationName = userLocationName?.display_name || 'Your location';
-          const accuracy = userLocation?.accuracy ? `±${Math.round(userLocation.accuracy)}m` : '';
+          const accuracy = userLocation?.accuracy ? `${Math.round(userLocation.accuracy)}m` : '';
+
           return (
             <span style={{ color: '#10b981' }}>
-              📍 {locationName} {accuracy && `(${accuracy})`}
-              {nearestStationInfo && (
-                <span style={{ color: '#6b7280', fontSize: '0.9em' }}>
-                  {' '} → Nearest: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}m)
-                </span>
-              )}
-            </span>
+        📍 {locationName}
+            {nearestStationInfo && (
+              <span style={{ color: '#6b7280', fontSize: '0.9em' }}>
+                {' '} → Nearest: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}km)
+              </span>
+            )}
+      </span>
+
           );
         case 'failed':
             return null;
@@ -753,7 +756,7 @@ function Dashboard() {
       <div className={`alert-banner ${aqiStatus.class}`}>
         ℹ️ <span>
           {currentDataInfo?.station_name || 'Your Location'} AQI: {Math.round(currentAQI)} - {aqiStatus.status}
-          {nearestStationInfo && !isMobileView && ` • Distance to nearest sensor: ${nearestStationInfo.distance.toFixed(1)}m`}
+          {nearestStationInfo && !isMobileView && ` • Distance to nearest sensor: ${nearestStationInfo.distance.toFixed(1)}km`}
         </span>
       </div>
 

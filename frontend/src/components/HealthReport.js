@@ -7,11 +7,13 @@ const LazyChart = React.lazy(() => import('./LazyChart'));
 
 // --- Helper Functions (same as Dashboard.js) ---
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // km
-    const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c * 1000;
+    // REMOVED: * 1000 to return km instead of meters
+    return R * c; 
 };
 
 const getAQIColor = (aqi) => {
@@ -455,7 +457,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                 ℹ️ <span>
                     <strong>CURRENT AIR QUALITY:</strong> 
                     {interpolatedData ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
-                    {nearestStation && nearestStation.distance !== null && ` • Distance: ${nearestStation.distance.toFixed(1)}m from nearest monitor`}
+                    {nearestStation && nearestStation.distance !== null && ` • Distance: ${nearestStation.distance.toFixed(1)}km from nearest monitor`}
                 </span>
             </div>
 
@@ -479,7 +481,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                             <strong>Generated:</strong> {new Date().toLocaleString('en-IN')}
                         </div>
                         <div className="metadata-item">
-                            <strong>Patient:</strong> {username}
+                            <strong>Name:</strong> {username}
                         </div>
                         <div className="metadata-item">
                             <strong>Location:</strong> {interpolatedData ? 'Your Current Location' : 'Nearest Monitor Data'}
@@ -514,7 +516,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                                 {interpolatedData ? '🎯 Your Location' : `📍 ${friendlyStationName}`}
                                 {nearestStation && nearestStation.distance !== null && (
                                     <div className="distance-info">
-                                        Distance: {nearestStation.distance.toFixed(1)}m
+                                        Distance: {nearestStation.distance.toFixed(1)}km
                                     </div>
                                 )}
                             </div>
@@ -735,7 +737,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                                 <div className="source-desc">
                                     {interpolatedData ? 
                                     `Location-based calculation - you are ${nearestStation?.distance?.toFixed(1)}m from nearest air quality monitor` :
-                                    `Using data from nearest monitoring station (${nearestStation?.distance?.toFixed(1)}m away)`
+                                    `Using data from nearest monitoring station (${nearestStation?.distance?.toFixed(1)}km away)`
                                 }
                             </div>
                             </div>

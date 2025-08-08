@@ -39,14 +39,18 @@ const getAQIStatus = (aqi) => {
     return 'Hazardous';
 };
 
+// ...
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // km
+    const R = 6371; // Earth's radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c * 1000; // Returns distance in meters
+    // REMOVED: * 1000 to return km instead of meters
+    return R * c; 
 };
+// ..
+
 
 const createAqiIcon = (aqi, isComingSoon = false) => {
     const color = isComingSoon ? '#cbd5e1' : getAQIColor(aqi);
@@ -270,17 +274,17 @@ const MapPage = () => {
 }, [user, mapInstance]); // Remove userLocation from dependencies to prevent loops
 
 // MINIMAL FIX: Add this debounced effect for user location data calculation
-useEffect(() => {
-    if (!userLocation || Object.keys(stations).length === 0) return;
-    
-    // FIXED: Debounce the calculation to prevent excessive updates
-    const timeoutId = setTimeout(() => {
-        console.log('Calculating user location data...');
-        // ... your existing calculation code here ...
-    }, 1000); // 1 second debounce
-    
-    return () => clearTimeout(timeoutId);
-}, [userLocation, stations]);
+    useEffect(() => {
+        if (!userLocation || Object.keys(stations).length === 0) return;
+        
+        // FIXED: Debounce the calculation to prevent excessive updates
+        const timeoutId = setTimeout(() => {
+            console.log('Calculating user location data...');
+            // ... your existing calculation code here ...
+        }, 1000); // 1 second debounce
+        
+        return () => clearTimeout(timeoutId);
+    }, [userLocation, stations]);
     // Make component instance available globally for popup callbacks
     useEffect(() => {
         window.mapPageInstance = {
@@ -377,7 +381,7 @@ useEffect(() => {
                 station.station_info.lng
             );
 
-            console.log(`📍 Station ${stationId}: ${distance.toFixed(2)}m away`);
+            console.log(`📍 Station ${stationId}: ${distance.toFixed(2)}km away`);
 
             // Avoid division by zero
             const safeDistance = Math.max(distance, 0.001);
@@ -553,7 +557,7 @@ useEffect(() => {
                     is_interpolated: false,
                     distance_to_nearest: nearestDist,
                     nearest_station_name: nearestStationData.station_info.name,
-                    distance_warning: `You are ${nearestDist.toFixed(1)}m away from sensors (beyond m interpolation range)`
+                    distance_warning: `You are ${nearestDist.toFixed(1)}km away from sensors`
                 });
                 
                 console.log('✅ Using nearest real station data (beyond 1km):', nearestStationData.station_info.name);
@@ -1179,7 +1183,7 @@ useEffect(() => {
                                                         }
                                                     </div>
                                                     <div className="distance-info">
-                                                        📏 {nearestStation.distance.toFixed(1)}m from nearest sensor
+                                                        📏 {nearestStation.distance.toFixed(1)}km from nearest sensor
                                                     </div>
                                                 </div>
                                             </div>

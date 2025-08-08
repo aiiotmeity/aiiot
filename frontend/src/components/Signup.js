@@ -1,4 +1,4 @@
-import React, { useState,  useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './css/Signup.css';
 import logoImage from '../assets/aqi.webp'; 
@@ -27,10 +27,22 @@ function Signup() {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  // Auto-dismiss error messages
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 5000); // Auto-dismiss after 5 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   // Memoize particles to prevent recreation on every render
   const particles = useMemo(() => {
     const particleElements = [];
-    for (let i = 0; i < 30; i++) { // Reduced from 50 to 30
+    for (let i = 0; i < 20; i++) { // Reduced from 30 to 20
       particleElements.push(
         <div
           key={i}
@@ -38,8 +50,11 @@ function Signup() {
           style={{
             left: Math.random() * 100 + '%',
             top: Math.random() * 100 + '%',
-            width: Math.random() * 8 + 4 + 'px',
-            height: Math.random() * 8 + 4 + 'px',
+            width: '4px',
+            height: '4px',
+            backgroundColor: 'rgba(59, 130, 246, 0.3)',
+            borderRadius: '50%',
+            position: 'absolute',
             animationDelay: Math.random() * 5 + 's'
           }}
         />
@@ -191,10 +206,9 @@ function Signup() {
       <nav className="navbar">
         <div className="navbar-content">
           <Link to="/" className="navbar-brand">
-                      {/* 2. USE THE IMPORTED VARIABLE */}
-                      <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
-                      AirAware
-                    </Link>
+            <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+            AirAware
+          </Link>
         </div>
       </nav>
 
@@ -212,20 +226,24 @@ function Signup() {
             <p>Create your account to get started</p>
           </div>
 
-          {/* Show error message */}
-          {error && (
-            <div className="error-message" style={{
-              backgroundColor: '#f8d7da',
-              color: '#721c24',
-              padding: '12px',
-              borderRadius: '4px',
-              marginBottom: '16px',
-              border: '1px solid #f5c6cb'
-            }}>
-              <span style={{ marginRight: '8px' }}>⚠️</span>
-              {error}
-            </div>
-          )}
+          {/* Compact Alert Messages */}
+          <div className="alert-container">
+            {/* Error message */}
+            {error && (
+              <div className="error-message">
+                <span>⚠️</span>
+                <span>{error}</span>
+                <button 
+                  type="button" 
+                  onClick={() => setError('')}
+                  className="alert-close"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -243,14 +261,6 @@ function Signup() {
                   placeholder="Enter your full name"
                   required
                   disabled={loading}
-                  style={{
-                    width: '100%',
-                    padding: '12px 12px 12px 45px',
-                    fontSize: '16px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    outline: 'none'
-                  }}
                 />
               </div>
             </div>
@@ -271,17 +281,9 @@ function Signup() {
                   required
                   disabled={loading}
                   maxLength="13"
-                  style={{
-                    width: '100%',
-                    padding: '12px 12px 12px 45px',
-                    fontSize: '16px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    outline: 'none'
-                  }}
                 />
               </div>
-              <small style={{ color: '#666', fontSize: '14px' }}>
+              <small>
                 Enter mobile number with +91 prefix (13 characters total)
               </small>
             </div>
@@ -290,33 +292,26 @@ function Signup() {
               type="submit" 
               className="btn-primary" 
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: '16px',
-                backgroundColor: loading ? '#ccc' : '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                marginTop: '16px'
-              }}
             >
               {loading ? (
                 <>
-                  <span style={{ marginRight: '8px' }}>🔄</span> Creating Account...
+                  <span>🔄</span>
+                  <span>Creating Account...</span>
                 </>
               ) : (
-                'Create Account'
+                <>
+                  <span>✨</span>
+                  <span>Create Account</span>
+                </>
               )}
             </button>
           </form>
 
-          <div className="signup-footer" style={{ marginTop: '24px', textAlign: 'center' }}>
+          <div className="signup-footer">
             <p>
               Already have an account? 
-              <a href="/login" style={{ color: '#007bff', textDecoration: 'none', marginLeft: '4px' }}>
-                <span style={{ marginRight: '4px' }}>🔑</span> Login
+              <a href="/login">
+                <span>🔑</span> Login
               </a>
             </p>
           </div>

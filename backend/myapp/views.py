@@ -1066,6 +1066,9 @@ def send_otp_api(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+
+
+
 @api_view(['POST'])
 @csrf_exempt
 def verify_otp_api(request):

@@ -286,16 +286,15 @@ function HomePage() {
         </div>
         </div>
       </section>
+      
 
       {/* --- Stats Section --- */}
       <section className="stats-section">
         <div className="stats-container">
           <div className="section-header">
-            <h2 className="section-title">Kerala Air Quality Network</h2>
-            <p className="section-subtitle">
-              Comprehensive monitoring across multiple locations for accurate air quality assessment
-            </p>
-          </div>
+          <h2 className="section-title">AirAware Kalady Network</h2>
+        </div>
+
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-number">5</div>
@@ -318,9 +317,7 @@ function HomePage() {
         <div className="section-container">
           <div className="section-header">
             <h2 className="section-title">Understanding Air Quality Index</h2>
-            <p className="section-subtitle">
-              Know what the AQI numbers mean for your health and daily activities
-            </p>
+            
           </div>
           <div className="aqi-scale-grid">
             <div className="aqi-scale-item">
@@ -370,9 +367,7 @@ function HomePage() {
   <div className="section-container">
     <div className="section-header">
       <h2 className="section-title">Monitoring Locations</h2>
-      <p className="section-subtitle">
-        Air quality data from strategic locations across Ernakulam district
-      </p>
+      
     </div>
     <div className="cities-grid">
       <div className="city-card" onClick={handleMapNavigation}>
@@ -461,9 +456,7 @@ function HomePage() {
         <div className="section-container">
           <div className="section-header">
             <h2 className="section-title">Our Services</h2>
-            <p className="section-subtitle">
-              Advanced air quality solutions powered by cutting-edge technology
-            </p>
+            
           </div>
           <div className="services-grid">
             
@@ -504,9 +497,10 @@ function HomePage() {
             <div className="footer-section">
               <h3>About AirQuality Kerala</h3>
               <p className="footer-text">
-                Leading provider of real-time air quality monitoring solutions in Kerala, 
-                committed to environmental sustainability and public health awareness.
+                AirAware Kalady — Leading provider of real-time air quality monitoring solutions in Kalady, 
+                dedicated to promoting environmental sustainability and enhancing public health awareness.
               </p>
+
               <div className="social-links">
                 <a href="#" className="social-link">
                   <i className="fab fa-facebook-f"></i>
@@ -566,8 +560,9 @@ function HomePage() {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 AirQuality Kerala. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
-          </div>
+          <p>&copy; 2025 AirAware Kalady. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
+        </div>
+
         </div>
       </footer>
 
@@ -630,9 +625,7 @@ function HomePage() {
                 <i className="fas fa-play"></i>
                 Start Exploring
               </button>
-              <div className="popup-timer">
-                <span>Welcome to cleaner air monitoring!</span>
-              </div>
+              
             </div>
           </div>
         </div>
