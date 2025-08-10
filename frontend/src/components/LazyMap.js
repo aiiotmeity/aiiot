@@ -1,0 +1,61 @@
+import React, { useEffect, useRef } from 'react';
+
+const LazyMap = ({ userLocation, stations }) => {
+    const mapRef = useRef(null);
+    const mapInstanceRef = useRef(null);
+    const markersRef = useRef({});
+    const userMarkerRef = useRef(null);
+
+    const getAQIColor = (aqi) => {
+        if (aqi === null || aqi === undefined) return '#6b7280';
+        if (aqi <= 50) return '#10b981';
+        if (aqi <= 100) return '#f59e0b';
+        if (aqi <= 200) return '#ef4444';
+        return '#7c2d12';
+    };
+    const createAqiIcon = (aqi, name) => {
+        const color = getAQIColor(aqi);
+        const iconHtml = `<div style="background-color: ${color};" class="aqi-marker-icon"><div class="aqi-marker-icon-inner">${Math.round(aqi) || 'N/A'}</div></div><div class="aqi-marker-label">${name}</div>`;
+        return window.L.divIcon({ html: iconHtml, className: 'custom-div-icon', iconSize: [40, 40], iconAnchor: [20, 40] });
+    };
+
+    useEffect(() => {
+        if (mapRef.current && !mapInstanceRef.current) {
+            const map = window.L.map(mapRef.current, { zoomControl: false }).setView([10.176, 76.430], 13);
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            window.L.control.zoom({ position: 'topleft' }).addTo(map);
+            mapInstanceRef.current = map;
+        }
+    }, []);
+
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map || !stations) return;
+
+        Object.values(markersRef.current).forEach(marker => marker.remove());
+        markersRef.current = {};
+
+        Object.entries(stations).forEach(([id, station]) => {
+            const { lat, lng, name } = station.station_info;
+            const marker = window.L.marker([lat, lng], { icon: createAqiIcon(station.highest_sub_index, name) }).addTo(map);
+            markersRef.current[id] = marker;
+        });
+
+    }, [stations]);
+    
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (map && userLocation) {
+            map.setView([userLocation.lat, userLocation.lng], 14);
+            if (userMarkerRef.current) {
+                userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+            } else {
+                userMarkerRef.current = window.L.marker([userLocation.lat, userLocation.lng]).addTo(map);
+            }
+        }
+    }, [userLocation]);
+
+    return <div ref={mapRef} style={{ height: '100%', width: '100%', borderRadius: '12px' }}></div>;
+};
+
+export default LazyMap;
