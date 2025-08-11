@@ -431,14 +431,7 @@ function FamilyPage() {
                                             </div>
                                         </div>
                                         <div className="member-actions">
-                                            <Link 
-                                                to={`/health-assessment?username=${member.name}`} 
-                                                className="action-btn health-btn"
-                                                title="View Health Assessment"
-                                            >
-                                                <span className="btn-icon">🏥</span>
-                                                <span>Health Info</span>
-                                            </Link>
+                                            
                                             <button 
                                                 className="action-btn edit-btn" 
                                                 onClick={() => handleEditMemberClick(member)}
@@ -650,7 +643,7 @@ function FamilyPage() {
                                 <li><Link to="/dashboard">🏠 Dashboard</Link></li>
                               
                                 <li><Link to="/health-assessment">📋 Health Assessment</Link></li>
-                                <li><Link to="/health-report">📄 Health Report</Link></li>
+                                
                             </ul>
                         </div>
                         <div className="footer-section">

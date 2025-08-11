@@ -572,7 +572,7 @@ class HomeAPI(APIView):
                 logger.info(f"User location provided. Nearest station found: {target_station_data['station_info']['name']}")
             except (ValueError, TypeError):
                 # Fallback to the default if coordinates are invalid
-                logger.warning("Invalid lat/lng parameters received.")
+                logger.warning("Invalid lat/lng parameters received. ")
                 pass
         else:
             logger.info("No user location provided. Defaulting to Station 1 data.")

@@ -186,7 +186,8 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     // Fallback to the first station's AQI if something goes wrong
     return stations[0]?.highest_sub_index || 50; 
 };
-    const { user } = useAuth();
+    // AFTER (Correct):
+    const { user, loading: authLoading } = useAuth();
     const [username] = useState(user?.name || null);
     const [reportData, setReportData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -201,7 +202,10 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     const [currentDataInfo, setCurrentDataInfo] = useState(null);
 
     const navigate = useNavigate();
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    // This will automatically use the correct URL for both local and deployed environments
+    const API_BASE_URL = process.env.NODE_ENV === 'production' 
+        ? 'https://airaware-app-gcw7.onrender.com' // Your deployed backend URL
+        : 'http://localhost:8000';                   // Your local backend URL
 
     // Update time every minute
     useEffect(() => {
@@ -212,41 +216,60 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     // In HealthReport.js, replace the entire fetchReportData function
 
     const fetchReportData = useCallback(async () => {
+        // This check is now robust and waits for the user object from useAuth
+        if (!user || !user.name) {
+            console.log("Health Report fetch blocked: User name not available yet.");
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
-            if (!user?.name) {
-                // Wait for user object to be available before fetching
-                return;
-            }
-            const url = `${API_BASE_URL}/api/health-report/?username=${user.name}`;
+            // --- THIS IS THE KEY FIX ---
+            // The backend view expects 'username', so we must send 'user.name'
+            const url = new URL(`${API_BASE_URL}/api/health-report/`);
+            url.searchParams.append('username', user.name); // Send username, NOT user_id
+
+            console.log(`🚀 Calling health report API: ${url.toString()}`);
+
             const response = await fetch(url);
 
-            // --- START: THE KEY FIX ---
-            // This block checks if the response is valid JSON before parsing.
             if (!response.ok) {
-                // If the status is 401/403, it's an authentication error.
-                if (response.status === 401 || response.status === 403) {
-                    throw new Error("Your session has expired. Please log in again.");
-                }
-                // For other errors, give a generic message.
-                throw new Error(`Server returned an error: ${response.status}`);
+                throw new Error(`The server responded with an error (Status: ${response.status})`);
             }
-            // --- END: THE KEY FIX ---
             
             const data = await response.json();
             setReportData(data);
+            
+            // Set the default station for the forecast chart
+            if (data.stations) {
+                const stationEntries = Object.entries(data.stations);
+                if (stationEntries.length > 0) {
+                    const [defaultId] = stationEntries[0];
+                    setNearestStation({ id: defaultId });
+                }
+            }
 
         } catch (err) {
+            console.error("❌ Health report fetch failed:", err);
             setError(err.message);
-            // If the error indicates a login issue, redirect to the login page.
-            if (err.message.includes("log in")) {
-                setTimeout(() => navigate('/login'), 2000);
-            }
         } finally {
             setLoading(false);
         }
     }, [user, navigate, API_BASE_URL]);
+
+
+    // ===== INITIALIZATION =====
+    useEffect(() => {
+        if (authLoading) {
+            return; // Wait for auth check
+        }
+        if (!user) {
+            navigate('/login'); // Redirect if not logged in
+            return;
+        }
+         fetchReportData();
+    }, [authLoading, user, fetchReportData, navigate]);
 
    
     // In HealthReport.js

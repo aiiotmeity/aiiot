@@ -479,7 +479,7 @@ function Dashboard() {
           station_name: nearestStation.station_info.name,
           is_interpolated: false,
           show_distance_message: true,
-          distance_message: `📍 You are ${nearestDistance.toFixed(1)}m from the nearest sensor node, so you are seeing data from ${nearestStation.station_info.name}`,
+          distance_message: `📍 You are ${nearestDistance.toFixed(1)}km from the nearest sensor node, so you are seeing data from ${nearestStation.station_info.name}`,
           data_type: 'Nearest Station Data'
         });
       }
@@ -746,7 +746,6 @@ function Dashboard() {
             <li><Link to="/health-assessment" className="nav-link" onClick={handleNavLinkClick}>📋 Health Update</Link></li>
             <li><Link to="/health-report" className="nav-link" onClick={handleNavLinkClick}>📄 Health Report</Link></li>
             <li><Link to="/add-family" className="nav-link" onClick={handleNavLinkClick}>👥 Add Family</Link></li>
-            <li><Link to="/map" className="nav-link" onClick={handleNavLinkClick}>🗺️ Live Map</Link></li>
             <li className="user-info">👤 <span>{username}</span></li>
             <li><button onClick={handleLogout} className="nav-link login-btn">🚪 Logout</button></li>
           </ul>
