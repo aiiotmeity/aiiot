@@ -794,7 +794,7 @@ function Dashboard() {
             <div className="location-main-content">
               <div className="location-icon-section" style={{ color: currentDataInfo.is_interpolated ? '#10b981' : '#3b82f6' }}>
                 <div className="location-icon-large"><i className={`fas ${currentDataInfo.is_interpolated ? 'fa-crosshairs' : 'fa-map-marker-alt'}`}></i></div>
-                <div className="location-badge-large">{currentDataInfo.is_interpolated ? '🎯 Your Location' : '📍 Nearest Station'}</div>
+                
               </div>
               <div className="location-details-section">
                 <div className="location-primary-info">

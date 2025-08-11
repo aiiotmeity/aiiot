@@ -25,13 +25,14 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # In myproject/settings.py
 
-# This is the new, corrected configuration
+# This is the new, corrected configuration\
+
 DATABASES = {
     'default': dj_database_url.config(
         # This function will safely use the DATABASE_URL from your environment variables if it's valid.
         # If it's missing or empty (like when you're on your local computer),
         # it will automatically and correctly fall back to using your local sqlite3 file.
-        default=f"sqlite:///{os.path.join(BASE_DIR, 'db.sqlite3')}"
+        default=f"sqlite://{os.path.join(BASE_DIR, 'db.sqlite3')}"
     )
 }
 
