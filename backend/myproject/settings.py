@@ -29,10 +29,8 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 DATABASES = {
     'default': dj_database_url.config(
-        # This function will safely use the DATABASE_URL from your environment variables if it's valid.
-        # If it's missing or empty (like when you're on your local computer),
-        # it will automatically and correctly fall back to using your local sqlite3 file.
-        default=f"sqlite://{os.path.join(BASE_DIR, 'db.sqlite3')}"
+        # Convert Windows path to URL-safe format with forward slashes
+        default=f"sqlite:///{str(BASE_DIR / 'db.sqlite3').replace(os.sep, '/')}"
     )
 }
 
