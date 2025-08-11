@@ -580,7 +580,7 @@ function HealthAssessment() {
               📋
             </div>
             <h1>Health Assessment Questionnaire</h1>
-            <p><Link to="/">🏠 Home</Link></p>
+            
             <p>Hello, {username}! Let's evaluate your health status for personalized air quality recommendations.</p>
           </div>
           

@@ -984,12 +984,11 @@ const MapPage = () => {
                                             ) : (
                                                 <>
                                                     <div className="method-item">
-                                                        <span className="method-icon">📍</span>
-                                                        <span>Using nearest station data</span>
+                                                        
                                                     </div>
                                                     <div className="method-item">
-                                                        <span className="method-icon">⚠️</span>
-                                                        <span>Beyond 1m - no interpolation</span>
+                                                        
+                                                        
                                                     </div>
                                                 </>
                                             )}
