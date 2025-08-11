@@ -1982,7 +1982,7 @@ def station_forecast_api(request, station_id):
 # In myapp/views.py
 
 # In myapp/views.py
-@cache_control(max_age=30, public=True)
+
 @api_view(['GET'])
 @csrf_exempt
 def health_report_api(request):

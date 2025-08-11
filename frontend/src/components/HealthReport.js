@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'reac
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../App';
 import './css/HealthReport.css';
+import logoImage from '../assets/aqi.webp'; 
 
 const LazyChart = React.lazy(() => import('./LazyChart'));
 
@@ -161,7 +162,7 @@ const getEmergencyContacts = (aqi) => {
 
 function HealthReport() {
     // In HealthReport.js, add this function near the top with your other helpers.
-
+const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 const calculateInterpolatedAqi = (locationData, stations) => {
     let totalWeight = 0;
     let weightedAqi = 0;
@@ -451,18 +452,19 @@ const calculateInterpolatedAqi = (locationData, stations) => {
             <nav className="navbar">
                 <div className="navbar-content">
                     <Link to="/" className="navbar-brand">
-                        <img src="/aqi.webp" alt="AQM Logo" width="40" height="40" style={{ marginRight: '12px' }} />
-                        AirAware Kerala
+                        {/* 2. USE THE IMPORTED VARIABLE */}
+                        <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                        AirAware
                     </Link>
 
                     <div className="menu-toggle" onClick={toggleMenu}>☰</div>
 
                     <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
                         <li><Link to="/" className="nav-link">🏠 Home</Link></li>
-                        <li><Link to="/dashboard" className="nav-link">Profile</Link></li>
+                        <li><Link to="/dashboard" className="nav-link">👤 Profile</Link></li>
                         <li><Link to="/health-assessment" className="nav-link">📋 Health Update</Link></li>
                         <li><Link to="/add-family" className="nav-link">👥 Add Family</Link></li>
-                        <li><Link to="/map" className="nav-link">🗺️ Live Map</Link></li>
+                        {/*<li><Link to="/map" className="nav-link">🗺️ Live Map</Link></li>*/}
                         <li className="user-info">👤 <span>{username}</span></li>
                         <li>
                             <button onClick={handleLogout} className="nav-link login-btn">🚪 Logout</button>

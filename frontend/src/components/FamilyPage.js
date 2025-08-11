@@ -276,7 +276,7 @@ function FamilyPage() {
                     <div className="menu-toggle" onClick={toggleMenu}>☰</div>
 
                     <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-                        <li><Link to="/dashboard" className="nav-link">Profile</Link></li>
+                        <li><Link to="/dashboard" className="nav-link">👤 Profile</Link></li>
                         
                         <li><Link to="/health-assessment" className="nav-link">📋 Health Update</Link></li>
                         <li><Link to="/health-report" className="nav-link">📄 Health Report</Link></li>
@@ -640,7 +640,7 @@ function FamilyPage() {
                         <div className="footer-section">
                             <h4>Quick Links</h4>
                             <ul>
-                                <li><Link to="/dashboard">🏠 Dashboard</Link></li>
+                                <li><Link to="/dashboard">👤 Profile</Link></li>
                               
                                 <li><Link to="/health-assessment">📋 Health Assessment</Link></li>
                                 

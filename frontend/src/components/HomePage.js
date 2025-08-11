@@ -218,7 +218,7 @@ function HomePage() {
            
             {user ? (
               <>
-                <li><button onClick={handleDashboardNavigation} className="nav-link nav-button">Profile</button></li>
+                <li><button onClick={handleDashboardNavigation} className="nav-link nav-button">👤 Profile</button></li>
                 <li className="nav-link user-greeting">Hello, {user.name}</li>
                 <li><button onClick={handleLogout} className="nav-link login-btn nav-button"><i className="fas fa-sign-out-alt"></i> Logout</button></li>
               </>

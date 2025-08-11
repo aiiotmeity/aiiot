@@ -937,8 +937,14 @@ const MapPage = () => {
                                                     `📍 From ${userLocationData.station_name}`
                                                 }
                                             </div>
+                                            
                                             <div className="distance-info">
-                                                📏 {nearestStation.distance.toFixed(1)}m from nearest sensor
+                                                {/* This check prevents the crash */}
+                                                {nearestStation && nearestStation.distance != null ? (
+                                                    `📏 ${nearestStation.distance.toFixed(1)}km from nearest sensor`
+                                                ) : (
+                                                    '📏 Calculating distance...'
+                                                )}
                                             </div>
                                             {userLocationData.distance_warning && (
                                                 <div className="distance-warning">

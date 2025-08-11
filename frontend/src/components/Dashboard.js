@@ -746,7 +746,7 @@ function Dashboard() {
             <li><Link to="/health-assessment" className="nav-link" onClick={handleNavLinkClick}>📋 Health Update</Link></li>
             <li><Link to="/health-report" className="nav-link" onClick={handleNavLinkClick}>📄 Health Report</Link></li>
             <li><Link to="/add-family" className="nav-link" onClick={handleNavLinkClick}>👥 Add Family</Link></li>
-            <li><Link to="/map" className="nav-link" onClick={handleNavLinkClick}>🗺️ Live Map</Link></li>
+            
             <li className="user-info">👤 <span>{username}</span></li>
             <li><button onClick={handleLogout} className="nav-link login-btn">🚪 Logout</button></li>
           </ul>
@@ -974,8 +974,7 @@ function Dashboard() {
               <ul>
                 <li>ASIET Campus Station </li>
                 <li>Mattoor Junction Station</li>
-                <li>Advanced spatial interpolation algorithms</li>
-                <li>Weather integration</li>
+                
               </ul>
             </div>
             <div className="footer-section">
