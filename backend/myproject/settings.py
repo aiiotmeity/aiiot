@@ -23,25 +23,17 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 
-# Database Configuration
-database_url = os.environ.get('DATABASE_URL')
-if database_url and database_url.strip():
-    # Production database
-    try:
-        DATABASES = {
-            'default': dj_database_url.parse(
-                database_url,
-                conn_max_age=600,
-                conn_health_checks=True,
-            )
-        }
-    except ValueError as e:
-        print(f"Database URL parse error: {e}")
-        # Fallback to SQLite if DATABASE_URL is invalid
-        DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
-else:
-    # Development database
-    DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
+# In myproject/settings.py
+
+# This is the new, corrected configuration
+DATABASES = {
+    'default': dj_database_url.config(
+        # This function will safely use the DATABASE_URL from your environment variables if it's valid.
+        # If it's missing or empty (like when you're on your local computer),
+        # it will automatically and correctly fall back to using your local sqlite3 file.
+        default=f"sqlite:///{os.path.join(BASE_DIR, 'db.sqlite3')}"
+    )
+}
 
 
 # Environment-specific settings (Production vs. Development)

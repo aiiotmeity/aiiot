@@ -200,39 +200,239 @@ ul {
 }
 
 /* === MOBILE NAVBAR FIXES === */
+
+/* === MOBILE NAVBAR FIXES - ADD TO YOUR HomePage.css === */
+
+/* Mobile Navbar - Solid White Background & Clear Text */
 @media (max-width: 768px) {
+  /* Main navbar container on mobile */
+  .navbar {
+    background: #ffffff !important; /* Solid white background */
+    backdrop-filter: none; /* Remove blur effect that might cause issues */
+    -webkit-backdrop-filter: none;
+    border-bottom: 2px solid #e5e7eb; /* Stronger border for definition */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Clear shadow */
+  }
+  
+  /* Navbar brand (logo/title) on mobile */
+  .navbar-brand {
+    color: #1f2937 !important; /* Dark text */
+    font-weight: 800;
+    font-size: 1.5rem;
+    text-shadow: none;
+  }
+  
+  .navbar-brand:hover {
+    color: #3b82f6 !important; /* Blue on hover */
+  }
+  
+  /* Menu toggle button */
+  .menu-toggle { 
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: #f3f4f6; /* Light gray background */
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    color: #1f2937 !important; /* Dark icon color */
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+  }
+  
+  .menu-toggle:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+    color: #3b82f6 !important;
+    transform: scale(1.05);
+  }
+  
+  /* Mobile dropdown menu */
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    right: 0;
+    background: #ffffff !important; /* Solid white background */
+    border: 2px solid #e5e7eb;
+    border-top: none;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.5rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-radius: 0 0 16px 16px;
+    z-index: 1000;
+    transform: translateY(-10px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    backdrop-filter: none; /* Remove any blur effects */
+    -webkit-backdrop-filter: none;
+  }
+  
+  .nav-links.active {
+    display: flex !important;
+    transform: translateY(0);
+    opacity: 1;
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  @keyframes slideDown {
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Mobile nav link styles */
   .nav-link, .nav-button {
-    color: #1f2937 !important; /* Ensure dark text on mobile too */
+    color: #1f2937 !important; /* Dark text */
+    background: #f9fafb; /* Light background */
     width: 100%;
     text-align: left;
     padding: 1rem 1.5rem;
-    border-radius: var(--border-radius);
+    border-radius: 8px;
     margin-bottom: 0.5rem;
     font-weight: 600;
-    transition: var(--transition);
-    border: 1px solid transparent;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    text-decoration: none;
   }
   
   .nav-link:hover, .nav-button:hover {
-    color: var(--primary-color) !important;
-    background: rgba(59, 130, 246, 0.05) !important;
-    border-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6 !important; /* Blue text on hover */
+    background: #eff6ff !important; /* Light blue background */
+    border-color: #bfdbfe;
     transform: translateX(4px);
   }
   
+  /* Special styling for login button on mobile */
   .nav-link.login-btn {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
-    color: white !important;
+    background: #ef4444 !important; /* Red background */
+    color: #ffffff !important; /* White text */
     margin-left: 0;
     margin-top: 1rem;
     text-align: center;
     font-weight: 700;
+    border: 2px solid #dc2626;
   }
   
   .nav-link.login-btn:hover {
-    color: white !important;
-    background: linear-gradient(135deg, var(--primary-dark), #1e40af) !important;
-    transform: translateY(-2px);
+    color: #ffffff !important; /* Keep white text */
+    background: #dc2626 !important; /* Darker red on hover */
+    border-color: #b91c1c;
+    transform: translateY(-2px); /* Lift effect instead of slide */
+  }
+  
+  /* User greeting on mobile */
+  .user-greeting { 
+    color: #4b5563 !important; /* Medium gray text */
+    background: #f3f4f6;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1rem;
+    border: 2px solid #e5e7eb;
+  }
+}
+
+/* Smaller mobile devices (phones) */
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0.875rem 1rem; /* Slightly less padding */
+  }
+  
+  .navbar-brand {
+    font-size: 1.4rem; /* Slightly smaller */
+  }
+  
+  .menu-toggle {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+  
+  .nav-links {
+    padding: 1.25rem; /* Less padding on small screens */
+  }
+  
+  .nav-link, .nav-button {
+    padding: 0.875rem 1.25rem; /* Slightly less padding */
+    font-size: 0.95rem;
+  }
+}
+
+/* Extra fixes for any remaining visibility issues */
+@media (max-width: 768px) {
+  /* Ensure all navbar text is dark and visible */
+  .navbar * {
+    color: #1f2937 !important;
+  }
+  
+  /* Override any inherited light colors */
+  .navbar .nav-link:not(.login-btn),
+  .navbar .nav-button:not(.login-btn),
+  .navbar .navbar-brand {
+    color: #1f2937 !important;
+    text-shadow: none !important;
+  }
+  
+  /* Ensure login button stays red with white text */
+  .navbar .nav-link.login-btn {
+    color: #ffffff !important;
+    background: #ef4444 !important;
+  }
+  
+  /* Remove any conflicting background effects */
+  .navbar::before,
+  .nav-links::before {
+    display: none !important;
+  }
+  
+  /* Ensure proper stacking */
+  .navbar {
+    position: relative;
+    z-index: 1001;
+  }
+  
+  .nav-links {
+    position: absolute;
+    z-index: 1002;
+  }
+}
+
+/* High contrast mode for better accessibility */
+@media (max-width: 768px) and (prefers-contrast: high) {
+  .navbar {
+    background: #ffffff !important;
+    border-bottom: 3px solid #000000;
+  }
+  
+  .nav-link, .nav-button {
+    color: #000000 !important;
+    background: #ffffff !important;
+    border: 2px solid #000000;
+  }
+  
+  .nav-link:hover, .nav-button:hover {
+    color: #ffffff !important;
+    background: #000000 !important;
+  }
+  
+  .nav-link.login-btn {
+    background: #dc2626 !important;
+    border-color: #7f1d1d;
   }
 }
 
