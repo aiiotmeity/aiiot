@@ -2134,18 +2134,18 @@
   .map-page .mobile-bottom-sheet,
   .map-page .my-location-btn,
   .map-page .mobile-map-controls {
-    display: none !important;
+  display: none !important;
   }
 
   .map-page .main-content {
-    height: 100vh;
-    width: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-  }
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden;
+  position: relative;
+  /* By default, it's a row for desktop */
+}
 
-  . .map-page .main-content {
+  .map-page .main-content {
     height: 100vh;
     width: 100%;
     position: fixed;
@@ -2160,5 +2160,23 @@
     top: 0;
     left: 0;
     z-index: 1;
+  }
+}
+/* In MapPage.css -- ADD THIS TO THE END OF THE FILE */
+
+/* === MOBILE-ONLY OVERRIDES === */
+@media (max-width: 768px) {
+  .map-page .main-content {
+    flex-direction: column; /* Apply the column layout ONLY on mobile */
+  }
+
+  .map-page .sidebar-panel,
+  .map-page .details-panel {
+    display: none; /* Hide the desktop sidebars on mobile */
+  }
+
+  /* This ensures the mobile menu is visible when it needs to be */
+  .map-page .mobile-bottom-sheet {
+    display: flex; 
   }
 }

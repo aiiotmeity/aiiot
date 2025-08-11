@@ -264,11 +264,8 @@ const calculateInterpolatedAqi = (locationData, stations) => {
         if (authLoading) {
             return; // Wait for auth check
         }
-        if (!user) {
-            navigate('/login'); // Redirect if not logged in
-            return;
-        }
-         fetchReportData();
+        
+        fetchReportData();
     }, [authLoading, user, fetchReportData, navigate]);
 
    
@@ -391,6 +388,14 @@ const calculateInterpolatedAqi = (locationData, stations) => {
         return getFriendlyStationName(currentDataInfo?.station_name);
     }, [currentDataInfo]);
 
+    // Helper function to safely format distance
+    const formatDistance = useCallback((distance) => {
+        if (distance === null || distance === undefined || typeof distance !== 'number') {
+            return 'N/A';
+        }
+        return distance.toFixed(1);
+    }, []);
+
     // Event handlers
     const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
     const handleLogout = useCallback(() => {
@@ -480,7 +485,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                 ℹ️ <span>
                     <strong>CURRENT AIR QUALITY:</strong> 
                     {interpolatedData ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
-                    {nearestStation && nearestStation.distance !== null && ` • Distance: ${nearestStation.distance.toFixed(1)}km from nearest monitor`}
+                    {nearestStation && nearestStation.distance !== null && nearestStation.distance !== undefined && ` • Distance: ${formatDistance(nearestStation.distance)}km from nearest monitor`}
                 </span>
             </div>
 
@@ -537,9 +542,9 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                             <h4>🌬️ Current Air Quality</h4>
                             <div className="station-name">
                                 {interpolatedData ? '🎯 Your Location' : `📍 ${friendlyStationName}`}
-                                {nearestStation && nearestStation.distance !== null && (
+                                {nearestStation && nearestStation.distance !== null && nearestStation.distance !== undefined && (
                                     <div className="distance-info">
-                                        Distance: {nearestStation.distance.toFixed(1)}km
+                                        Distance: {formatDistance(nearestStation.distance)}km
                                     </div>
                                 )}
                             </div>
@@ -759,8 +764,8 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                                 <div className="source-title">Location Analysis</div>
                                 <div className="source-desc">
                                     {interpolatedData ? 
-                                    `Location-based calculation - you are ${nearestStation?.distance?.toFixed(1)}m from nearest air quality monitor` :
-                                    `Using data from nearest monitoring station (${nearestStation?.distance?.toFixed(1)}km away)`
+                                    `Location-based calculation - you are ${formatDistance(nearestStation?.distance)}km from nearest air quality monitor` :
+                                    `Using data from nearest monitoring station (${formatDistance(nearestStation?.distance)}km away)`
                                 }
                             </div>
                             </div>

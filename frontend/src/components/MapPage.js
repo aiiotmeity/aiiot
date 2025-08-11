@@ -969,22 +969,11 @@ const MapPage = () => {
                                     
                                     {/* Methodology info */}
                                     <div className="methodology-section">
-                                        <h4><i className="fas fa-info-circle"></i> How We Calculate</h4>
+                                        
                                         <div className="methodology-card">
                                             {userLocationData.is_interpolated ? (
                                                 <>
-                                                    <div className="method-item">
-                                                        <span className="method-icon">🎯</span>
-                                                        <span>Smart interpolation from 2 real sensors</span>
-                                                    </div>
-                                                    <div className="method-item">
-                                                        <span className="method-icon">📊</span>
-                                                        <span>Data sources: lora-v1 & loradev2</span>
-                                                    </div>
-                                                    <div className="method-item">
-                                                        <span className="method-icon">✅</span>
-                                                        <span>You're within 1m of sensors</span>
-                                                    </div>
+                                                   
                                                 </>
                                             ) : (
                                                 <>
