@@ -26,13 +26,21 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 # In myproject/settings.py
 
 # This is the new, corrected configuration\
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-DATABASES = {
-    'default': dj_database_url.config(
-        # Convert Windows path to URL-safe format with forward slashes
-        default=f"sqlite:///{str(BASE_DIR / 'db.sqlite3').replace(os.sep, '/')}"
-    )
-}
+if DATABASE_URL and DATABASE_URL.strip():
+    # Use the provided DATABASE_URL (for production)
+    DATABASES = {
+        'default': dj_database_url.config(default=DATABASE_URL)
+    }
+else:
+    # Fallback to SQLite for local development or when DATABASE_URL is empty
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Environment-specific settings (Production vs. Development)
