@@ -126,6 +126,8 @@ const getLocationName = async (lat, lng) => {
       })),
 
     fetch(`https://us1.locationiq.com/v1/reverse.php?key=demo&lat=${lat}&lon=${lng}&format=json`)
+
+    
       .then(res => res.json())
       .then(data => ({
         service: 'LocationIQ',
