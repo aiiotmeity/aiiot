@@ -501,18 +501,26 @@ function HomePage() {
               </p>
 
               <div className="social-links">
+                <a href="https://www.linkedin.com/in/aiiot-asiet-b22302308" 
+                    className="social-link" 
+                    target="_blank" 
+                    rel="noopener noreferrer">
+                    <i className="fab fa-linkedin-in"></i>
+                  </a>
+                
+                <a href="https://www.instagram.com/aiiot_adishankara?igsh=aXY4bXQ2cjVhYWM2"
+                    className="social-link"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    <i className="fab fa-instagram"></i>
+                </a>
                 <a href="#" className="social-link">
                   <i className="fab fa-facebook-f"></i>
                 </a>
                 <a href="#" className="social-link">
                   <i className="fab fa-twitter"></i>
                 </a>
-                <a href="#" className="social-link">
-                  <i className="fab fa-linkedin-in"></i>
-                </a>
-                <a href="#" className="social-link">
-                  <i className="fab fa-instagram"></i>
-                </a>
+                
               </div>
             </div>
             <div className="footer-section">
@@ -554,7 +562,7 @@ function HomePage() {
               <br />
               <p className="footer-text">
                 <strong>Email:</strong> aiiot@adishankara.ac.in<br />
-                <strong>Phone:</strong> 0484 246 3825
+                <strong>Phone:</strong> 9846900310
               </p>
             </div>
           </div>

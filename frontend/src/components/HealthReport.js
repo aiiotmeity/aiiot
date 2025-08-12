@@ -748,58 +748,23 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                     <button onClick={handlePrint} className="action-btn primary">
                         🖨️ Print Report
                     </button>
-                    <button onClick={() => navigate('/health-assessment')} className="action-btn secondary">
-                        📋 Update Health Profile
-                    </button>
-                    <button onClick={() => navigate('/dashboard')} className="action-btn secondary">
-                        📊 View Dashboard
-                    </button>
+                    
                 </div>
 
                 {/* Data Source Information */}
-                <div className="data-source-section">
-                    <h3>⚡ Report Data Source & Methodology</h3>
-                    <div className="data-source-info">
-                        <div className="source-item">
-                            <div className="source-icon">📍</div>
-                            <div className="source-content">
-                                <div className="source-title">Location Analysis</div>
-                                <div className="source-desc">
-                                    {interpolatedData ? 
-                                    `Location-based calculation - you are ${formatDistance(nearestStation?.distance)}km from nearest air quality monitor` :
-                                    `Using data from nearest monitoring station (${formatDistance(nearestStation?.distance)}km away)`
-                                }
-                            </div>
-                            </div>
-                        </div>
-                        <div className="source-item">
-                            <div className="source-icon">🏥</div>
-                            <div className="source-content">
-                                <div className="source-title">Health Data</div>
-                                <div className="source-desc">Based on your personal health assessment and risk factors</div>
-                            </div>
-                        </div>
-                        <div className="source-item">
-                            <div className="source-icon">🏛️</div>
-                            <div className="source-content">
-                                <div className="source-title">Guidelines</div>
-                                <div className="source-desc">Following CPCB standards and Kerala Health Department protocols</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+                
                 {/* Government Disclaimer */}
                 <div className="disclaimer-section">
-                    <h3>📄 Official Disclaimer</h3>
-                    <div className="disclaimer-content">
-                        <p><strong>🏛️ Data Authority:</strong> Air quality data sourced from Government of Kerala monitoring stations operated under Central Pollution Control Board (CPCB) guidelines.</p>
-                        <p><strong>⚕️ Health Advisory:</strong> Recommendations are based on standard government health guidelines. Consult healthcare professionals for personalized medical advice.</p>
-                        <p><strong>📊 Data Accuracy:</strong> Air quality readings are updated every 30 seconds from certified monitoring equipment. {interpolatedData && 'Enhanced location analysis provides area-specific calculations.'}</p>
-                        <p><strong>🔄 Updates:</strong> This report reflects current conditions. Air quality can change rapidly - check live updates frequently.</p>
-                        <p><strong>📞 Emergency:</strong> In case of severe health symptoms related to air pollution, immediately contact medical emergency services (108) or Kerala Pollution Control Board (0471-2418566).</p>
-                    </div>
+                <h3>📄 Official Disclaimer</h3>
+                <div className="disclaimer-content">
+                    <p><strong>🏛️ Data Authority:</strong> Air quality data is collected and analyzed using IoT-based sensors developed by the Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology (ASIET). This data is independent of government monitoring networks.</p>
+                    
+                    <p><strong>⚕️ Health Advisory:</strong> Recommendations are generated using our AI-powered analysis of real-time sensor data. For personal medical advice, please consult a healthcare professional.</p>
+                    
+                    <p><strong>📞 Emergency:</strong> If you experience severe symptoms related to air pollution, seek immediate medical help (108) or visit the nearest healthcare facility.</p>
                 </div>
+                </div>
+
             </div>
 
              {/* Footer */}
@@ -809,20 +774,38 @@ const calculateInterpolatedAqi = (locationData, stations) => {
             <div className="footer-section">
               <h4>AirAware Kerala</h4>
               <p>Smart Air Quality Monitoring System</p>
-              <p>Real-time data • Personalized insights • Health-focused</p>
+              
               <div className="social-links">
-                <a href="#" className="social-link">📘</a>
-                <a href="#" className="social-link">🐦</a>
-                <a href="#" className="social-link">💼</a>
-                <a href="#" className="social-link">📷</a>
+                <a href="https://www.linkedin.com/in/aiiot-asiet-b22302308" 
+                    className="social-link" 
+                    target="_blank" 
+                    rel="noopener noreferrer">
+                    <i className="fab fa-linkedin-in"></i>
+                  </a>
+
+                <a href="https://www.instagram.com/aiiot_adishankara?igsh=aXY4bXQ2cjVhYWM2"
+                    className="social-link"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    <i className="fab fa-instagram"></i>
+                </a>
+
+                <a href="#" className="social-link">
+                  <i className="fab fa-facebook-f"></i>
+                </a>
+                <a href="#" className="social-link">
+                  <i className="fab fa-twitter"></i>
+                </a>
+                
               </div>
             </div>
             <div className="footer-section">
               <h4>Quick Links</h4>
               <ul>
-                <li><a href="/">🏠 Home</a></li>
-                <li><a href="/health-report">📄 Health Report</a></li>
-                <li><a href="/add-family">👥 Add Family</a></li>
+                <li><a href="/"> Home</a></li>
+                <li><a href="/health-report"> Health Report</a></li>
+                <li><a href="/add-family"> Add Family</a></li>
+                <li><a href="/map" >Live Map</a></li>
               </ul>
             </div>
             <div className="footer-section">
@@ -843,13 +826,12 @@ const calculateInterpolatedAqi = (locationData, stations) => {
               </p>
               <p>
                 <strong>Email:</strong> aiiot@adishankara.ac.in<br/>
-                <strong>Phone:</strong> 0484 246 3825
+                <strong>Phone:</strong> 9846900310
               </p>
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 AirAware Kerala - Smart Air Quality Monitoring System</p>
-            <p>Powered by real monitor data • Advanced location analysis • Government approved</p>
+            <p>&copy;  2025 AirAware kalady. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
           </div>
         </div>
       </footer>

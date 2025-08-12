@@ -954,19 +954,37 @@ function Dashboard() {
             <div className="footer-section">
               <h4>AirAware Kerala</h4>
               <p>Smart Air Quality Monitoring System</p>
-              <p>Real-time data • Personalized insights • Health-focused</p>
+              
               <div className="social-links">
-                <a href="#" className="social-link">📘</a>               
-                <a href="#" className="social-link">💼</a>
-                <a href="#" className="social-link">📷</a>
+                <a href="https://www.linkedin.com/in/aiiot-asiet-b22302308" 
+                    className="social-link" 
+                    target="_blank" 
+                    rel="noopener noreferrer">
+                    <i className="fab fa-linkedin-in"></i>
+                  </a>
+
+                <a href="https://www.instagram.com/aiiot_adishankara?igsh=aXY4bXQ2cjVhYWM2"
+                    className="social-link"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    <i className="fab fa-instagram"></i>
+                </a>
+                <a href="#" className="social-link">
+                  <i className="fab fa-facebook-f"></i>
+                </a>
+                <a href="#" className="social-link">
+                  <i className="fab fa-twitter"></i>
+                </a>
+                
               </div>
             </div>
             <div className="footer-section">
               <h4>Quick Links</h4>
               <ul>
-                <li><Link to="/">🏠 Home</Link></li>
-                <li><Link to="/health-report">📄 Health Report</Link></li>
-                <li><Link to="/add-family">👥 Add Family</Link></li>
+                <li><Link to="/"> Home</Link></li>
+                <li><Link to="/health-report">Health Report</Link></li>
+                <li><Link to="/add-family">Add Family</Link></li>
+                <li><Link to="/map">Live map</Link></li>
               </ul>
             </div>
             <div className="footer-section">
@@ -986,13 +1004,13 @@ function Dashboard() {
               </p>
               <p>
                 <strong>Email:</strong> aiiot@adishankara.ac.in<br/>
-                <strong>Phone:</strong> 0484 246 3825
+                <strong>Phone:</strong> 9846900310
               </p>
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 AirAware Kerala - Smart Air Quality Monitoring System</p>
-            <p>Powered by real sensor data • Advanced interpolation • Government approved</p>
+            <p>&copy;  2025 AirAware kalady. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
+            
           </div>
         </div>
       </footer>

@@ -1052,20 +1052,18 @@ const MapPage = () => {
                         <span>AirAware</span>
                     </Link>
                     
-                    {!isMobile && (
-                        <div className="nav-center">
-                            <ul className="nav-links">
-                                <li><Link to="/" className="nav-link">Home</Link></li>
-                                <li><Link to="/map" className="nav-link active">Live Map</Link></li>
-                                {user && (
-                                    <>
-                                       {/*<li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
-                                        <li><Link to="/add-family" className="nav-link">Family</Link></li>*/}
-                                    </>
-                                )}
-                            </ul>
-                        </div>
-                    )}
+                    <div className="nav-center">
+                        <ul className="nav-links">
+                            <li><Link to="/" className="nav-link">Home</Link></li>
+                            
+                            {user && !isMobile && ( // You can keep other links desktop-only if needed
+                                <>
+                                   {/*<li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
+                                    <li><Link to="/add-family" className="nav-link">Family</Link></li>*/}
+                                </>
+                            )}
+                        </ul>
+                    </div>
 
                     <div className="nav-right">
                         {user ? (
