@@ -934,16 +934,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="data-source-section">
-          <h3>⚡ System Status & Data Source</h3>
-          <div className="status-grid">
-            <div className="status-item"><div className="status-icon">📍</div><div className="status-content"><div className="status-title">Location Status</div><div className="status-value">{locationStatus === 'gps_detected' ? 'GPS Active' : locationStatus === 'detecting' ? 'Detecting...' : locationStatus === 'failed' ? 'Failed' : 'Default'}</div></div></div>
-            <div className="status-item"><div className="status-icon">📊</div><div className="status-content"><div className="status-title">Data Method</div><div className="status-value">{currentDataInfo?.is_interpolated ? 'Advanced Data Interpolation' : 'Direct Sensor'}</div></div></div>
-            <div className="status-item"><div className="status-icon">📡</div><div className="status-content"><div className="status-title">Data Source</div><div className="status-value">{currentDataInfo?.station_name || 'Default Station'}</div></div></div>
-            <div className="status-item"><div className="status-icon">🔄</div><div className="status-content"><div className="status-title">Last Update</div><div className="status-value">{lastUpdateTime.toLocaleTimeString()}</div></div></div>
-          </div>
-          
-        </div>
+        
 
         
       </div>
