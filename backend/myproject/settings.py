@@ -45,8 +45,8 @@ else:
 if os.environ.get('RENDER'):
     # --- PRODUCTION Settings (on Render) ---
     ALLOWED_HOSTS = [
-       # 'aiiot.it.com',
-        #'www.aiiot.it.com',
+        'airaware.it.com',
+        'www.airaware.it.com',
         'airaware-app-gcw7.onrender.com',
         '.onrender.com'
     ]
