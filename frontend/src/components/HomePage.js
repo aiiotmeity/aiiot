@@ -21,7 +21,9 @@ function HomePage() {
   
   // API Base URL configuration
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://airaware-app-gcw7.onrender.com' 
+    ? (process.env.REACT_APP_USE_CUSTOM_DOMAIN === 'true' 
+        ? 'https://airaware.it.com' 
+        : 'https://airaware-app-gcw7.onrender.com')
     : 'http://localhost:8000';
 
   // FIX: Added useEffect to handle window resizing for isMobileView
