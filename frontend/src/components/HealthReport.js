@@ -513,9 +513,9 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                         <div className="metadata-item">
                             <strong>Name:</strong> {username}
                         </div>
-                        <div className="metadata-item">
+                        {/*<div className="metadata-item">
                             <strong>Location:</strong> {interpolatedData ? 'Your Current Location' : 'Nearest Monitor Data'}
-                        </div>
+                        </div>*/}
                         <div className="metadata-item">
                             <strong>Data Source:</strong> {friendlyStationName}
                         </div>
@@ -811,10 +811,8 @@ const calculateInterpolatedAqi = (locationData, stations) => {
             <div className="footer-section">
               <h4>Data Sources</h4>
               <ul>
-                <li>Campus Air Quality Monitor</li>
-                <li>Mattoor Junction Monitor</li>
-                <li>Advanced location analysis algorithms</li>
-                <li>Weather integration</li>
+                <li>ASIET Campus Station </li>
+                <li>Mattoor Junction Station</li>
               </ul>
             </div>
             <div className="footer-section">

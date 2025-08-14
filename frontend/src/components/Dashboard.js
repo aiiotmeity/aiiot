@@ -319,20 +319,28 @@ function Dashboard() {
   }, [isMenuOpen, isMobileView, closeMenu]);
 
   // ===== GET USER LOCATION =====
+  // ===== GET USER LOCATION (IMPROVED) =====
   const getUserLocation = useCallback(() => {
     return new Promise((resolve, reject) => {
+      // 1. Check for browser support first
       if (!navigator.geolocation) {
-        reject(new Error('Geolocation not supported'));
+        reject({ code: -1, message: 'Geolocation is not supported by this browser.' });
         return;
       }
+
       setLocationStatus('detecting');
       setIsLocationUpdating(true);
-      const timeout = setTimeout(() => {
-        reject(new Error('Location detection timeout'));
-      }, 10000);
+
+      // 2. Define clearer, more lenient options
+      const options = {
+        enableHighAccuracy: true, // Keep for best results, but be aware it's slower
+        timeout: 15000,           // 3. Increased timeout to 15 seconds
+        maximumAge: 60000         // 4. Accept a cached location up to 1 minute old
+      };
+
+      // 5. Use the built-in error handling, no need for a manual setTimeout
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          clearTimeout(timeout);
           const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
@@ -340,36 +348,37 @@ function Dashboard() {
             source: 'gps',
             timestamp: Date.now()
           };
+
+          // Validate coordinates
           if (isNaN(location.lat) || isNaN(location.lng)) {
-            reject(new Error('Invalid GPS coordinates'));
+            reject({ code: -2, message: 'Received invalid GPS coordinates.' });
             return;
           }
+
+          // Fetch location name and update state
           try {
             const locationName = await getLocationName(location.lat, location.lng);
             setUserLocationName(locationName);
             console.log('📍 Location name resolved:', locationName.display_name);
           } catch (nameError) {
-            console.log('❌ Failed to get location name:', nameError);
+            console.warn('⚠️ Could not resolve location name, using fallback.', nameError);
             const fallbackName = getRegionalFallback(location.lat, location.lng);
             setUserLocationName(fallbackName);
           }
+          
           setUserLocation(location);
           setLocationStatus('gps_detected');
           setIsLocationUpdating(false);
           resolve(location);
         },
         (error) => {
-          clearTimeout(timeout);
-          setLocationStatus('failed');
+          // 6. Handle specific errors from the Geolocation API
           setIsLocationUpdating(false);
-          console.log('GPS error:', error.message);
-          reject(error);
+          setLocationStatus('failed');
+          console.error('GPS error:', error.code, error.message);
+          reject(error); // Reject with the original error object
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000
-        }
+        options // Pass the refined options here
       );
     });
   }, []);
@@ -593,9 +602,25 @@ function Dashboard() {
         const location = await getUserLocation();
         console.log('📍 Location obtained:', location);
         await fetchDashboardData(location);
+      // This is the NEW block
       } catch (locationError) {
-        console.log('📍 Location detection failed:', locationError);
+        console.log('📍 Location detection failed:', locationError.message);
         setLocationStatus('failed');
+
+        // Provide more specific feedback to the user
+        let userMessage = 'Could not fetch your location.';
+        switch (locationError.code) {
+          case 1: // PERMISSION_DENIED
+            userMessage = "Location access was denied. Please enable it in your browser settings for personalized data.";
+            break;
+          case 2: // POSITION_UNAVAILABLE
+            userMessage = "Your location could not be determined. Please check your network or GPS connection.";
+            break;
+          case 3: // TIMEOUT
+            userMessage = "Finding your location took too long. Please try again from a place with a better signal.";
+            break;
+        }
+        setError(userMessage); // Use your existing error banner to show this message
       }
     };
     initializeDashboard();

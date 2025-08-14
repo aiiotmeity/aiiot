@@ -68,14 +68,15 @@ if os.environ.get('RENDER'):
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
     CORS_ALLOWED_ORIGINS = [
-        "https://aiiot.it.com",
-        "https://www.aiiot.it.com",
+        "https://airaware.it.com",
+        "https://www.airaware.it.com",
         "https://airaware-app-gcw7.onrender.com",
     ]
 
+
     CSRF_TRUSTED_ORIGINS = [
-        "https://aiiot.it.com",
-        "https://www.aiiot.it.com",
+        "airaware.it.com",
+        "www.airaware.it.com",
         "https://airaware-app-gcw7.onrender.com",
     ]
 
@@ -85,7 +86,7 @@ if os.environ.get('RENDER'):
 
 else:
     # --- DEVELOPMENT Settings (local) ---
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'aiiot.it.com']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'airaware.it.com', 'www.airaware.it.com']
 
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
