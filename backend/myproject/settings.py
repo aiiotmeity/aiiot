@@ -75,10 +75,10 @@ if os.environ.get('RENDER'):
 
 
     CSRF_TRUSTED_ORIGINS = [
-        "airaware.it.com",
-        "www.airaware.it.com",
-        "https://airaware-app-gcw7.onrender.com",
-    ]
+    "https://airaware.it.com",
+    "https://www.airaware.it.com",
+    "https://airaware-app-gcw7.onrender.com",
+]
 
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
