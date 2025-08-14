@@ -654,20 +654,26 @@ function Dashboard() {
               {isLocationUpdating && <span className="location-spinner">⟳</span>}
             </span>
           );
+        // This is the NEW block with the disclaimer
         case 'gps_detected':
           const locationName = userLocationName?.display_name || 'Your location';
-          const accuracy = userLocation?.accuracy ? `${Math.round(userLocation.accuracy)}m` : '';
 
           return (
-            <span style={{ color: '#10b981' }}>
-        📍 {locationName}
-            {nearestStationInfo && (
-              <span style={{ color: '#6b7280', fontSize: '0.9em' }}>
-                {' '} → Nearest: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}km)
+            // Use a div to stack the location and the disclaimer
+            <div>
+              <span style={{ color: '#10b981' }}>
+                  📍 {locationName}
+                  {nearestStationInfo && (
+                    <span style={{ color: '#6b7280', fontSize: '0.9em' }}>
+                      {' '} → Nearest: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}km)
+                    </span>
+                  )}
               </span>
-            )}
-      </span>
-
+              {/* THIS IS THE NEW DISCLAIMER */}
+              <div className="location-disclaimer">
+                Note: If your location seems incorrect, it may be due to a slow network. Please refresh the page or check again shortly.
+              </div>
+            </div>
           );
         case 'failed':
             return null;

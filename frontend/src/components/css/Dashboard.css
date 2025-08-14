@@ -978,6 +978,12 @@ body {
   flex-direction: column;
   gap: 0.5rem;
 }
+.location-disclaimer {
+  font-size: 0.8rem;
+  color: #454ed3;
+  margin-top: 4px;
+  font-style: italic;
+}
 
 .recommendation {
   color: var(--gray-600);
