@@ -363,7 +363,7 @@ function HomePage() {
       </section>
 
       {/* --- Cities Section --- */}
-      // In src/components/HomePage.js
+      
 
 <section className="section cities-section" id="cities">
   <div className="section-container">

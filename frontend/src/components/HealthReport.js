@@ -415,8 +415,23 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     // This is the primary fix that prevents the crash.
     // This one-line change prevents the crash
     if (loading) {
-        return <div className="panel-loader"><h2>🏥 Generating Your Health Report...</h2><div className="loading-spinner"></div></div>;
-    }
+    return (
+        <div className="panel-loader">
+            <h2>🏥 Generating Your Health Report...</h2>
+            <div className="loading-spinner"></div>
+            <button 
+                onClick={() => window.location.href = "/health-report"} 
+                className="retry-btn" 
+                style={{ marginTop: "20px" }}
+            >
+                🔄 Refresh
+            </button>
+        </div>
+    );
+}
+
+
+
 
     // CORRECTED: Check for an error state second
     if (error) {

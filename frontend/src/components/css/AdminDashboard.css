@@ -351,14 +351,14 @@
     margin: 8px 0;
 }
 
-.admin-dashboard .aqi-good { color: var(--admin-success); }
-.admin-dashboard .aqi-moderate { color: var(--admin-warning); }
-.admin-dashboard .aqi-unhealthy { color: var(--admin-error); }
-.admin-dashboard .aqi-hazardous { color: #7c2d12; }
+.admin-dashboard .aqi-good { color: white;}
+.admin-dashboard .aqi-moderate { color: white;}
+.admin-dashboard .aqi-unhealthy { color: white;}
+.admin-dashboard .aqi-hazardous { color: white;}
 
 .admin-dashboard .aqi-status-text {
     font-weight: 600;
-    color: var(--admin-text-secondary);
+    color: rgb(6, 3, 22)
 }
 
 /* Sensor Grid */
