@@ -23,6 +23,13 @@ urlpatterns = [
     path('family-members/<int:member_id>/', views.delete_family_member_api, name='delete_family_member_api'),
     path('family-members/update/<int:member_id>/', views.update_family_member_api, name='update_family_member_api'),
     path('admin/login/', views.admin_login_api, name='admin_login_api'),
-    path('admin/dashboard/', views.admin_dashboard_api, name='admin_dashboard_api'),
-     # <-- ADD THIS LINE
+    # Add these URL patterns to your urls.py:
+     path('admin/dashboard/', views.admin_dashboard_api, name='admin_dashboard_api'),
+    path('admin/users/create/', views.admin_create_user_api, name='admin_create_user_api'),
+    path('admin/users/update/<int:user_id>/', views.update_user_api, name='update_user_api'),
+
+    # This path must match exactly what the frontend is calling
+    path('admin/users/delete/<int:user_id>/', views.delete_user_api, name='delete_user_api'),
+
+    path('admin/export/', views.admin_export_data_api, name='admin_export_data_api'),
 ]
