@@ -34,7 +34,7 @@ from twilio.rest import Client
 import numpy as np
 import pandas as pd
 from datetime import datetime
-
+import random
 
 
 from geopy.geocoders import Nominatim
@@ -131,7 +131,9 @@ WHO_LIMITS = {
 
 STATION_LOCATIONS = {
     "lora-v1": {"lat":10.178385739668958,"lon": 76.43052237497399},
-    "loradev2": {"lat": 10.17095090340159, "lon": 76.42962876824544}
+    "loradev2": {"lat": 10.17095090340159, "lon": 76.42962876824544},
+    "lora-v3":{'lat': 10.165, 'lng': 76.420}
+    
 }
 
 
@@ -523,14 +525,17 @@ class HomeAPI(APIView):
 
                 lora_v1_items = get_device_data("lora-v1", limit=24)
                 loradev2_items = get_device_data("loradev2", limit=24)
+                lora_v3_items = get_device_data("lora-v3", limit=24)  # Fetch but do not use
                 
                 # The process_device_items function correctly formats the 'last_updated_on' timestamp
                 latest_v1, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
                 latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
+                latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)  # Process but do not use
                 
                 station_locations = {
                     'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
                     'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
+                    'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Airport Rd)' },
                 }
 
                 all_stations_data = {
@@ -545,6 +550,12 @@ class HomeAPI(APIView):
                         'highest_sub_index': high_index_loradev2, 
                         'station_info': station_locations['loradev2'], 
                         'last_updated_on': latest_v2.get('last_updated_on') if latest_v2 else 'N/A'
+                    },
+                    'lora-v3': { # <-- ADD THIS ENTIRE BLOCK
+                        'averages': avg_lora_v3, 
+                        'highest_sub_index': high_index_lora_v3, 
+                        'station_info': STATION_LOCATIONS['lora-v3'], 
+                        'last_updated_on': latest_v3.get('last_updated_on') if latest_v3 else 'N/A'
                     }
                 }
                 
@@ -755,8 +766,7 @@ import random # <-- Add this import at the top of your file
 
 # ... (other imports)
 
-@api_view(['GET'])
-@csrf_exempt
+
 @api_view(['GET'])
 @csrf_exempt
 def map_realtimedata_api(request):
@@ -771,16 +781,18 @@ def map_realtimedata_api(request):
         # Fetch data for the two real stations
         lora_v1_items = get_device_data("lora-v1", limit=24)
         loradev2_items = get_device_data("loradev2", limit=24)
+        lora_v3_items = get_device_data("lora-v3", limit=24)
 
         _, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
         _, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
+        _, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
         
         station_locations = {
-            'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
+            'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
-            'temp-1': { 'lat': 10.185, 'lng': 76.425, 'name': 'Station 3 (Kalady Town)' },
-            'temp-2': { 'lat': 10.175, 'lng': 76.445, 'name': 'Station 4 (Malayattoor Rd)' },
-            'temp-3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 5 (Airport Rd)' },
+            'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Airport Rd)'},
+            'temp-2': { 'lat': 10.175, 'lng': 76.445, 'name': 'Station 4 (Malayattoor Rd)'},
+            'temp-3': { 'lat': 10.185, 'lng': 76.425, 'name':  'Station 5 (Kalady Town)'},
         }
 
         response_data = {
@@ -796,10 +808,10 @@ def map_realtimedata_api(request):
                     'station_info': station_locations['loradev2']
                 },
                 # For upcoming stations, only send location info and null data
-                'temp-1': {
-                    'averages': None, 
-                    'highest_sub_index': None, 
-                    'station_info': station_locations['temp-1']
+                 'lora-v3': { # <-- ADD THIS REAL STATION BLOCK
+                    'averages': avg_lora_v3, 
+                    'highest_sub_index': high_index_lora_v3, 
+                    'station_info': station_locations['lora-v3']
                 },
                 'temp-2': {
                     'averages': None, 
@@ -828,7 +840,7 @@ def station_forecast_api(request, station_id):
     Corrected: Fetches forecast data, providing a real forecast for temporary stations.
     """
     try:
-        if station_id not in ['lora-v1', 'loradev2', 'temp-1', 'temp-2', 'temp-3']:
+        if station_id not in ['lora-v1', 'loradev2', 'lora-v3', 'temp-2', 'temp-3']:
             return Response({'error': 'Invalid station ID'}, status=400)
 
         source_station_id = 'lora-v1' if station_id.startswith('temp-') else station_id
@@ -866,18 +878,28 @@ def health_check_api(request):
             'timestamp': datetime.now().isoformat()
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# In views.py
+
 @api_view(['GET'])
 @csrf_exempt
 def all_devices_api(request):
     """Get data from all devices for React app"""
     try:
-        # Get data for both devices
+        # Get data for all three devices
         lora_v1_items = get_device_data("lora-v1")
         loradev2_items = get_device_data("loradev2")
+        lora_v3_items = get_device_data("lora-v3") # <-- Fetching lora-v3
 
-        # Process both datasets
+        # Process all three datasets
         latest_lora_v1, avg_lora_v1, subindices_lora_v1, high_index_lora_v1 = process_device_items(lora_v1_items)
         latest_loradev2, avg_loradev2, subindices_loradev2, high_index_loradev2 = process_device_items(loradev2_items)
+        latest_lora_v3, avg_lora_v3, subindices_lora_v3, high_index_lora_v3 = process_device_items(lora_v3_items) # <-- Processing lora-v3
+
+        station_locations = {
+            'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
+            'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
+            'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Airport Rd)'},
+        }
 
         return Response({
             'lora_v1': {
@@ -886,7 +908,7 @@ def all_devices_api(request):
                 'sub_indices': {k: round(v, 2) if v is not None else None for k, v in subindices_lora_v1.items()},
                 'highest_sub_index': high_index_lora_v1,
                 'station_name': 'ASIET Campus Station',
-                'location': STATION_LOCATIONS.get("lora-v1", {})
+                'station_info': station_locations.get("lora-v1", {})
             },
             'loradev2': {
                 'latest_item': latest_loradev2,
@@ -894,10 +916,18 @@ def all_devices_api(request):
                 'sub_indices': {k: round(v, 2) if v is not None else None for k, v in subindices_loradev2.items()},
                 'highest_sub_index': high_index_loradev2,
                 'station_name': 'Mattoor Junction Station',
-                'location': STATION_LOCATIONS.get("loradev2", {})
+                'station_info': station_locations.get("loradev2", {})
             },
-            'timestamp': datetime.now().isoformat(),
-            'status': 'success'
+            # --- START FIX: ADD THIS ENTIRE BLOCK ---
+            'lora-v3': {
+                'latest_item': latest_lora_v3,
+                'averages': avg_lora_v3,
+                'sub_indices': {k: round(v, 2) if v is not None else None for k, v in subindices_lora_v3.items()},
+                'highest_sub_index': high_index_lora_v3,
+                'station_name': 'Station 3 (Airport Rd)',
+                'station_info': station_locations.get("lora-v3", {})
+            }
+            # --- END FIX ---
         })
 
     except Exception as e:
@@ -1896,64 +1926,6 @@ import random # <-- Add this import at the top of your file
 
 
 
-@api_view(['GET'])
-@csrf_exempt
-def map_realtimedata_api(request):
-    """
-    Provides real-time data for 2 real stations and simulates data for 3 additional stations.
-    This result is cached for 60 seconds to ensure high performance.
-    """
-    cache_key = 'map_realtime_data'
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        logger.info("✅ Serving map data from cache.")
-        return Response(cached_data, status=status.HTTP_200_OK)
-
-    logger.info("🔄 Map data cache miss. Fetching fresh data from database.")
-    try:
-        if not initialize_aws_resources():
-            return Response({'error': 'AWS initialization failed'}, status=500)
-
-        lora_v1_items = get_device_data("lora-v1", limit=24)
-        loradev2_items = get_device_data("loradev2", limit=24)
-
-        latest_v1, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
-        latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
-        
-        station_locations = {
-            'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
-            'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
-            'temp-1': { 'lat': 10.167, 'lng': 76.435, 'name': 'Station 3 (Kalady Grama Panchayath Karyalayam)' },
-            'temp-2': { 'lat': 10.175, 'lng': 76.445, 'name': 'Station 4 (Malayattoor Rd)' },
-            'temp-3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 5 (Airport Rd)' },
-        }
-
-        response_data = {
-            'stations': {
-                'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1'], 'last_updated_on': latest_v1.get('received_at') if latest_v1 else 'N/A'},
-                'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'last_updated_on': latest_v2.get('received_at') if latest_v2 else 'N/A'}
-            }
-        }
-        
-        def simulate_station_data(base_avg, base_aqi):
-            if not base_avg or not base_aqi: return {}, 50
-            simulated_avg = {k: round(v * random.uniform(0.95, 1.05), 2) for k, v in base_avg.items()}
-            simulated_aqi = round(base_aqi * random.uniform(0.95, 1.05))
-            return simulated_avg, simulated_aqi
-
-        avg1, aqi1 = simulate_station_data(avg_lora_v1, high_index_lora_v1)
-        avg2, aqi2 = simulate_station_data(avg_loradev2, high_index_loradev2)
-        avg3, aqi3 = simulate_station_data(avg_lora_v1, high_index_lora_v1)
-
-        response_data['stations']['temp-1'] = {'averages': avg1, 'highest_sub_index': aqi1, 'station_info': station_locations['temp-1'], 'last_updated_on': 'Simulated'}
-        response_data['stations']['temp-2'] = {'averages': avg2, 'highest_sub_index': aqi2, 'station_info': station_locations['temp-2'], 'last_updated_on': 'Simulated'}
-        response_data['stations']['temp-3'] = {'averages': avg3, 'highest_sub_index': aqi3, 'station_info': station_locations['temp-3'], 'last_updated_on': 'Simulated'}
-        
-        cache.set(cache_key, response_data, 60) # Cache the result for 60 seconds
-        return Response(response_data, status=status.HTTP_200_OK)
-    except Exception as e:
-        logger.error(f"Error in map_realtimedata_api: {e}", exc_info=True)
-        return Response({'error': 'Failed to fetch real-time data'}, status=500)
 
 
 @api_view(['GET'])

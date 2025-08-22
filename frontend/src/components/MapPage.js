@@ -61,7 +61,8 @@ const createAqiIcon = (aqi, isComingSoon = false) => {
 
 // Enhanced popup content creator
 const createStationPopupContent = (station, stationId) => {
-    const isRealStation = ['lora-v1', 'loradev2'].includes(stationId);
+    // AFTER
+    const isRealStation = ['lora-v1', 'loradev2', 'lora-v3'].includes(stationId);
     const isComingSoon = stationId.startsWith('temp-');
 
     if (isComingSoon) {
@@ -82,6 +83,8 @@ const createStationPopupContent = (station, stationId) => {
         `;
     }
 
+    
+
     const { station_info, averages, highest_sub_index } = station;
     const pollutants = [
         { key: 'pm25', name: 'PM2.5', unit: 'µg/m³' },
@@ -90,7 +93,10 @@ const createStationPopupContent = (station, stationId) => {
         { key: 'no2', name: 'NO₂', unit: 'µg/m³' },
         { key: 'co', name: 'CO', unit: 'µg/m³' },
         { key: 'o3', name: 'O₃', unit: 'µg/m³' },
-        { key: 'nh3', name: 'NH₃', unit: 'µg/m³' }
+        { key: 'nh3', name: 'NH₃', unit: 'µg/m³' },
+        // --- ADD THESE TWO LINES ---
+        { key: 'temp', name: 'Temp', unit: '°C' },
+        { key: 'pre', name: 'Pressure', unit: 'hPa' },
     ];
 
     const readingsHtml = pollutants.map(p => {
@@ -290,7 +296,8 @@ const MapPage = () => {
         window.mapPageInstance = {
             handleStationSelect: (stationId, fromPopup = false) => {
                 // Only allow selection of real stations
-                if (['lora-v1', 'loradev2'].includes(stationId)) {
+                
+                if (['lora-v1', 'loradev2', 'lora-v3'].includes(stationId)) {
                     setSelectedStationId(stationId);
                     if (isMobile) {
                         setActiveTab('details');
@@ -345,7 +352,7 @@ const MapPage = () => {
         console.log('🔍 Starting IDW calculation with ONLY real stations...');
         
         // FIXED: Only use the 2 real stations for interpolation
-        const realStationIds = ['lora-v1', 'loradev2'];
+        const realStationIds = ['lora-v1', 'loradev2','lora-v3'];
         const realStations = {};
         
         realStationIds.forEach(id => {
@@ -445,9 +452,11 @@ const MapPage = () => {
             if (data.stations['loradev2']) {
                 processedStations['loradev2'] = data.stations['loradev2'];
             }
-            
+            if (data.stations['lora-v3']) {
+                processedStations['lora-v3'] = data.stations['lora-v3'];
+            }
             // Add coming soon stations (location only)
-            ['temp-1', 'temp-2', 'temp-3'].forEach(id => {
+            ['temp-2', 'temp-3'].forEach(id => {
                 if (data.stations[id]) {
                     processedStations[id] = {
                         station_info: data.stations[id].station_info,
@@ -486,7 +495,7 @@ const MapPage = () => {
             console.log('🔍 Calculating user location data with ONLY real stations for interpolation...');
             
             // FIXED: Only use real stations for distance calculation and interpolation
-            const realStationIds = ['lora-v1', 'loradev2'];
+            const realStationIds = ['lora-v1', 'loradev2','lora-v3'];
             const realStations = {};
             
             realStationIds.forEach(id => {
@@ -644,7 +653,8 @@ const MapPage = () => {
 
     const handleStationSelect = useCallback((stationId) => {
         // Only allow selection of real stations
-        if (['lora-v1', 'loradev2'].includes(stationId)) {
+        // AFTER
+        if (['lora-v1', 'loradev2', 'lora-v3'].includes(stationId)) {
             setSelectedStationId(stationId);
             if (isMobile) {
                 setActiveTab('details');

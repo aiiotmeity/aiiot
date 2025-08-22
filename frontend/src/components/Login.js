@@ -148,7 +148,7 @@ function Login() {
 
       if (response.ok && data.success) {
         setShowOTP(true);
-        setSuccess('OTP sent successfully! Check your phone.');
+        setSuccess('OTP sent successfully! ✅ Use 123456 for testing.');
         setPhoneNumber(validatedPhone); // Keep the +91 format
       } else {
         setError(data.error || data.message || 'Failed to send OTP');
