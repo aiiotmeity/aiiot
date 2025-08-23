@@ -83,8 +83,6 @@ const createStationPopupContent = (station, stationId) => {
         `;
     }
 
-    
-
     const { station_info, averages, highest_sub_index } = station;
     const pollutants = [
         { key: 'pm25', name: 'PM2.5', unit: 'µg/m³' },
@@ -93,10 +91,7 @@ const createStationPopupContent = (station, stationId) => {
         { key: 'no2', name: 'NO₂', unit: 'µg/m³' },
         { key: 'co', name: 'CO', unit: 'µg/m³' },
         { key: 'o3', name: 'O₃', unit: 'µg/m³' },
-        { key: 'nh3', name: 'NH₃', unit: 'µg/m³' },
-        // --- ADD THESE TWO LINES ---
-        { key: 'temp', name: 'Temp', unit: '°C' },
-        { key: 'pre', name: 'Pressure', unit: 'hPa' },
+        { key: 'nh3', name: 'NH₃', unit: 'µg/m³' }
     ];
 
     const readingsHtml = pollutants.map(p => {
@@ -686,13 +681,16 @@ const MapPage = () => {
     // === DATA PROCESSING ===
     const selectedStationData = stations[selectedStationId];
     const pollutants = [
-        { key: 'pm25', name: 'PM2.5' }, 
-        { key: 'pm10', name: 'PM10' }, 
-        { key: 'so2', name: 'SO₂' }, 
-        { key: 'no2', name: 'NO₂' }, 
-        { key: 'co', name: 'CO' }, 
-        { key: 'o3', name: 'O₃' }, 
-        { key: 'nh3', name: 'NH₃' }
+        { key: 'pm25', name: 'PM2.5', unit: 'µg/m³' },
+        { key: 'pm10', name: 'PM10', unit: 'µg/m³' },
+        { key: 'so2', name: 'SO₂', unit: 'µg/m³' },
+        { key: 'no2', name: 'NO₂', unit: 'µg/m³' },
+        { key: 'co', name: 'CO', unit: 'µg/m³' },
+        { key: 'o3', name: 'O₃', unit: 'µg/m³' },
+        { key: 'nh3', name: 'NH₃', unit: 'µg/m³' },
+        // --- ADD THESE TWO LINES ---
+        { key: 'temp', name: 'Temperature', unit: '°C' },
+        { key: 'pre', name: 'Pressure', unit: 'hPa' },
     ];
 
     // === FORECAST CHART CONFIGURATION ===
@@ -861,9 +859,14 @@ const MapPage = () => {
                                             <div className="mobile-reading-card" key={p.key}>
                                                 <div className="reading-label">{p.name}</div>
                                                 <div className="reading-value">
-                                                    {(selectedStationData.averages?.[p.key]?.toFixed(2)) ?? 'N/A'}
-                                                    <span>µg/m³</span>
-                                                </div>
+                                                {
+                                                    // Use latest_readings for temp/pressure, otherwise use averages
+                                                    (p.key === 'temp' || p.key === 'pre')
+                                                        ? (selectedStationData.latest_readings?.[p.key] ?? 'N/A')
+                                                        : (selectedStationData.averages?.[p.key]?.toFixed(2) ?? 'N/A')
+                                                }
+                                                <span>{p.unit}</span>
+                                            </div>
                                             </div>
                                         ))}
                                     </div>
@@ -1329,9 +1332,14 @@ const MapPage = () => {
                                                     <div className="reading-card" key={p.key}>
                                                         <div className="reading-label">{p.name}</div>
                                                         <div className="reading-value">
-                                                            {(selectedStationData.averages?.[p.key]?.toFixed(2)) ?? 'N/A'}
-                                                            <span className="reading-unit">µg/m³</span>
-                                                        </div>
+                                                        {
+                                                            // Use latest_readings for temp/pressure, otherwise use averages
+                                                            (p.key === 'temp' || p.key === 'pre')
+                                                                ? (selectedStationData.latest_readings?.[p.key] ?? 'N/A')
+                                                                : (selectedStationData.averages?.[p.key]?.toFixed(2) ?? 'N/A')
+                                                        }
+                                                        <span className="reading-unit">{p.unit}</span>
+                                                    </div>
                                                     </div>
                                                 ))}
                                             </div>

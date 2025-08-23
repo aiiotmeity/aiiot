@@ -553,7 +553,6 @@ function HomePage() {
                 AQI Forecasting
               </button>
               <a href="#" className="footer-link">Data Analytics</a>
-              <a href="#" className="footer-link">Support</a>
             </div>
             <div className="footer-section">
               <h3>Contact Information</h3>

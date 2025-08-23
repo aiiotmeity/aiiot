@@ -177,18 +177,27 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 # In myapp/views.py or myapp/utils.py
 
+# In views.py, replace the entire get_s3_forecast_data function with this corrected version.
+
 def get_s3_forecast_data(device_type=None):
     """
-    CORRECTED: Fetches and processes the 4-day forecast from S3, providing specific dates.
+    CORRECTED: Fetches and processes the 4-day forecast from S3.
+    This version uses the correct filename logic for all stations, including lora-v3.
     """
     if not s3_client:
         logger.warning("S3 client not available, cannot fetch forecast.")
         return [], None
 
     try:
-        # **FIX: Replace hyphen with underscore to match S3 filename format**
-        corrected_device_type = device_type.replace('-', '_')
-        s3_key = f'data/air_quality/latest_forecast_{corrected_device_type}.json'
+        # --- START: THE FIX ---
+        # This logic handles the different naming conventions in your S3 bucket.
+        if device_type == 'lora-v1':
+            file_suffix = 'lora_v1'  # Uses underscore for Station 1
+        else:
+            file_suffix = device_type  # Directly uses 'lora-v3' and 'loradev2'
+
+        s3_key = f'data/air_quality/latest_forecast_{file_suffix}.json'
+        # --- END: THE FIX ---
         
         logger.info(f"Fetching S3 forecast data from: {s3_key}")
         
@@ -533,7 +542,7 @@ class HomeAPI(APIView):
                 latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)  # Process but do not use
                 
                 station_locations = {
-                    'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
+                    'lora-v1': { 'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)' },
                     'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
                     'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Airport Rd)' },
                 }
@@ -766,26 +775,24 @@ import random # <-- Add this import at the top of your file
 
 # ... (other imports)
 
+# In views.py, replace the entire map_realtimedata_api function
 
 @api_view(['GET'])
 @csrf_exempt
 def map_realtimedata_api(request):
     """
-    CORRECTED: Fetches data for 2 real stations and provides location info
-    for 3 upcoming stations without simulated data.
+    CORRECTED: Fetches data for all real stations and includes the 'latest_readings'
+    for real-time values like temperature and pressure.
     """
     try:
         if not initialize_aws_resources():
             return Response({'error': 'AWS initialization failed'}, status=500)
 
-        # Fetch data for the two real stations
-        lora_v1_items = get_device_data("lora-v1", limit=24)
-        loradev2_items = get_device_data("loradev2", limit=24)
-        lora_v3_items = get_device_data("lora-v3", limit=24)
-
-        _, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
-        _, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
-        _, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
+        # --- CAPTURE THE LATEST ITEM ---
+        # The first item returned by process_device_items is the most recent data point
+        latest_v1, avg_lora_v1, _, high_index_lora_v1 = process_device_items(get_device_data("lora-v1", limit=24))
+        latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(get_device_data("loradev2", limit=24))
+        latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(get_device_data("lora-v3", limit=24))
         
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
@@ -798,31 +805,26 @@ def map_realtimedata_api(request):
         response_data = {
             'stations': {
                 'lora-v1': {
-                    'averages': avg_lora_v1, 
-                    'highest_sub_index': high_index_lora_v1, 
-                    'station_info': station_locations['lora-v1']
+                    'averages': avg_lora_v1,
+                    'highest_sub_index': high_index_lora_v1,
+                    'station_info': station_locations['lora-v1'],
+                    'latest_readings': latest_v1  # <-- ADD THIS LINE
                 },
                 'loradev2': {
-                    'averages': avg_loradev2, 
-                    'highest_sub_index': high_index_loradev2, 
-                    'station_info': station_locations['loradev2']
+                    'averages': avg_loradev2,
+                    'highest_sub_index': high_index_loradev2,
+                    'station_info': station_locations['loradev2'],
+                    'latest_readings': latest_v2 # <-- ADD THIS LINE
+                },
+                'lora-v3': {
+                    'averages': avg_lora_v3,
+                    'highest_sub_index': high_index_lora_v3,
+                    'station_info': station_locations['lora-v3'],
+                    'latest_readings': latest_v3 # <-- ADD THIS LINE
                 },
                 # For upcoming stations, only send location info and null data
-                 'lora-v3': { # <-- ADD THIS REAL STATION BLOCK
-                    'averages': avg_lora_v3, 
-                    'highest_sub_index': high_index_lora_v3, 
-                    'station_info': station_locations['lora-v3']
-                },
-                'temp-2': {
-                    'averages': None, 
-                    'highest_sub_index': None, 
-                    'station_info': station_locations['temp-2']
-                },
-                'temp-3': {
-                    'averages': None, 
-                    'highest_sub_index': None, 
-                    'station_info': station_locations['temp-3']
-                }
+                'temp-2': { 'averages': None, 'highest_sub_index': None, 'station_info': station_locations['temp-2'], 'latest_readings': None },
+                'temp-3': { 'averages': None, 'highest_sub_index': None, 'station_info': station_locations['temp-3'], 'latest_readings': None }
             }
         }
         
@@ -1935,7 +1937,7 @@ def station_forecast_api(request, station_id):
     Provides forecast data for all 5 stations.
     """
     try:
-        valid_ids = ['lora-v1', 'loradev2', 'temp-1', 'temp-2', 'temp-3']
+        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'temp-2', 'temp-3']
         if station_id not in valid_ids:
             return Response({'error': 'Invalid station ID'}, status=400)
 
@@ -2208,7 +2210,7 @@ def admin_dashboard_api(request):
                     'no2': 'N/A', 'so2': 'N/A', 'o3': 'N/A',
                     'temperature': 'N/A', 'humidity': 'N/A', 'pressure': 'N/A',
                     'received_at': None, 'device_status': 'OFFLINE',
-                    'battery': 'N/A', 'signal_strength': 'Unknown'
+                    
                 }
             
             try:
