@@ -45,7 +45,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 // Known accurate locations for the area
 const KNOWN_LOCATIONS = {
-  '10.1783_76.4309': {
+  '10.1783_76.4305': {
     display_name: 'ASIET Campus, Kalady',
     city: 'Kalady',
     state: 'Kerala',
@@ -63,7 +63,7 @@ const KNOWN_LOCATIONS = {
     state: 'Kerala',
     country: 'India'
   },
-  '10.1765_76.4285': {
+  '10.165_76.420': {
     display_name: 'Kalady Railway Station Area',
     city: 'Kalady',
     state: 'Kerala',

@@ -241,7 +241,6 @@ def get_s3_forecast_data(device_type=None):
         logger.error(f"Error in get_s3_forecast_data for {device_type}: {e}")
         return [], None
 
-
 def calculate_subindices(averages):
     """Calculate sub-indices for all parameters from their average values."""
 
