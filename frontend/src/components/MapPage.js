@@ -480,7 +480,7 @@ const MapPage = () => {
 
     useEffect(() => {
         fetchRealtimeData();
-        const interval = setInterval(fetchRealtimeData, 60000);
+        const interval = setInterval(fetchRealtimeData, 30000);
         return () => clearInterval(interval);
     }, [fetchRealtimeData]);
 

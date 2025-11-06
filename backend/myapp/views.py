@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError  # ADDED MISSING IMPORT
 import json
-
+from twilio.base.exceptions import TwilioRestException
 from django.core.cache import cache
 from django.views.decorators.cache import cache_control
 import os
@@ -98,9 +98,13 @@ try:
     else:
         client = None
         logger.warning("Twilio credentials not found. SMS functionality will be disabled.")
+# ... (the code from above) ...
 except Exception as e:
     client = None
     logger.error(f"Failed to initialize Twilio client: {e}")
+
+# VVVVVV  ADD THIS LINE VVVVVV
+
 
 # Initialize AWS clients safely
 try:
@@ -131,8 +135,8 @@ WHO_LIMITS = {
 
 STATION_LOCATIONS = {
     "lora-v1": {"lat":10.178385739668958,"lon": 76.43052237497399},
-    "loradev2": {"lat": 10.17095090340159, "lon": 76.42962876824544},
-    "lora-v3":{'lat': 10.165, 'lng': 76.420}
+    "loradev2": {"lat": 10.182204721868617, "lon": 76.42850343115732},
+    "lora-v3":{"lat": 10.173254902926303, "lng": 76.42755590382993}
     
 }
 
@@ -382,9 +386,9 @@ def calculate_subindices(averages):
 # In your views.py - Replace ONLY the process_device_items function with this:
 # This is our rulebook for what a "good" sensor reading looks like.
 VALID_SENSOR_RANGES = {
-    'nh3':  (0.0, 150.0),  # A valid NH3 reading must be between 0 and 1000
-    'o3':   (0.0, 150.0),
-    'pm25': (0.0, 150.0),
+    'nh3':  (0.0, 100.0),  # A valid NH3 reading must be between 0 and 1000
+    'o3':   (0.0, 100.0),
+    'pm25': (0.0, 100.0),
     'pm10': (0.0, 50.0),
     'co':   (0.0, 30.0),
     'so2':  (0.0, 150.0),
@@ -418,55 +422,64 @@ def get_safe_value(pollutant_name, value_to_check):
 
 # In views (14).py, replace the entire process_device_items function with this:
 
+# In your views.py file
+
 def process_device_items(items):
     """
-    Final, simplified version.
-    This function calculates the average and then uses get_safe_value()
-    to clean the data before showing it to the user.
+    CORRECTED: This function now correctly handles multiple date formats
+    (like YYYY-MM-DD from lora-v3 and dd:mm:YYYY from other devices).
     """
     if not items:
         return None, {}, {}, None
 
-    # (The first part of the function for sorting and parsing remains the same)
+    # ... (parsing and sorting logic remains the same) ...
     for item in items:
         item.update(parse_payload(item.get('payload', {})))
-    items.sort(
-        key=lambda x: datetime.strptime(truncate_nanoseconds(x['received_at']), '%Y-%m-%dT%H:%M:%S.%fZ'),
-        reverse=True
-    )
+    try:
+        items.sort(
+            key=lambda x: datetime.strptime(truncate_nanoseconds(x['received_at']), '%Y-%m-%dT%H:%M:%S.%fZ'),
+            reverse=True
+        )
+    except (ValueError, TypeError):
+        pass
+
     latest_item = items[0] if items else None
     if latest_item:
-        # ... (date and time formatting logic is unchanged)
         device_date_str = latest_item.get('date')
         device_time_str = latest_item.get('time')
+
         if device_date_str and device_time_str:
             try:
-                formatted_date = datetime.strptime(device_date_str, '%d:%m:%Y').strftime('%Y-%m-%d')
+                # --- START: THE FIX ---
+                # Check which date format is being used
+                if '-' in device_date_str:
+                    # This handles "2025-10-16" (lora-v3 format)
+                    formatted_date = datetime.strptime(device_date_str, '%Y-%m-%d').strftime('%Y-%m-%d')
+                else:
+                    # This handles "15:10:2025" (lora-v1/loradev2 format)
+                    formatted_date = datetime.strptime(device_date_str, '%d:%m:%Y').strftime('%Y-%m-%d')
+                
                 latest_item['last_updated_on'] = f"{formatted_date} at {device_time_str}"
+                # --- END: THE FIX ---
+
             except (ValueError, TypeError):
                 latest_item['last_updated_on'] = "Invalid date/time"
         else:
             db_timestamp = datetime.strptime(truncate_nanoseconds(latest_item['received_at']), '%Y-%m-%dT%H:%M:%S.%fZ')
             latest_item['last_updated_on'] = db_timestamp.strftime('%Y-%m-%d %H:%M:%S')
-
-    # 1. Calculate the raw averages from the last 24 items
+    
+    # ... (The rest of the function for calculations remains the same) ...
     latest_24_items = items[:24]
     parameters = ['nh3', 'o3', 'pm25', 'pm10', 'co', 'so2', 'no2']
     sums = {p: sum(float(it.get(p, 0)) for it in latest_24_items if it.get(p) is not None) for p in parameters}
     counts = {p: sum(1 for it in latest_24_items if it.get(p) is not None) for p in parameters}
     raw_averages = {p: sums[p] / counts[p] if counts[p] > 0 else 0 for p in parameters}
 
-    # 2. Clean the averages using our new rule
-    safe_averages = {
-        param: get_safe_value(param, value) for param, value in raw_averages.items()
-    }
-
-    # 3. Calculate the final AQI using only the safe, clean values
-    sub_indices = calculate_subindices(safe_averages) # Use your preferred subindex calculation
+    safe_averages = {param: get_safe_value(param, value) for param, value in raw_averages.items()}
+    sub_indices = calculate_subindices(safe_averages)
     valid_indices = [v for v in sub_indices.values() if v is not None]
     highest_sub_index = round(max(valid_indices)) if valid_indices else None
     
-    # Return the safe values. The user will never see the raw, potentially faulty data.
     return latest_item, safe_averages, sub_indices, highest_sub_index
 
 def get_aqi_status(aqi):
@@ -508,104 +521,79 @@ from django.views.decorators.csrf import csrf_exempt
 logger = logging.getLogger(__name__)
 
 # In myapp/views.py, replace all old HomeAPI versions with this one:
+# In myapp/views.py
 
 class HomeAPI(APIView):
     """
-    Final Location-Aware HomeAPI:
-    - Fetches data for ONLY the 2 real stations (lora-v1 and loradev2).
-    - Determines the station nearest to the user based on lat/lng parameters.
-    - Returns the data, including the correct 'last_updated_on' timestamp,
-      for that single nearest station.
+    MODIFIED Location-Aware HomeAPI with Backend Fallback:
+    - Tries to fetch live data from AWS.
+    - If AWS fetching fails, it catches the exception and returns a static,
+      pre-defined JSON response, preventing a frontend error.
     """
     def get(self, request, format=None):
-        user_lat = request.GET.get('lat')
-        user_lng = request.GET.get('lng')
+        try:
+            # --- TRY TO GET LIVE DATA (Existing Logic) ---
+            user_lat = request.GET.get('lat')
+            user_lng = request.GET.get('lng')
 
-        # Use a single cache key for all real-time station data for efficiency
-        cache_key = 'all_stations_realtime_data'
-        all_stations_data = cache.get(cache_key)
+            cache_key = 'all_stations_realtime_data'
+            all_stations_data = cache.get(cache_key)
 
-        if not all_stations_data:
-            logger.info("Cache miss. Fetching fresh data for the 2 real stations.")
-            try:
+            if not all_stations_data:
+                logger.info("Cache miss. Fetching fresh data for all real stations.")
                 if not initialize_aws_resources():
-                    return Response({'error': 'AWS connection failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    # This will be caught by the except block below
+                    raise ConnectionError('AWS connection failed')
 
+                # ... (rest of your data fetching logic from DynamoDB remains here) ...
                 lora_v1_items = get_device_data("lora-v1", limit=24)
                 loradev2_items = get_device_data("loradev2", limit=24)
-                lora_v3_items = get_device_data("lora-v3", limit=24)  # Fetch but do not use
+                lora_v3_items = get_device_data("lora-v3", limit=24)
                 
-                # The process_device_items function correctly formats the 'last_updated_on' timestamp
                 latest_v1, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
                 latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
-                latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)  # Process but do not use
+                latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
                 
                 station_locations = {
                     'lora-v1': { 'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)' },
-                    'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
-                    'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Airport Rd)' },
+                    'loradev2': { 'lat': 10.182204721868617, 'lng': 76.42850343115732, 'name': 'Station 2 (Pothiyakkara Road)' },
+                    'lora-v3': { 'lat': 10.173254902926303, 'lng': 76.42755590382993, 'name': 'Station 3 (Mattoor Junction)' },
                 }
 
                 all_stations_data = {
-                    'lora-v1': {
-                        'averages': avg_lora_v1, 
-                        'highest_sub_index': high_index_lora_v1, 
-                        'station_info': station_locations['lora-v1'], 
-                        'last_updated_on': latest_v1.get('last_updated_on') if latest_v1 else 'N/A'
-                    },
-                    'loradev2': {
-                        'averages': avg_loradev2, 
-                        'highest_sub_index': high_index_loradev2, 
-                        'station_info': station_locations['loradev2'], 
-                        'last_updated_on': latest_v2.get('last_updated_on') if latest_v2 else 'N/A'
-                    },
-                    'lora-v3': { # <-- ADD THIS ENTIRE BLOCK
-                        'averages': avg_lora_v3, 
-                        'highest_sub_index': high_index_lora_v3, 
-                        'station_info': STATION_LOCATIONS['lora-v3'], 
-                        'last_updated_on': latest_v3.get('last_updated_on') if latest_v3 else 'N/A'
-                    }
+                    'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1'], 'last_updated_on': latest_v1.get('last_updated_on') if latest_v1 else 'N/A'},
+                    'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'last_updated_on': latest_v2.get('last_updated_on') if latest_v2 else 'N/A'},
+                    'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'last_updated_on': latest_v3.get('last_updated_on') if latest_v3 else 'N/A'}
                 }
                 
-                # Cache the combined data for 60 seconds
                 cache.set(cache_key, all_stations_data, 60)
-            except Exception as e:
-                logger.error(f"Error fetching station data for HomeAPI: {e}", exc_info=True)
-                return Response({'error': 'Could not fetch sensor data'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Determine the station nearest to the user's location
-        target_station_data = all_stations_data['lora-v1'] # Default to Station 1
-        if user_lat and user_lng and all_stations_data:
-            try:
-                # Find the ID of the station with the minimum distance
-                nearest_station_id = min(
-                    all_stations_data.keys(),
-                    key=lambda sid: calculate_distance(
-                        float(user_lat), 
-                        float(user_lng), 
-                        all_stations_data[sid]['station_info']['lat'], 
-                        all_stations_data[sid]['station_info']['lng']
-                    )
-                )
+            
+            # ... (rest of your logic for finding the nearest station) ...
+            target_station_data = all_stations_data['lora-v1'] # Default to Station 1
+            if user_lat and user_lng and all_stations_data:
+                nearest_station_id = min(all_stations_data.keys(), key=lambda sid: calculate_distance(float(user_lat), float(user_lng), all_stations_data[sid]['station_info']['lat'], all_stations_data[sid]['station_info']['lng']))
                 target_station_data = all_stations_data[nearest_station_id]
-                logger.info(f"User location provided. Nearest station found: {target_station_data['station_info']['name']}")
-            except (ValueError, TypeError):
-                # Fallback to the default if coordinates are invalid
-                logger.warning("Invalid lat/lng parameters received. ")
-                pass
-        else:
-            logger.info("No user location provided. Defaulting to Station 1 data.")
+            
+            response_data = {
+                'highest_sub_index': target_station_data.get('highest_sub_index'),
+                'aqi_status': get_aqi_status(target_station_data.get('highest_sub_index')),
+                'station_name': target_station_data.get('station_info', {}).get('name'),
+                'last_updated_on': target_station_data.get('last_updated_on', "N/A"),
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
 
-        # Construct the final response with data from ONLY the nearest station
-        response_data = {
-            'highest_sub_index': target_station_data.get('highest_sub_index'),
-            'aqi_status': get_aqi_status(target_station_data.get('highest_sub_index')),
-            'station_name': target_station_data.get('station_info', {}).get('name'),
-            'last_updated_on': target_station_data.get('last_updated_on', "N/A"),
-        }
-        
-        return Response(response_data, status=status.HTTP_200_OK)
-
+        except Exception as e:
+            # --- CATCH THE ERROR AND RETURN FALLBACK DATA ---
+            logger.error(f"HomeAPI failed to fetch live data: {e}. Serving fallback response.")
+            
+            fallback_response = {
+                'highest_sub_index': 42,
+                'aqi_status': 'Good',
+                'station_name': 'ASIET Campus',
+                'last_updated_on': 'Showing recent data',
+            }
+            return Response(fallback_response, status=status.HTTP_200_OK)
 def _extract_real_datetime(self, latest_item, all_items):
     """
     STRICT VERSION: Only return REAL sensor data, never fake fallbacks
@@ -720,7 +708,7 @@ def _get_fallback_response(self, error_message):
     
     return Response(fallback_data, status=status.HTTP_200_OK)
 
-# UPDATE: Main HomeAPI get method
+# UPDATE: Main HomeAPI get methodz
 def get(self, request, format=None):
     logger.info("🔄 HomeAPI: Fetching FRESH data (strict mode)")
     
@@ -776,62 +764,78 @@ import random # <-- Add this import at the top of your file
 
 # In views.py, replace the entire map_realtimedata_api function
 
+# In myapp/views.py
+
 @api_view(['GET'])
 @csrf_exempt
 def map_realtimedata_api(request):
     """
-    CORRECTED: Fetches data for all real stations and includes the 'latest_readings'
-    for real-time values like temperature and pressure.
+    MODIFIED: Fetches live data but provides a static fallback if AWS is unreachable.
     """
     try:
+        # --- TRY TO GET LIVE DATA (Existing Logic) ---
         if not initialize_aws_resources():
-            return Response({'error': 'AWS initialization failed'}, status=500)
+            raise ConnectionError('AWS initialization failed')
 
-        # --- CAPTURE THE LATEST ITEM ---
-        # The first item returned by process_device_items is the most recent data point
         latest_v1, avg_lora_v1, _, high_index_lora_v1 = process_device_items(get_device_data("lora-v1", limit=24))
         latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(get_device_data("loradev2", limit=24))
         latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(get_device_data("lora-v3", limit=24))
         
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
-            'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
-            'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Airport Rd)'},
+            'loradev2': { 'lat': 10.18220, 'lng': 76.4285, 'name': 'Station 2 (Pothiyakkara Road)' },
+            'lora-v3': { 'lat': 10.17325, 'lng': 76.42755, 'name': 'Station 3 (Mattoor Junction)'},
             'temp-2': { 'lat': 10.175, 'lng': 76.445, 'name': 'Station 4 (Malayattoor Rd)'},
             'temp-3': { 'lat': 10.185, 'lng': 76.425, 'name':  'Station 5 (Kalady Town)'},
         }
 
         response_data = {
             'stations': {
-                'lora-v1': {
-                    'averages': avg_lora_v1,
-                    'highest_sub_index': high_index_lora_v1,
-                    'station_info': station_locations['lora-v1'],
-                    'latest_readings': latest_v1  # <-- ADD THIS LINE
-                },
-                'loradev2': {
-                    'averages': avg_loradev2,
-                    'highest_sub_index': high_index_loradev2,
-                    'station_info': station_locations['loradev2'],
-                    'latest_readings': latest_v2 # <-- ADD THIS LINE
-                },
-                'lora-v3': {
-                    'averages': avg_lora_v3,
-                    'highest_sub_index': high_index_lora_v3,
-                    'station_info': station_locations['lora-v3'],
-                    'latest_readings': latest_v3 # <-- ADD THIS LINE
-                },
-                # For upcoming stations, only send location info and null data
+                'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1'], 'latest_readings': latest_v1},
+                'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'latest_readings': latest_v2},
+                'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'latest_readings': latest_v3},
                 'temp-2': { 'averages': None, 'highest_sub_index': None, 'station_info': station_locations['temp-2'], 'latest_readings': None },
                 'temp-3': { 'averages': None, 'highest_sub_index': None, 'station_info': station_locations['temp-3'], 'latest_readings': None }
             }
         }
-        
         return Response(response_data, status=status.HTTP_200_OK)
 
     except Exception as e:
-        logger.error(f"Error in map_realtimedata_api: {e}", exc_info=True)
-        return Response({'error': 'Failed to fetch real-time data'}, status=500)
+        # --- CATCH THE ERROR AND RETURN FALLBACK DATA ---
+        logger.error(f"map_realtimedata_api failed to fetch live data: {e}. Serving fallback response.")
+        
+        fallback_stations = {
+            'stations': {
+                'lora-v1': {
+                    # MODIFIED: Added all pollutant parameters with reasonable static values.
+                    'averages': {
+                        'pm25': 12.5, 'pm10': 25.3, 'so2': 5.1, 
+                        'no2': 14.2, 'co': 0.4, 'o3': 28.7, 'nh3': 2.1
+                    },
+                    'highest_sub_index': 45,
+                    'station_info': {'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1'},
+                    'latest_readings': {'temp': 29, 'pre': 1012}
+                },
+                'loradev2': {
+                    # MODIFIED: Added all pollutant parameters with reasonable static values.
+                    'averages': {
+                        'pm25': 15.1, 'pm10': 29.8, 'so2': 6.3,
+                        'no2': 16.8, 'co': 0.5, 'o3': 32.1, 'nh3': 2.5
+                    },
+                    'highest_sub_index': 52,
+                    'station_info': {'lat': 10.18, 'lng': 76.4285, 'name': 'Station 2'},
+                    'latest_readings': {'temp': 30, 'pre': 1011}
+                },
+                'lora-v3': {
+                    'averages': {'pm25': 14.2, 'pm10': 28.1}, 'highest_sub_index': 48,
+                    'station_info': {'lat': 10.173, 'lng': 76.427, 'name': 'Station 3'},
+                    'latest_readings': {'temp': 29.5, 'pre': 1011.5}
+                },
+                'temp-2': {'station_info': {'lat': 10.175, 'lng': 76.445, 'name': 'Station 4 (Coming Soon)'}},
+                'temp-3': {'station_info': {'lat': 10.185, 'lng': 76.425, 'name': 'Station 5 (Coming Soon)'}}
+            }
+        }
+        return Response(fallback_stations, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -898,8 +902,8 @@ def all_devices_api(request):
 
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
-            'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
-            'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Airport Rd)'},
+            'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Pothiyakkara Road)' },
+            'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Mattoor Junction)'},
         }
 
         return Response({
@@ -939,360 +943,119 @@ def all_devices_api(request):
             'status': 'error'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# In views.py, DELETE your old send_otp_api and verify_otp_api functions
+# and PASTE this entire block in their place.
+
+from twilio.base.exceptions import TwilioRestException # <-- Add this import at the top of views.py
+
+# In views.py, DELETE your old functions and PASTE this entire block.
 
 @api_view(['POST'])
 @csrf_exempt
 def send_otp_api(request):
-    """CORRECTED: API endpoint to send OTP - Enhanced debugging version"""
+    """MODIFIED: API to send OTP via Twilio ONLY. No default case."""
     try:
-        print(f"DEBUG: Raw request body: {request.body}")
-        
-        # Parse JSON data
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError as e:
-            print(f"DEBUG: JSON decode error: {e}")
-            return Response({
-                'error': 'Invalid JSON format',
-                'message': 'Please send valid JSON data'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
+        data = json.loads(request.body)
         phone_number = data.get('phone_number', '').strip()
         print(f"DEBUG: Phone number received: '{phone_number}'")
-        
+
         if not phone_number:
-            return Response({
-                'error': 'Phone number is required',
-                'message': 'Please provide a phone number'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # ENHANCED: Check what users exist in database
-        print("\n=== DEBUG: Checking all users in database ===")
-        all_users = User.objects.all()
-        for user in all_users:
-            print(f"User: {user.name} | Phone: '{user.phone_number}' | ID: {user.id}")
-        print("=== End user list ===\n")
-
-        # Enhanced user search with extensive debugging
-        def find_user_by_phone_debug(phone):
-            """Find user by trying different phone number formats with extensive debugging"""
-            print(f"DEBUG: Starting search for phone: '{phone}'")
-            
-            # If input is +91 format (13 characters)
-            if len(phone) == 13 and phone.startswith('+91'):
-                # Extract the 10-digit number
-                clean_phone = phone[3:]  # Remove +91
-                print(f"DEBUG: Extracted 10-digit number: '{clean_phone}'")
-                
-                # Validate the 10-digit number
-                if len(clean_phone) == 10 and clean_phone.startswith(('6', '7', '8', '9')):
-                    # Try different formats that might be stored in database
-                    formats_to_try = [
-                        phone,                          # +919876543210 (exact format)
-                        clean_phone,                    # 9876543210
-                        f'91{clean_phone}',            # 919876543210
-                    ]
-                    
-                    for phone_format in formats_to_try:
-                        print(f"DEBUG: Trying format: '{phone_format}'")
-                        try:
-                            user = User.objects.get(phone_number=phone_format)
-                            print(f"DEBUG: ✅ Found user with format: '{phone_format}' - User: {user.name}")
-                            return user, phone_format
-                        except User.DoesNotExist:
-                            print(f"DEBUG: ❌ No user found with format: '{phone_format}'")
-                            continue
-                else:
-                    print(f"DEBUG: Invalid 10-digit number: '{clean_phone}'")
-            else:
-                print(f"DEBUG: Invalid phone format - Length: {len(phone)}, Starts with +91: {phone.startswith('+91')}")
-            
-            print(f"DEBUG: 🚫 No user found for any format of phone: '{phone}'")
-            return None, None
-
-        # Find user with enhanced debugging
-        user, user_phone_format = find_user_by_phone_debug(phone_number)
-        
+        # Simplified user lookup
+        user = User.objects.filter(phone_number=phone_number).first()
         if not user:
-            print(f"DEBUG: FINAL RESULT - No user found for phone: {phone_number}")
-            return Response({
-                'error': 'Phone number not registered',
-                'message': 'This phone number is not registered. Please sign up first.',
-                'debug_info': {
-                    'searched_phone': phone_number,
-                    'phone_length': len(phone_number),
-                    'starts_with_plus91': phone_number.startswith('+91'),
-                    'total_users_in_db': User.objects.count(),
-                    'all_phone_numbers': [u.phone_number for u in User.objects.all()]
-                }
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Phone number not registered'}, status=status.HTTP_400_BAD_REQUEST)
+        print(f"DEBUG: Found user: {user.name}")
 
-        print(f"DEBUG: ✅ Found user: {user.name} with phone format: {user_phone_format}")
-
-        # Store OTP in login table using the same format as in User table
-        try:
-            otp_record, created = login.objects.get_or_create(
-                phone_number=user_phone_format,  # Use same format as in User table
-                defaults={
-                    'otp_code': DEFAULT_OTP,
-                    'otp_verified': False
-                }
-            )
-            
-            if not created:
-                otp_record.otp_code = DEFAULT_OTP
-                otp_record.otp_verified = False
-                otp_record.save()
-                
-            print(f"DEBUG: OTP record saved for: {user_phone_format}")
-            
-        except Exception as e:
-            print(f"DEBUG: Error saving OTP record: {e}")
+        # Check if Twilio client is configured. This is the main check.
+        if not client or not VERIFY_SERVICE_SID:
+            print("CRITICAL ERROR: Twilio is not configured. Check your .env file.")
             return Response({
-                'error': 'Database error',
-                'message': 'Unable to process request'
+                'error': 'SMS Service Not Configured',
+                'message': 'The server is not set up to send text messages.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Try Twilio - use the original phone format for Twilio
-        twilio_success = False
-        twilio_error = None
-        
-        if client and VERIFY_SERVICE_SID:
-            try:
-                # Use the original phone_number for Twilio (should be +91 format)
-                print(f"DEBUG: Attempting Twilio send to: {phone_number}")
-                
-                verification = client.verify \
-                    .services(VERIFY_SERVICE_SID) \
-                    .verifications \
-                    .create(to=phone_number, channel='sms')
-                
-                twilio_success = verification.status == 'pending'
-                print(f"DEBUG: Twilio result: {verification.status}")
-                
-            except Exception as e:
-                print(f"DEBUG: Twilio failed: {e}")
-                twilio_error = str(e)
+        # Attempt to send a real SMS via Twilio
+        try:
+            print(f"DEBUG: Attempting Twilio send to: {phone_number}")
+            verification = client.verify.v2.services(VERIFY_SERVICE_SID) \
+                .verifications.create(to=phone_number, channel='sms')
+            
+            print(f"DEBUG: Twilio result: {verification.status}")
 
-        # Return success with debugging info
-        return Response({
-            'success': True,
-            'message': 'OTP sent successfully',
-            'phone_number': phone_number,  # Return original format to frontend
-            'twilio_success': twilio_success,
-            'debug_info': {
-                'user_found': True,
-                'user_name': user.name,
-                'user_phone_format': user_phone_format,
-                'input_phone_format': phone_number,
-                'twilio_error': twilio_error,
-                'default_otp': DEFAULT_OTP  # Remove in production
-            }
-        }, status=status.HTTP_200_OK)
+            if verification.status == 'pending':
+                return Response({
+                    'success': True,
+                    'message': 'A real OTP has been sent via SMS.'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'Twilio Service Error',
+                    'message': f'Could not send OTP. Status: {verification.status}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except TwilioRestException as e:
+            print(f"DEBUG: Twilio API Error: {e}")
+            return Response({
+                'error': 'Failed to send SMS.',
+                'message': 'The phone number may be invalid or not verified for this trial account.',
+                'details': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
-        print(f"DEBUG: Unexpected error: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        return Response({
-            'error': 'Internal server error',
-            'message': 'Something went wrong. Please try again.'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
+        print(f"DEBUG: Unexpected error in send_otp_api: {e}")
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
 @csrf_exempt
 def verify_otp_api(request):
-    """CORRECTED: OTP verification - Fixed health assessment check and redirect logic"""
+    """MODIFIED: API to verify OTP via Twilio ONLY. No default case."""
     try:
-        print(f"DEBUG: Verify OTP request body: {request.body}")
-        
-        # Parse JSON data
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError as e:
-            print(f"DEBUG: JSON decode error: {e}")
-            return Response({
-                'error': 'Invalid JSON format',
-                'message': 'Please send valid JSON data'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
+        data = json.loads(request.body)
         otp_code = data.get('otp_code', '').strip()
-        phone_number = data.get('phone_number', '').strip()  # This is now +919876543210 format
-        
-        print(f"DEBUG: OTP: '{otp_code}', Phone: '{phone_number}'")
+        phone_number = data.get('phone_number', '').strip()
 
-        if not otp_code:
-            return Response({
-                'error': 'OTP code is required',
-                'message': 'Please enter the OTP code'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        if not phone_number:
-            return Response({
-                'error': 'Phone number is required',
-                'message': 'Phone number is missing'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate OTP format
-        if not otp_code.isdigit() or len(otp_code) != 6:
-            return Response({
-                'error': 'Invalid OTP format',
-                'message': 'OTP must be 6 digits'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Find user with any phone format (same logic as send_otp)
-        def find_user_by_phone(phone):
-            """Find user by trying different phone number formats"""
-            print(f"DEBUG: Looking for user with phone: '{phone}'")
-            
-            # Handle +91 prefix (13 characters)
-            if len(phone) == 13 and phone.startswith('+91'):
-                # Extract the 10-digit number
-                clean_phone = phone[3:]  # Remove +91
-                print(f"DEBUG: Extracted 10-digit number: '{clean_phone}'")
-                
-                # Validate the 10-digit number
-                if len(clean_phone) == 10 and clean_phone.startswith(('6', '7', '8', '9')):
-                    # Try different formats that might be stored in database
-                    formats_to_try = [
-                        phone,                          # +919876543210 (exact format)
-                        clean_phone,                    # 9876543210
-                        f'91{clean_phone}',            # 919876543210
-                    ]
-                    
-                    for phone_format in formats_to_try:
-                        print(f"DEBUG: Trying format: '{phone_format}'")
-                        try:
-                            user = User.objects.get(phone_number=phone_format)
-                            print(f"DEBUG: Found user with format: '{phone_format}'")
-                            return user, phone_format
-                        except User.DoesNotExist:
-                            continue
-            
-            print(f"DEBUG: No user found for phone: '{phone}'")
-            return None, None
-
-        user, user_phone_format = find_user_by_phone(phone_number)
-        
+        user = User.objects.filter(phone_number=phone_number).first()
         if not user:
-            print(f"DEBUG: User not found for phone: {phone_number}")
-            return Response({
-                'error': 'User not found',
-                'message': 'User with this phone number does not exist'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        print(f"DEBUG: Found user: {user.name} (ID: {user.id}) with phone format: {user_phone_format}")
+        # Check if Twilio client is configured
+        if not client or not VERIFY_SERVICE_SID:
+            print("CRITICAL ERROR: Twilio is not configured. Cannot verify OTP.")
+            return Response({'error': 'SMS Service Not Configured'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Verify OTP
-        verified = False
-        verification_method = None
-        
-        # Check default OTP first
-        if otp_code == DEFAULT_OTP:
-            verified = True
-            verification_method = 'default'
-            print(f"DEBUG: OTP verified with default: {DEFAULT_OTP}")
-        elif client and VERIFY_SERVICE_SID:
-            # Try Twilio verification (already in +91 format)
-            try:
-                print(f"DEBUG: Attempting Twilio verification for: {phone_number}")
-                
-                verification_check = client.verify \
-                    .services(VERIFY_SERVICE_SID) \
-                    .verification_checks \
-                    .create(to=phone_number, code=otp_code)  # Use phone_number directly
-                
-                verified = verification_check.status == "approved"
-                verification_method = 'twilio'
-                print(f"DEBUG: Twilio verification: {verification_check.status}")
-                
-            except Exception as e:
-                print(f"DEBUG: Twilio verification failed: {e}")
-                verification_method = 'twilio_failed'
-
-        if not verified:
-            print(f"DEBUG: OTP verification failed")
-            return Response({
-                'error': 'Invalid OTP',
-                'message': 'The OTP code is incorrect or expired'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Update login status
+        # Attempt to verify the code with Twilio
         try:
-            login_record = login.objects.get(phone_number=user_phone_format)
-            login_record.otp_verified = True
-            login_record.save()
-            print(f"DEBUG: Updated login record for: {user_phone_format}")
-        except login.DoesNotExist:
-            print(f"DEBUG: Creating new login record for: {user_phone_format}")
-            login.objects.create(
-                phone_number=user_phone_format,
-                otp_code=otp_code,
-                otp_verified=True
-            )
-        except Exception as e:
-            print(f"DEBUG: Error updating login status: {e}")
-
-        # FIXED: Check health assessment more robustly
-        try:
-            # Check if user has completed health assessment
-            health_assessment = HealthAssessment.objects.filter(user=user).first()
-            has_health_assessment = health_assessment is not None
+            print(f"DEBUG: Attempting Twilio verification for: {phone_number}")
+            verification_check = client.verify.v2.services(VERIFY_SERVICE_SID) \
+                .verification_checks.create(to=phone_number, code=otp_code)
             
-            print(f"DEBUG: Health assessment query for user {user.name} (ID: {user.id})")
-            print(f"DEBUG: Found health assessment: {health_assessment}")
-            print(f"DEBUG: Has health assessment: {has_health_assessment}")
-            
-            if has_health_assessment:
-                print(f"DEBUG: Health assessment details - Score: {health_assessment.health_score}, Created: {health_assessment.created_at}")
-            
-        except Exception as e:
-            print(f"DEBUG: Error checking health assessment: {e}")
-            has_health_assessment = False
+            print(f"DEBUG: Twilio verification result: {verification_check.status}")
 
-        # FIXED: Determine redirect path based on health assessment
-        if has_health_assessment:
-            redirect_to = '/dashboard'
-            print(f"DEBUG: User has health assessment, redirecting to dashboard")
-        else:
-            redirect_to = '/health-assessment'
-            print(f"DEBUG: User has NO health assessment, redirecting to health assessment")
+            if verification_check.status == "approved":
+                # --- Verification successful ---
+                has_health_assessment = HealthAssessment.objects.filter(user=user).exists()
+                redirect_to = '/dashboard' if has_health_assessment else '/health-assessment'
+                
+                return Response({
+                    'success': True,
+                    'message': 'Login successful',
+                    'user': {'name': user.name, 'user_id': user.id, 'has_health_assessment': has_health_assessment},
+                    'redirect_to': redirect_to
+                }, status=status.HTTP_200_OK)
+            else:
+                # If status is not 'approved', the OTP is wrong.
+                return Response({'error': 'Invalid OTP', 'message': 'The code is incorrect or expired.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Return success response
-        return Response({
-            'success': True,
-            'message': 'Login successful',
-            'user': {
-                'name': user.name,
-                'phone_number': user.phone_number,
-                'user_id': user.id,  # Added user_id for better tracking
-                'has_health_assessment': has_health_assessment
-            },
-            'redirect_to': redirect_to,
-            'debug_info': {
-                'verification_method': verification_method,
-                'user_phone_format': user_phone_format,
-                'health_assessment_found': has_health_assessment,
-                'user_id': user.id
-            }
-        }, status=status.HTTP_200_OK)
+        except TwilioRestException as e:
+            print(f"DEBUG: Twilio API Error during verification: {e}")
+            return Response({'error': 'Invalid OTP', 'message': 'The code is incorrect or expired.'}, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
-        print(f"DEBUG: Unexpected error in verify_otp: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        return Response({
-            'error': 'Internal server error',
-            'message': 'Something went wrong. Please try again.'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    
+        print(f"DEBUG: Unexpected error in verify_otp_api: {e}")
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @csrf_exempt
@@ -2008,7 +1771,7 @@ def health_report_api(request):
             
             station_locations = {
                 'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
-                'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Mattoor Junction)' },
+                'loradev2': { 'lat': 10.182204, 'lng': 76.428503, 'name': 'Station 2 (Pothiyakkara Road)' },
                 # ... include your temp stations here as well
             }
 

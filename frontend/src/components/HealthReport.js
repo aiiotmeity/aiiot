@@ -475,7 +475,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                     <div className="menu-toggle" onClick={toggleMenu}>☰</div>
 
                     <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-                        <li><Link to="/" className="nav-link">🏠 Home</Link></li>
+                        <li><Link to="/homepage" className="nav-link">🏠 Home</Link></li>
                         <li><Link to="/dashboard" className="nav-link">👤 Profile</Link></li>
                         <li><Link to="/health-assessment" className="nav-link">📋 Health Update</Link></li>
                         <li><Link to="/add-family" className="nav-link">👥 Add Family</Link></li>
@@ -817,7 +817,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
             <div className="footer-section">
               <h4>Quick Links</h4>
               <ul>
-                <li><a href="/"> Home</a></li>
+                <li><a href="/homepage"> Home</a></li>
                 <li><a href="/health-report"> Health Report</a></li>
                 <li><a href="/add-family"> Add Family</a></li>
                 <li><a href="/map" >Live Map</a></li>

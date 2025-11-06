@@ -64,7 +64,7 @@ const KNOWN_LOCATIONS = {
     country: 'India'
   },
   '10.165_76.420': {
-    display_name: 'Kalady Railway Station Area',
+    display_name: 'Airport Road, Kalady',
     city: 'Kalady',
     state: 'Kerala',
     country: 'India'
@@ -569,6 +569,12 @@ function Dashboard() {
           averages: { pm25: 22, pm10: 38, so2: 7, no2: 35, co: 1.0, o3: 43, nh3: 88, temp: 27, hum: 68, pre: 1012 },
           highest_sub_index: 45,
           last_updated_on: 'Sample Data'
+        },
+        'lora-v3': {
+          station_info: { name: 'Station 3 (Airport Rd)', lat: 10.165, lng: 76.420, description: 'Near Airport Road' },
+          averages: { pm25: 28, pm10: 45, so2: 9, no2: 38, co: 1.2, o3: 48, nh3: 95, temp: 29, hum: 62, pre: 1011 },
+          highest_sub_index: 55,
+          last_updated_on: 'Sample Data'
         }
       },
       forecasts: {
@@ -583,6 +589,12 @@ function Dashboard() {
           { day: 'Tomorrow', pm25_max: 22, pm10_max: 32, so2_max: 7, no2_max: 42, co_max: 1.1, o3_max: 41, nh3_max: 95 },
           { day: 'Day 3', pm25_max: 22, pm10_max: 28, so2_max: 7, no2_max: 40, co_max: 1.1, o3_max: 43, nh3_max: 95 },
           { day: 'Day 4', pm25_max: 18, pm10_max: 21, so2_max: 7, no2_max: 36, co_max: 1.1, o3_max: 45, nh3_max: 95 }
+        ],
+        'lora-v3': [
+          { day: 'Today', pm25_max: 32, pm10_max: 40, so2_max: 9, no2_max: 42, co_max: 1.3, o3_max: 50, nh3_max: 98 },
+          { day: 'Tomorrow', pm25_max: 26, pm10_max: 35, so2_max: 9, no2_max: 46, co_max: 1.3, o3_max: 45, nh3_max: 102 },
+          { day: 'Day 3', pm25_max: 25, pm10_max: 32, so2_max: 9, no2_max: 44, co_max: 1.3, o3_max: 47, nh3_max: 103 },
+          { day: 'Day 4', pm25_max: 22, pm10_max: 25, so2_max: 9, no2_max: 40, co_max: 1.3, o3_max: 48, nh3_max: 101 }
         ]
       },
       health_data: { risk_level: 'Low', score: 75, recommendations: ['Enjoy outdoor activities', 'Open windows for fresh air'] }
@@ -773,7 +785,7 @@ function Dashboard() {
             {isMenuOpen ? '✕' : '☰'}
           </div>
           <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-            <li><Link to="/" className="nav-link" onClick={handleNavLinkClick}>🏠 Home</Link></li>
+            <li><Link to="/homepage" className="nav-link" onClick={handleNavLinkClick}>🏠 Home</Link></li>
             <li><Link to="/health-assessment" className="nav-link" onClick={handleNavLinkClick}>📋 Health Update</Link></li>
             <li><Link to="/health-report" className="nav-link" onClick={handleNavLinkClick}>📄 Health Report</Link></li>
             <li><Link to="/add-family" className="nav-link" onClick={handleNavLinkClick}>👥 Add Family</Link></li>
@@ -1003,7 +1015,7 @@ function Dashboard() {
             <div className="footer-section">
               <h4>Quick Links</h4>
               <ul>
-                <li><Link to="/"> Home</Link></li>
+                <li><Link to="/homepage"> Home</Link></li>
                 <li><Link to="/health-report">Health Report</Link></li>
                 <li><Link to="/add-family">Add Family</Link></li>
                 <li><Link to="/map">Live map</Link></li>

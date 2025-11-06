@@ -125,7 +125,7 @@ function HomePage() {
 
   useEffect(() => {
     fetchHomeData();
-    const interval = setInterval(fetchHomeData, 60000);
+    const interval = setInterval(fetchHomeData, 30000);
     return () => clearInterval(interval);
   }, [fetchHomeData]);
   
@@ -200,7 +200,7 @@ function HomePage() {
   const displayStationName = homeData?.station_name || 'No data';
 
   return (
-    <div className="homepage">
+    <div className="airaware-homepage-container">
       {/* --- Navbar --- */}
       <nav className="navbar">
         <div className="navbar-content">
@@ -213,10 +213,11 @@ function HomePage() {
             <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
           </div>
           <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-            <li><Link to="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>Home</Link></li>
+            <li><Link to="/homepage" className="nav-link" onClick={() => setIsMenuOpen(false)}>Home</Link></li>
             <li><a href="#cities" className="nav-link" onClick={() => setIsMenuOpen(false)}>Cities</a></li>
             <li><a href="#services" className="nav-link" onClick={() => setIsMenuOpen(false)}>Services</a></li>
             <li><a href="#contact" className="nav-link" onClick={() => setIsMenuOpen(false)}>Contact</a></li>
+            <li><a href="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>Aiiot</a></li>
            
             {user ? (
               <>
@@ -270,7 +271,7 @@ function HomePage() {
               </div>
               <div className="aqi-status-container">
                 <div className="aqi-status" style={{ color: aqiStatus.color }}>
-                  {aqiStatus.status}
+                  {aqiStatus.color}
                 </div>
                 <div className="aqi-icon" style={{ color: aqiStatus.color }}>
                   <i className={aqiStatus.icon}></i>

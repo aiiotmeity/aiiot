@@ -13,6 +13,11 @@ import HealthReport from './components/HealthReport';
 import FamilyPage from './components/FamilyPage';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLogin from './components/AdminLogin';
+import AiIotInnovationCenter from './component_aiiot/Aiiot_index';
+import WeatherHomepage from './weather_component/WeatherHomepage';
+import MapComponent from './weather_component/MapComponent';
+import RiverDashboard from './weather_component/RiverDashboard';
+
 
 // Session Manager
 const SessionManager = {
@@ -165,10 +170,14 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<AiIotInnovationCenter/>} />
+          <Route path="/homepage" element={<HomePage />} />
+          <Route path="/weather-home" element={<WeatherHomepage/>} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
           <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <Signup />} />
           <Route path="/map" element={<MapPage />} />
+          <Route path="/weather-map" element={<MapComponent />} />
+          <Route path="/river-forecast" element={<RiverDashboard />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

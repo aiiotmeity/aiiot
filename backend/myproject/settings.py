@@ -116,6 +116,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'myapp',
     'corsheaders',
+    'weather_monitoring',
 ]
 
 ROOT_URLCONF = 'myproject.urls'

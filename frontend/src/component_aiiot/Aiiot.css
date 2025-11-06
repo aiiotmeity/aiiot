@@ -1,0 +1,95 @@
+/* AI-IoT Innovations - Complete SCOPED CSS */
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ROOT CONTAINER FOR THIS PAGE
+  This now contains the 'body' styles and the inline styles
+  from your Aiiot_index.js file.
+*/
+.aiiot-page-container {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc; /* A slightly cooler light gray (slate-50) */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* REMOVED: ::-webkit-scrollbar
+  This was the cause of your global scrolling bug.
+  It is impossible to scope scrollbar styles, so they must be removed
+  from component-specific CSS files.
+*/
+
+/* A subtle gradient for the hero section background */
+.aiiot-page-container .hero-gradient {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(240, 245, 255, 1) 100%);
+}
+
+/* Animation for cards and sections on scroll */
+.aiiot-page-container .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.aiiot-page-container .reveal-on-scroll.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Hero Image Carousel Styles */
+.aiiot-page-container #hero-image {
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+}
+
+.aiiot-page-container .indicator { 
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+}
+
+.aiiot-page-container .indicator:hover {
+    transform: scale(1.3);
+    opacity: 0.8;
+}
+
+.aiiot-page-container .indicator.active { 
+    animation: aiiotPulse 1s infinite alternate; 
+}
+
+@keyframes aiiotPulse {
+    from { opacity: 1; }
+    to { opacity: 0.7; }
+}
+
+/* Smooth transitions for all interactive elements */
+.aiiot-page-container a,
+.aiiot-page-container button {
+    transition: all 0.3s ease;
+}
+
+/* Images */
+.aiiot-page-container img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Buttons */
+.aiiot-page-container button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+}
+
+.aiiot-page-container a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Focus states for accessibility */
+.aiiot-page-container button:focus-visible,
+.aiiot-page-container a:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}

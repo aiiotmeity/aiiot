@@ -10,6 +10,7 @@ urlpatterns = [
 
     # 2. Your API paths come next.
     path('api/', include('myapp.urls')),
+    path('api/weather/', include('weather_monitoring.urls')),  # ← ADD THIS LINE
 
     # 3. The catch-all for React comes LAST.
     # This ensures that any request not matching 'admin/' or 'api/'
