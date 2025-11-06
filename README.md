@@ -106,4 +106,4 @@ my-django-react-app
 
 ## Updating Documentation
 
-Make sure to update the README files in both the `backend` and `frontend` directories with detailed instructions for setup, usage, and deployment.
+Make sure to update the README files in both the `backend` and `frontend` directories with detailed instructions for setup, usage, and deployment."# aiiot-complete" 
