@@ -82,9 +82,14 @@ function FamilyPage() {
     const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
     
     const handleLogout = useCallback(() => {
-        localStorage.clear();
-        navigate('/login');
-    }, [navigate]);
+        try {
+            logout();
+            navigate('/login');
+        } catch (e) {
+            console.error('Logout failed:', e);
+            navigate('/login');
+        }
+    }, [logout, navigate]);
 
     const handleAddMemberClick = () => {
         setEditingMember(null);

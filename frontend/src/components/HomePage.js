@@ -14,10 +14,14 @@ function HomePage() {
   
   // FIX: Added isMobileView state to track screen size
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
-  const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
+  // null = unknown / checking, false = not completed, true = completed
+  const [hasCompletedAssessment, setHasCompletedAssessment] = useState(null);
   // --- Add hooks for navigation and authentication ---
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  // Normalize display name: prefer username, then name, then phone_number
+  const stored = (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; } })();
+  const displayName = user?.username || user?.name || stored?.username || stored?.name || stored?.phone_number || 'Guest';
   
   // API Base URL configuration
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -42,7 +46,10 @@ function HomePage() {
       // Only check if there is a logged-in user
       if (user) {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/health-assessment-status/?username=${user.name}`);
+          const identifier = user.username || user.name || user.phone_number;
+          const url = new URL(`${API_BASE_URL}/api/health-assessment-status/`);
+          url.searchParams.append('username', identifier);
+          const response = await fetch(url.toString());
           const data = await response.json();
           if (response.ok) {
             setHasCompletedAssessment(data.has_assessment);
@@ -136,21 +143,40 @@ function HomePage() {
     navigate('/map');
   }, [navigate]);
 
-  const handleDashboardNavigation = useCallback(() => {
+  const handleDashboardNavigation = useCallback(async () => {
     setIsMenuOpen(false);
-    if (user) {
-      // If the user has completed the assessment, go to the dashboard.
-      if (hasCompletedAssessment) {
-        navigate('/dashboard');
-      } else {
-        // Otherwise, send them to the assessment page.
-        navigate('/health-assessment');
-      }
-    } else {
-      // If no user, go to login.
+    if (!user) {
       navigate('/login');
+      return;
     }
-  }, [user, navigate, hasCompletedAssessment]);
+
+    // If we already know the assessment status, use it.
+    if (hasCompletedAssessment === true) {
+      navigate('/dashboard');
+      return;
+    }
+
+    // Otherwise, check the server quickly to ensure we have the latest value.
+    try {
+      setHasCompletedAssessment(null); // indicate checking
+      const identifier = user.username || user.name || user.phone_number;
+      const url = new URL(`${API_BASE_URL}/api/health-assessment-status/`);
+      url.searchParams.append('username', identifier);
+      const response = await fetch(url.toString());
+      if (response.ok) {
+        const data = await response.json();
+        setHasCompletedAssessment(data.has_assessment);
+        if (data.has_assessment) navigate('/dashboard');
+        else navigate('/health-assessment');
+        return;
+      }
+      // On non-ok response, fallback to sending to assessment page
+      navigate('/health-assessment');
+    } catch (err) {
+      console.error('Failed to check health assessment status:', err);
+      navigate('/health-assessment');
+    }
+  }, [user, navigate, API_BASE_URL, hasCompletedAssessment]);
 
 
   const handleLogout = useCallback(() => {
@@ -222,7 +248,7 @@ function HomePage() {
             {user ? (
               <>
                 <li><button onClick={handleDashboardNavigation} className="nav-link nav-button">👤 Profile</button></li>
-                <li className="nav-link user-greeting">Hello, {user.name}</li>
+                <li className="nav-link user-greeting">Hello, {displayName}</li>
                 <li><button onClick={handleLogout} className="nav-link login-btn nav-button"><i className="fas fa-sign-out-alt"></i> Logout</button></li>
               </>
             ) : (
@@ -271,7 +297,7 @@ function HomePage() {
               </div>
               <div className="aqi-status-container">
                 <div className="aqi-status" style={{ color: aqiStatus.color }}>
-                  {aqiStatus.color}
+                  {aqiStatus.status}
                 </div>
                 <div className="aqi-icon" style={{ color: aqiStatus.color }}>
                   <i className={aqiStatus.icon}></i>
@@ -532,6 +558,7 @@ function HomePage() {
               <a href="#cities" className="footer-link">Monitoring Stations</a>
               <a href="#services" className="footer-link">Services</a>
               <Link to="/map" className="footer-link">Live Map</Link>
+              <Link to="/support" className="footer-link">Support</Link>
               <button onClick={handleAdminPortalClick} className="footer-link footer-button">
                 Admin Portal
               </button>
@@ -567,6 +594,10 @@ function HomePage() {
                 <strong>Email:</strong> aiiot@adishankara.ac.in<br />
                 <strong>Phone:</strong> 9846900310
               </p>
+              <br />
+              <button onClick={() => navigate('/support')} className="footer-link footer-button">
+                Support / Complaints
+              </button>
             </div>
           </div>
           <div className="footer-bottom">

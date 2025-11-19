@@ -31,9 +31,9 @@ function HealthAssessment() {
 
   // Get username from localStorage or session
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setUsername(user.name || 'User');
-  }, []);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  setUsername(user.username || 'User');
+}, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -44,16 +44,26 @@ function HealthAssessment() {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+  
 
   // Check if user has a completed assessment when the page loads
   useEffect(() => {
     const checkAssessmentStatus = async () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const currentUsername = user.name;
-
+      const currentUsername = user.username;
+      
       if (currentUsername && currentUsername !== 'User') {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/health-assessment-status/?username=${currentUsername}`);
+          // --- ARATHY'S FIX 1: ---
+          // The URL was incorrect. It was pointing to /health_assessment_api}
+          // The correct URL from urls.py to check status is /health-assessment-status/
+          const response = await fetch(`${API_BASE_URL}/health-assessment-status/`, {
+            method: 'POST', // Assuming it needs a POST with user info, adjust if GET
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUsername }) // Send username to check
+          });
+          // --- END OF FIX 1 ---
+          
           const data = await response.json();
           if (response.ok) {
             setHasCompletedAssessment(data.has_assessment);
@@ -65,7 +75,8 @@ function HealthAssessment() {
     };
 
     checkAssessmentStatus();
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL]); // Removed 'username' dependency, it's derived inside
+  
 
   // Optimized particles with reduced count
   const particles = useMemo(() => {
@@ -420,7 +431,7 @@ function HealthAssessment() {
 
     const storedUser = JSON.parse(localStorage.getItem('user'));
 
-    if (!storedUser || !storedUser.user_id) {
+    if (!storedUser || !storedUser.phone_number) { // Check for phone_number
       setError('Could not identify user. Please log in again.');
       setLoading(false);
       setSaveStatus('❌ Save failed');
@@ -430,15 +441,21 @@ function HealthAssessment() {
     try {
       const score = calculateHealthScore();
       
+      // --- ARATHY'S FIX 2: ---
+      // The payload was missing 'phone_number', which the backend requires.
+      // We add it here from the 'storedUser' object.
       const payload = {
         ...formData,
         health_score: score,
         user_id: storedUser.user_id,
+        phone_number: storedUser.phone_number // <-- THIS IS THE FIX
       };
+      // --- END OF FIX 2 ---
       
-      console.log('Sending data with user_id:', payload);
-
-      const response = await fetch(`${API_BASE_URL}/api/health-assessment/`, {
+      console.log('Sending payload:', payload); // Log the full payload
+      
+      // This URL is correct as per your urls.py
+      const response = await fetch(`${API_BASE_URL}/api/health-assessment-api/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -447,7 +464,9 @@ function HealthAssessment() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        console.error('Server error response:', errorData);
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -458,6 +477,12 @@ function HealthAssessment() {
         setSaveStatus('✅ Saved successfully!');
         setShowResult(true);
         
+        // Update localStorage to show assessment is complete
+        localStorage.setItem('user', JSON.stringify({
+          ...storedUser,
+          has_health_assessment: true
+        }));
+        
         setTimeout(() => {
           navigate('/dashboard');
         }, 4000);
@@ -467,14 +492,13 @@ function HealthAssessment() {
       }
     } catch (err) {
       console.error('Network error details:', err);
-      const errorMessage = 'Network error or server issue. Please try again.';
+      const errorMessage = err.message || 'Network error or server issue. Please try again.';
       setError(errorMessage);
       setSaveStatus('❌ Network error');
       
-      // The timeout you added is correct
       setTimeout(() => {
         setError('');
-      }, 2000);
+      }, 3000); // Give more time to see the error
       
     } finally {
       setLoading(false);

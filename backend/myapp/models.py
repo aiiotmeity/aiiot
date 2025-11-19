@@ -1,27 +1,46 @@
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib import admin
 import os
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone
 
-class User(models.Model):
-    name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=15, unique=True)
-    otp = models.CharField(max_length=6, blank=True, null=True)
+# --- PASTE THESE TWO MODELS ---
+# (Delete your old 'User' and 'login' models)
 
+# In myapp/models.py
+from django.db import models
 
-    def __str__(self):
-        return self.name
+# --- PASTE THESE TWO MODELS ---
+# (Delete your old 'User' and 'login' models)
 
+class Signup(models.Model):
+    id = models.AutoField(primary_key=True)
+    username = models.CharField(max_length=100)
+    phone_number = models.CharField(unique=True, max_length=15)
+    email = models.CharField(unique=True, max_length=100)
+    password = models.CharField(max_length=255)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-class login(models.Model):
-    phone_number = models.CharField(max_length=15, unique=True)
-    otp_code = models.CharField(max_length=6, null=True, blank=True)
-    otp_verified = models.BooleanField(default=False)
+    class Meta:
+        managed = False  # Tells Django to use the existing table
+        db_table = 'signup' # Links to your 'signup' table
 
-    def __str__(self):
-        return self.phone_number
+class UserLogin(models.Model):
+    id = models.AutoField(primary_key=True)
+    phone_number = models.CharField(max_length=20, unique=True)   # ✔ for login  # optional
+    password = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        managed = False
+        db_table = 'user_login'
+ # Links to your 'user_login' table
+
+# --- KEEP YOUR OTHER MODELS (HealthAssessment, etc.) BELOW ---
 class HealthQuestionnaire(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # Assuming you have a User model
     question1 = models.CharField(max_length=100)  # Adjust field types as necessary
@@ -34,165 +53,84 @@ class HealthQuestionnaire(models.Model):
 # CORRECTED models.py - HealthAssessment class
 
 class HealthAssessment(models.Model):
-    # FIX: Use ForeignKey with unique=True instead of OneToOneField to avoid migration issues
-    user = models.ForeignKey(User, on_delete=models.CASCADE, unique=True)
+    id = models.AutoField(primary_key=True)
     
-    age_group = models.CharField(max_length=20)
-    gender = models.CharField(max_length=20)
-    respiratory_conditions = models.JSONField(default=list)
-    smoking_history = models.TextField()
-    living_environment = models.JSONField(default=list)
-    common_symptoms = models.JSONField(default=list)
-    occupational_exposure = models.CharField(max_length=50)
-    medical_history = models.JSONField(default=list)
+    user = models.OneToOneField(
+        'Signup',
+        on_delete=models.CASCADE,
+        db_column='user_id',
+        related_name='health_assessment'
+    )
+
+    phone_number = models.CharField(
+        max_length=15,
+        unique=True,
+        db_index=True
+    )
+
+    age_group = models.CharField(max_length=20, null=True, blank=True)
+    gender = models.CharField(max_length=20, null=True, blank=True)
+
+    respiratory_conditions = models.JSONField(default=list, blank=True)
+    smoking_history = models.TextField(null=True, blank=True)
+    living_environment = models.JSONField(default=list, blank=True)
+    common_symptoms = models.JSONField(default=list, blank=True)
+    occupational_exposure = models.CharField(max_length=50, null=True, blank=True)
+    medical_history = models.JSONField(default=list, blank=True)
+
     health_score = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    # ============================
+    # ADD THESE TWO FUNCTIONS HERE
+    # ============================
+
+    def get_risk_level(self):
+        """
+        Convert health_score → risk level text.
+        """
+        if self.health_score is None:
+            return "Unknown"
+
+        if self.health_score >= 80:
+            return "Low"
+        elif self.health_score >= 50:
+            return "Medium"
+        else:
+            return "High"
+
+    def get_recommendations(self):
+        """
+        Basic recommendations based on risk level.
+        """
+        risk = self.get_risk_level()
+
+        if risk == "Low":
+            return "Maintain healthy habits and avoid prolonged pollution exposure."
+
+        if risk == "Medium":
+            return "Limit outdoor activity. Use a mask when going outside."
+
+        if risk == "High":
+            return "High risk! Avoid outdoor exposure, keep windows closed, use an air purifier."
+
+        return "No recommendation available."
+
+    # ============================
 
     class Meta:
-        indexes = [
-            models.Index(fields=['health_score']),
-            models.Index(fields=['created_at']),
-            models.Index(fields=['user']),
+        db_table = 'health_assessment'
+        managed = False
+        constraints = [
+            models.UniqueConstraint(fields=['user'], name='health_assessment_user_id_key'),
+            models.UniqueConstraint(fields=['phone_number'], name='health_assessment_phone_number_key'),
         ]
-        verbose_name = "Health Assessment"
-        verbose_name_plural = "Health Assessments"
-        
+
     def __str__(self):
-        return f"{self.user.name} - Health Assessment (Score: {self.health_score})"
-    
-    def get_risk_level(self):
-        """Calculate risk level based on health score"""
-        if self.health_score <= 50:
-            return 'Low'
-        elif self.health_score <= 100:
-            return 'Moderate'
-        elif self.health_score <= 150:
-            return 'High'
-        else:
-            return 'Critical'
-    
-    def get_risk_color(self):
-        """Get color code for risk level"""
-        risk_colors = {
-            'Low': '#10b981',      # Green
-            'Moderate': '#f59e0b', # Yellow
-            'High': '#ef4444',     # Red
-            'Critical': '#dc2626'  # Dark Red
-        }
-        return risk_colors.get(self.get_risk_level(), '#6b7280')
-    
-    def get_recommendations(self):
-        """Get health recommendations based on assessment"""
-        recommendations = []
-        
-        # Age-based recommendations
-        if self.age_group in ['0-12 years', '61 years and above']:
-            recommendations.append("Monitor air quality closely and limit outdoor activities during high pollution days")
-        
-        # Respiratory condition recommendations
-        if self.respiratory_conditions and 'None' not in self.respiratory_conditions:
-            recommendations.append("Use air purifiers indoors and wear masks during high pollution periods")
-            if 'Asthma' in self.respiratory_conditions:
-                recommendations.append("Keep rescue inhalers accessible and avoid known triggers")
-        
-        # Smoking history recommendations
-        if self.smoking_history == 'Current smoker':
-            recommendations.append("Consider smoking cessation programs - smoking significantly worsens air pollution effects")
-        elif self.smoking_history == 'Former smoker':
-            recommendations.append("Continue avoiding tobacco and secondhand smoke to maintain respiratory health")
-        elif self.smoking_history == 'Exposed to secondhand smoke':
-            recommendations.append("Minimize exposure to secondhand smoke environments")
-        
-        # Environment-based recommendations
-        if self.living_environment:
-            if 'Urban area' in self.living_environment:
-                recommendations.append("Consider indoor plants and regular home air quality monitoring")
-            if 'Industrial zone' in self.living_environment:
-                recommendations.append("Use high-efficiency air filters and monitor local air quality alerts")
-        
-        # Symptom-based recommendations
-        if self.common_symptoms and 'None' not in self.common_symptoms:
-            recommendations.append("Consult healthcare provider for persistent respiratory symptoms")
-            if len(self.common_symptoms) >= 3:
-                recommendations.append("Consider comprehensive pulmonary function testing")
-        
-        # Occupational recommendations
-        high_risk_occupations = ['Construction/Mining', 'Chemical Industry']
-        if self.occupational_exposure in high_risk_occupations:
-            recommendations.append("Use proper personal protective equipment (PPE) at work")
-            recommendations.append("Request regular occupational health screenings")
-        
-        # Medical history recommendations
-        if self.medical_history:
-            if 'Heart Disease' in self.medical_history:
-                recommendations.append("Monitor air quality extra carefully as it can affect cardiovascular health")
-            if 'Diabetes' in self.medical_history:
-                recommendations.append("Poor air quality can affect blood sugar control - monitor more frequently")
-            if 'Immunocompromised' in self.medical_history:
-                recommendations.append("Take extra precautions during high pollution days and consider staying indoors")
-        
-        # Default recommendation if no specific risks
-        if not recommendations:
-            recommendations.append("Maintain awareness of local air quality conditions and general health practices")
-        
-        return recommendations
-    
-    def get_priority_actions(self):
-        """Get high-priority actions based on risk level"""
-        risk_level = self.get_risk_level()
-        
-        if risk_level == 'Critical':
-            return [
-                "Seek immediate medical consultation",
-                "Use air purifiers in all living spaces",
-                "Avoid outdoor activities during high pollution days",
-                "Consider relocating if possible"
-            ]
-        elif risk_level == 'High':
-            return [
-                "Schedule healthcare provider consultation",
-                "Install air quality monitoring system",
-                "Use N95 masks when outdoors",
-                "Create a clean air room at home"
-            ]
-        elif risk_level == 'Moderate':
-            return [
-                "Monitor daily air quality forecasts",
-                "Use air purifiers in bedrooms",
-                "Exercise indoors during high pollution days"
-            ]
-        else:  # Low risk
-            return [
-                "Stay informed about air quality conditions",
-                "Maintain healthy lifestyle practices"
-            ]
-    
-    def is_high_risk_individual(self):
-        """Check if individual is in high-risk category"""
-        # Age-based risk
-        if self.age_group in ['0-12 years', '61 years and above']:
-            return True
-        
-        # Health condition risk
-        high_risk_conditions = ['Asthma', 'COPD', 'Heart Disease', 'Immunocompromised']
-        if self.respiratory_conditions:
-            if any(condition in self.respiratory_conditions for condition in high_risk_conditions):
-                return True
-        
-        if self.medical_history:
-            if any(condition in self.medical_history for condition in high_risk_conditions):
-                return True
-        
-        # Smoking risk
-        if self.smoking_history == 'Current smoker':
-            return True
-        
-        # Symptom risk
-        if self.common_symptoms and len([s for s in self.common_symptoms if s != 'None']) >= 2:
-            return True
-        
-        return False
+        return f"Health Assessment for {self.user.username if self.user else self.phone_number}"
+
 
 class AirQualityData(models.Model):
         co = models.FloatField(null=True)
@@ -239,10 +177,29 @@ class AdminUserlogin(models.Model):
 
 
 class FamilyMembers(models.Model):
-    parent_user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='family_members')
+    # class FamilyMembers(models.Model):
+    
+    # THIS IS THE FIXED LINE:
+    parent_user = models.ForeignKey('Signup', on_delete=models.CASCADE, related_name='family_members')
+    
+    # ... other fields
     name = models.CharField(max_length=100)
     age = models.IntegerField()
     relationship = models.CharField(max_length=50)
 
     def __str__(self):
         return f"{self.name} ({self.relationship})"
+
+
+class Support(models.Model):
+    sl_no = models.AutoField(primary_key=True, db_column='sl_no')
+    email = models.CharField(max_length=255)
+    case_description = models.TextField()
+    submitted_at = models.DateTimeField(auto_now_add=True, db_column='submitted_at')
+
+    class Meta:
+        db_table = 'support'
+        managed = False
+
+    def __str__(self):
+        return f"Support #{self.sl_no} from {self.email}"

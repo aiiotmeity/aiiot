@@ -1,5 +1,7 @@
+
 from datetime import datetime, timedelta
 import boto3
+from django.utils import timezone
 from botocore.exceptions import ClientError, NoCredentialsError  # ADDED MISSING IMPORT
 import json
 from twilio.base.exceptions import TwilioRestException
@@ -35,7 +37,13 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 import random
-
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.middleware.csrf import get_token
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from rest_framework.decorators import api_view
+import json
 
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
@@ -45,7 +53,7 @@ import time
 
 
 # Import your models
-from .models import User, login, HealthAssessment, AirQualityData, AdminUserlogin, FamilyMembers
+from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support
 
 # Import DynamoDB functions with error handling
 try:
@@ -58,9 +66,7 @@ try:
         initialize_aws_resources
     )
 except ImportError as e:
-    logger = logging.getLogger(__name__)
-    logger.error(f"Failed to import DynamoDB functions: {e}")
-
+ 
     # Provide fallback functions
     def get_all_items():
         return []
@@ -523,12 +529,15 @@ logger = logging.getLogger(__name__)
 # In myapp/views.py, replace all old HomeAPI versions with this one:
 # In myapp/views.py
 
+# In views.py, REPLACE your HomeAPI class with this:
+
 class HomeAPI(APIView):
     """
     MODIFIED Location-Aware HomeAPI with Backend Fallback:
     - Tries to fetch live data from AWS.
     - If AWS fetching fails, it catches the exception and returns a static,
       pre-defined JSON response, preventing a frontend error.
+    - *** FIX: This version now adds 'latest_readings' to the cache ***
     """
     def get(self, request, format=None):
         try:
@@ -545,7 +554,6 @@ class HomeAPI(APIView):
                     # This will be caught by the except block below
                     raise ConnectionError('AWS connection failed')
 
-                # ... (rest of your data fetching logic from DynamoDB remains here) ...
                 lora_v1_items = get_device_data("lora-v1", limit=24)
                 loradev2_items = get_device_data("loradev2", limit=24)
                 lora_v3_items = get_device_data("lora-v3", limit=24)
@@ -560,11 +568,15 @@ class HomeAPI(APIView):
                     'lora-v3': { 'lat': 10.173254902926303, 'lng': 76.42755590382993, 'name': 'Station 3 (Mattoor Junction)' },
                 }
 
+                # --- START: THE FIX ---
+                # Added 'latest_readings' to each station. This is the raw latest_item,
+                # which contains temp, hum, and pre for the interpolation function.
                 all_stations_data = {
-                    'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1'], 'last_updated_on': latest_v1.get('last_updated_on') if latest_v1 else 'N/A'},
-                    'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'last_updated_on': latest_v2.get('last_updated_on') if latest_v2 else 'N/A'},
-                    'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'last_updated_on': latest_v3.get('last_updated_on') if latest_v3 else 'N/A'}
+                    'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1'], 'last_updated_on': latest_v1.get('last_updated_on') if latest_v1 else 'N/A', 'latest_readings': latest_v1},
+                    'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'last_updated_on': latest_v2.get('last_updated_on') if latest_v2 else 'N/A', 'latest_readings': latest_v2},
+                    'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'last_updated_on': latest_v3.get('last_updated_on') if latest_v3 else 'N/A', 'latest_readings': latest_v3}
                 }
+                # --- END: THE FIX ---
                 
                 cache.set(cache_key, all_stations_data, 60)
             
@@ -594,6 +606,8 @@ class HomeAPI(APIView):
                 'last_updated_on': 'Showing recent data',
             }
             return Response(fallback_response, status=status.HTTP_200_OK)
+        
+
 def _extract_real_datetime(self, latest_item, all_items):
     """
     STRICT VERSION: Only return REAL sensor data, never fake fallbacks
@@ -943,240 +957,150 @@ def all_devices_api(request):
             'status': 'error'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# In views.py, DELETE your old send_otp_api and verify_otp_api functions
-# and PASTE this entire block in their place.
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework.decorators import api_view
+from django.http import JsonResponse
+import json
+@require_http_methods(["POST"])
+@csrf_protect
+def user_login_api(request):
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        phone_number = data.get("phone_number", "").strip()
+        password = data.get("password", "").strip()
+
+        if not phone_number or not password:
+            return JsonResponse({"success": False, "error": "Phone number and password are required."}, status=400)
+
+        # Fetch user by phone number
+        try:
+            user = Signup.objects.get(phone_number=phone_number)
+        except Signup.DoesNotExist:
+            return JsonResponse({"success": False, "error": "No account found with this phone number."}, status=404)
+
+        # Password match (you should hash passwords later)
+        if user.password != password:
+            return JsonResponse({"success": False, "error": "Invalid password."}, status=401)
+
+        # HEALTH ASSESSMENT CHECK
+        has_assessment = HealthAssessment.objects.filter(phone_number=phone_number).exists()
+
+        redirect_to = "/dashboard" if has_assessment else "/health-assessment"
+
+        return JsonResponse({
+            "success": True,
+            "user": {
+                "user_id": user.id,
+                "phone_number": user.phone_number,
+                "username": user.username,
+            },
+            "has_health_assessment": has_assessment,
+            "redirect_to": redirect_to
+        })
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+
 
 from twilio.base.exceptions import TwilioRestException # <-- Add this import at the top of views.py
 
-# In views.py, DELETE your old functions and PASTE this entire block.
 
+# In myapp/views.py
 @api_view(['POST'])
 @csrf_exempt
-def send_otp_api(request):
-    """MODIFIED: API to send OTP via Twilio ONLY. No default case."""
+def send_signup_otp_api(request):
     try:
         data = json.loads(request.body)
         phone_number = data.get('phone_number', '').strip()
-        print(f"DEBUG: Phone number received: '{phone_number}'")
 
         if not phone_number:
-            return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Phone number is required'}, status=400)
 
-        # Simplified user lookup
-        user = User.objects.filter(phone_number=phone_number).first()
-        if not user:
-            return Response({'error': 'Phone number not registered'}, status=status.HTTP_400_BAD_REQUEST)
-        print(f"DEBUG: Found user: {user.name}")
+        # If phone exists AND verified → user already registered
+        if Signup.objects.filter(phone_number=phone_number, is_verified=True).exists():
+            return Response({'error': 'Phone number already registered'}, status=400)
 
-        # Check if Twilio client is configured. This is the main check.
-        if not client or not VERIFY_SERVICE_SID:
-            print("CRITICAL ERROR: Twilio is not configured. Check your .env file.")
-            return Response({
-                'error': 'SMS Service Not Configured',
-                'message': 'The server is not set up to send text messages.'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        verification = client.verify.v2.services(VERIFY_SERVICE_SID).verifications.create(
+            to=phone_number,
+            channel='sms'
+        )
 
-        # Attempt to send a real SMS via Twilio
-        try:
-            print(f"DEBUG: Attempting Twilio send to: {phone_number}")
-            verification = client.verify.v2.services(VERIFY_SERVICE_SID) \
-                .verifications.create(to=phone_number, channel='sms')
-            
-            print(f"DEBUG: Twilio result: {verification.status}")
-
-            if verification.status == 'pending':
-                return Response({
-                    'success': True,
-                    'message': 'A real OTP has been sent via SMS.'
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    'error': 'Twilio Service Error',
-                    'message': f'Could not send OTP. Status: {verification.status}'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        except TwilioRestException as e:
-            print(f"DEBUG: Twilio API Error: {e}")
-            return Response({
-                'error': 'Failed to send SMS.',
-                'message': 'The phone number may be invalid or not verified for this trial account.',
-                'details': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'success': True, 'message': 'OTP sent successfully'}, status=200)
 
     except Exception as e:
-        print(f"DEBUG: Unexpected error in send_otp_api: {e}")
-        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': str(e)}, status=500)
 
 
 @api_view(['POST'])
 @csrf_exempt
 def verify_otp_api(request):
-    """MODIFIED: API to verify OTP via Twilio ONLY. No default case."""
     try:
         data = json.loads(request.body)
-        otp_code = data.get('otp_code', '').strip()
         phone_number = data.get('phone_number', '').strip()
+        otp_code = data.get('otp_code', '').strip()
 
-        user = User.objects.filter(phone_number=phone_number).first()
-        if not user:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        verification_check = client.verify.v2.services(VERIFY_SERVICE_SID).verification_checks.create(
+            to=phone_number,
+            code=otp_code
+        )
 
-        # Check if Twilio client is configured
-        if not client or not VERIFY_SERVICE_SID:
-            print("CRITICAL ERROR: Twilio is not configured. Cannot verify OTP.")
-            return Response({'error': 'SMS Service Not Configured'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Attempt to verify the code with Twilio
-        try:
-            print(f"DEBUG: Attempting Twilio verification for: {phone_number}")
-            verification_check = client.verify.v2.services(VERIFY_SERVICE_SID) \
-                .verification_checks.create(to=phone_number, code=otp_code)
-            
-            print(f"DEBUG: Twilio verification result: {verification_check.status}")
-
-            if verification_check.status == "approved":
-                # --- Verification successful ---
-                has_health_assessment = HealthAssessment.objects.filter(user=user).exists()
-                redirect_to = '/dashboard' if has_health_assessment else '/health-assessment'
-                
-                return Response({
-                    'success': True,
-                    'message': 'Login successful',
-                    'user': {'name': user.name, 'user_id': user.id, 'has_health_assessment': has_health_assessment},
-                    'redirect_to': redirect_to
-                }, status=status.HTTP_200_OK)
-            else:
-                # If status is not 'approved', the OTP is wrong.
-                return Response({'error': 'Invalid OTP', 'message': 'The code is incorrect or expired.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        except TwilioRestException as e:
-            print(f"DEBUG: Twilio API Error during verification: {e}")
-            return Response({'error': 'Invalid OTP', 'message': 'The code is incorrect or expired.'}, status=status.HTTP_400_BAD_REQUEST)
+        if verification_check.status == "approved":
+            return Response({'success': True, 'message': 'OTP verified'}, status=200)
+        else:
+            return Response({'error': 'Invalid OTP'}, status=400)
 
     except Exception as e:
-        print(f"DEBUG: Unexpected error in verify_otp_api: {e}")
-        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': str(e)}, status=500)
 
 @api_view(['POST'])
 @csrf_exempt
 def signup_api(request):
-    """API endpoint for user registration for React frontend - Updated for +91 format"""
     try:
-        print(f"DEBUG: Signup request body: {request.body}")
-        
-        # Parse JSON data
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError as e:
-            print(f"DEBUG: JSON decode error: {e}")
-            return Response({
-                'error': 'Invalid JSON format',
-                'message': 'Please send valid JSON data'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        name = data.get('name', '').strip()
-        phone_number = data.get('phone_number', '').strip()
-        
-        print(f"DEBUG: Signup data - Name: '{name}', Phone: '{phone_number}'")
+        data = json.loads(request.body)
+        username = data.get("username", "").strip()
+        phone_number = data.get("phone_number", "").strip()
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
 
-        # Validate name
-        if not name:
-            return Response({
-                'error': 'Name is required',
-                'message': 'Please enter your full name'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        if not all([username, phone_number, email, password]):
+            return Response({'error': 'All fields are required'}, status=400)
 
-        if len(name) < 2:
-            return Response({
-                'error': 'Name too short',
-                'message': 'Name must be at least 2 characters long'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # If phone exists & verified → DO NOT allow signup
+        if Signup.objects.filter(phone_number=phone_number, is_verified=True).exists():
+            return Response({'error': 'Phone number already registered'}, status=400)
 
-        # Validate phone number (13 characters with +91 prefix)
-        if not phone_number:
-            return Response({
-                'error': 'Phone number is required',
-                'message': 'Please enter your phone number'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate +91 format (13 characters)
-        if len(phone_number) != 13 or not phone_number.startswith('+91'):
-            return Response({
-                'error': 'Invalid phone number format',
-                'message': 'Phone number must be in +91xxxxxxxxxx format (13 characters)'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Extract and validate the 10-digit number
-        number_part = phone_number[3:]  # Remove +91
-        if not (len(number_part) == 10 and number_part.isdigit() and number_part[0] in '6789'):
-            return Response({
-                'error': 'Invalid phone number',
-                'message': 'Phone number must start with 6, 7, 8, or 9 after +91'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if user already exists with any phone format
-        def check_existing_user(phone):
-            """Check if user exists with different phone formats"""
-            number_part = phone[3:]  # Remove +91
-            formats_to_check = [
-                phone,                          # +919876543210
-                number_part,                    # 9876543210
-                f'91{number_part}',            # 919876543210
-            ]
-            
-            for phone_format in formats_to_check:
-                if User.objects.filter(phone_number=phone_format).exists():
-                    return True
-            return False
-
-        if check_existing_user(phone_number):
-            return Response({
-                'error': 'Phone number already registered',
-                'message': 'This phone number is already registered. Please login instead.'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Create new user with +91 format
-        try:
-            user = User.objects.create(
-                name=name,
-                phone_number=phone_number  # Store in +91 format
+        # Update old unverified user OR create new
+        user = Signup.objects.filter(phone_number=phone_number).first()
+        if user:
+            user.username = username
+            user.email = email
+            user.password = password
+            user.is_verified = True
+            user.save()
+            msg = "Account updated and verified."
+        else:
+            user = Signup.objects.create(
+                username=username,
+                phone_number=phone_number,
+                email=email,
+                password=password,
+                is_verified=True
             )
-            print(f"DEBUG: Created user: {user.name} with phone: {user.phone_number}")
-
-            # Create login record with same format
-            login_record = login.objects.create(
-                phone_number=phone_number,  # Store in +91 format
-                otp_verified=False
-            )
-            print(f"DEBUG: Created login record for: {phone_number}")
-
-        except Exception as e:
-            print(f"DEBUG: Error creating user: {e}")
-            return Response({
-                'error': 'Registration failed',
-                'message': 'Unable to create account. Please try again.'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            msg = "Signup successful."
 
         return Response({
-            'success': True,
-            'message': 'Registration successful',
-            'user': {
-                'name': user.name,
-                'phone_number': user.phone_number,
-                'user_id': user.id
+            "success": True,
+            "message": msg,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "phone_number": user.phone_number
             }
-        }, status=status.HTTP_201_CREATED)
+        })
 
     except Exception as e:
-        print(f"DEBUG: Unexpected error in signup_api: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        return Response({
-            'error': 'Internal server error',
-            'message': 'Something went wrong. Please try again.'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        return Response({'error': str(e)}, status=500)
 
 @api_view(['POST'])
 @csrf_exempt
@@ -1347,176 +1271,299 @@ def calculate_health_score_api(request):
         return Response({'error': f'Failed to calculate health score: {str(e)}'}, 
                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Replace your existing health_assessment_api function with this:
+# @api_view(['POST'])
+# @csrf_exempt
+# def health_assessment_api(request):
+#     # This log will appear in your "python manage.py runserver" terminal
+#     logger.info("--- 🚀 test_api was called successfully! ---")
+    
+#     return Response({
+#         'status': 'success',
+#         'message': 'Your test_api is working!',
+#         'timestamp': datetime.now().isoformat()
+#     }, status=status.HTTP_200_OK)
+    
+# # Replace your existing health_assessment_api function with this:
 @api_view(['POST'])
 @csrf_exempt
-@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def health_assessment_api(request):
-    """
-    FINAL CORRECTED API: Accepts health assessment data and saves it
-    using the unique user_id to ensure it's linked to the correct user.
-    """
+    """Save or update a health assessment linked to a Signup user using phone_number."""
+    logger.info("Received health assessment API request")
+
     try:
         data = json.loads(request.body)
-        
-        # --- KEY CHANGE: We now get 'user_id' instead of 'username' ---
-        user_id = data.get('user_id')
+        phone_number = data.get('phone_number')
 
-        if not user_id:
-            logger.error("Health assessment submission failed: user_id was not provided in the request.")
+        if not phone_number:
             return Response(
-                {'error': 'A user_id is required to save the assessment.'},
+                {'error': 'phone_number is required.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # --- THE FIX: Find the user by their unique ID (primary key) ---
         try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            logger.error(f"User with ID {user_id} not found during assessment submission.")
+            user = Signup.objects.get(phone_number=phone_number)
+        except Signup.DoesNotExist:
             return Response(
                 {'error': 'User not found. Please log in again.'},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Invalidate cache for this user since their data is changing
-        cache.delete(f'health_report_{user.name}_v1.0')
-        cache.delete(f'user_health_status_{user.name}')
-            
-        # Calculate health score from the submitted data
-        health_score = calculate_health_score_from_data(data)
-        logger.info(f"Calculated health score {health_score} for user: {user.name} (ID: {user.id})")
+        # ----------------------------
+        # HEALTH SCORE CALCULATION
+        # ----------------------------
+        def calculate_health_score(data):
+            score = 0
 
-        # Use update_or_create to safely handle new or existing assessments
-        assessment, created = HealthAssessment.objects.update_or_create(
-            user=user,
-            defaults={
-                'age_group': data.get('age_group', ''),
-                'gender': data.get('gender', ''),
-                'respiratory_conditions': data.get('respiratory_conditions', []),
-                'smoking_history': data.get('smoking_history', ''),
-                'living_environment': data.get('living_environment', []),
-                'common_symptoms': data.get('common_symptoms', []),
-                'occupational_exposure': data.get('occupational_exposure', ''),
-                'medical_history': data.get('medical_history', []),
-                'health_score': health_score
+            age_scores = {
+                "0-12 years": 5, "13-18 years": 8, "19-40 years": 10,
+                "41-60 years": 15, "61 years and above": 20
             }
-        )
-        
-        action = "created" if created else "updated"
-        logger.info(f"Health assessment for user {user.name} (ID: {user.id}) was successfully {action}.")
+            score += age_scores.get(data.get('age_group'), 0)
+
+            score += 2 if data.get('gender') == 'Male' else (1 if data.get('gender') else 0)
+
+            if data.get('respiratory_conditions') and 'None' not in data['respiratory_conditions']:
+                score += len(data['respiratory_conditions']) * 3
+
+            smoking_scores = {
+                "Never smoked": 0, "Former smoker": 10,
+                "Current smoker": 25, "Exposed to secondhand smoke": 8
+            }
+            score += smoking_scores.get(data.get('smoking_history'), 0)
+
+            environment_scores = {
+                "Urban area": 10, "Industrial zone": 15,
+                "Rural area": 3, "Coastal area": 2
+            }
+            for env in data.get('living_environment', []):
+                score += environment_scores.get(env, 0)
+
+            symptom_scores = {
+                "Frequent coughing": 8, "Shortness of breath": 10,
+                "Wheezing": 8, "Chest tightness": 9
+            }
+            for s in data.get('common_symptoms', []):
+                score += symptom_scores.get(s, 0)
+
+            occupation_scores = {
+                "Construction/Mining": 15, "Chemical Industry": 15,
+                "Healthcare": 8, "Agriculture": 10,
+                "Office Environment": 3, "Other": 5
+            }
+            score += occupation_scores.get(data.get('occupational_exposure'), 0)
+
+            condition_scores = {
+                "Hypertension": 8, "Diabetes": 8, "Heart Disease": 10,
+                "Allergies": 5, "Immunocompromised": 12
+            }
+            for c in data.get('medical_history', []):
+                score += condition_scores.get(c, 0)
+
+            return score
+
+        health_score = calculate_health_score(data)
+
+        # ----------------------------
+        # CREATE OR UPDATE ASSESSMENT
+        # ----------------------------
+        try:
+            assessment, created = HealthAssessment.objects.update_or_create(
+                phone_number=phone_number,
+                defaults={
+                    'user': user,
+                    'age_group': data.get('age_group', ''),
+                    'gender': data.get('gender', ''),
+                    'respiratory_conditions': data.get('respiratory_conditions', []),
+                    'smoking_history': data.get('smoking_history', ''),
+                    'living_environment': data.get('living_environment', []),
+                    'common_symptoms': data.get('common_symptoms', []),
+                    'occupational_exposure': data.get('occupational_exposure', ''),
+                    'medical_history': data.get('medical_history', []),
+                    'health_score': health_score,
+                    'updated_at': datetime.now()
+                }
+            )
+        except IntegrityError:
+            assessment = HealthAssessment.objects.get(phone_number=phone_number)
+            assessment.health_score = health_score
+            assessment.updated_at = datetime.now()
+            assessment.save()
+            created = False
+
+        # ----------------------------
+        # RISK LEVEL & COLORS
+        # ----------------------------
+        def get_risk_level(score):
+            if score <= 50: return 'Excellent'
+            elif score <= 80: return 'Good'
+            elif score <= 120: return 'Moderate'
+            elif score <= 150: return 'Warning'
+            elif score <= 200: return 'High'
+            return 'Critical'
+
+        def get_risk_color(score):
+            if score <= 50: return '#10b981'
+            elif score <= 80: return '#8b5cf6'
+            elif score <= 120: return '#f59e0b'
+            elif score <= 150: return '#f97316'
+            elif score <= 200: return '#ef4444'
+            return '#dc2626'
 
         return Response({
             'success': True,
-            'message': f'Health assessment {action} successfully',
-            'health_score': assessment.health_score,
-            'assessment_id': assessment.id,
+            'message': 'Health assessment saved successfully',
             'created': created,
-            'risk_level': assessment.get_risk_level(),
-            'risk_color': assessment.get_risk_color()
+            'health_score': health_score,
+            'risk_level': get_risk_level(health_score),
+            'risk_color': get_risk_color(health_score),
+            'assessment_id': assessment.id
         }, status=status.HTTP_200_OK)
 
     except json.JSONDecodeError:
-        return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid JSON format'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.error(f"Unexpected error in health_assessment_api: {e}", exc_info=True)
-        return Response({'error': 'An unexpected error occurred on the server.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-# In myapp/views.py
+       
 
-# In myapp/views.py
-
+# myapp/views.py
 @api_view(['GET'])
 @csrf_exempt
 def dashboard_api(request):
     """
-    FINAL, CORRECTED API: Provides all necessary data for the React dashboard,
-    and correctly fetches the user's real health score.
+    REALTIME Dashboard API (Final Version)
+    - Uses phone_number
+    - Fetches realtime data from DynamoDB
+    - Fetches 4-day forecast from S3
+    - Returns health + stations + forecasts
     """
-    username = request.GET.get('username')
-    if not username:
-        return Response({'error': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
 
+    # 1. Read phone number
+    phone_number = request.GET.get("phone_number")
+    if not phone_number:
+        return Response({"error": "phone_number is required"}, status=400)
+
+    # 2. User + Health Assessment
     try:
-        # --- FIX: Correctly get the user and their health assessment ---
-        user = User.objects.get(name=username)
-        health_assessment = HealthAssessment.objects.get(user=user)
-        
-        health_data = { 
-            'score': health_assessment.health_score, 
-            'risk_level': health_assessment.get_risk_level(),
-            'recommendations': health_assessment.get_recommendations(),
+        user = Signup.objects.get(phone_number=phone_number)
+        ha = HealthAssessment.objects.get(phone_number=phone_number)
+
+        health_data = {
+            "score": ha.health_score,
+            "risk_level": ha.get_risk_level(),
+            "recommendations": ha.get_recommendations(),
         }
-    except User.DoesNotExist:
-        return Response({'error': f"User '{username}' not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    except Signup.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
+
     except HealthAssessment.DoesNotExist:
-        logger.warning(f"Health assessment not found for user '{username}'. Redirecting.")
-        return Response({'error': 'Health assessment not found', 'redirect_to': '/health-assessment'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Health assessment missing"}, status=404)
+
+    # 3. Realtime AWS DynamoDB data
+    try:
+        initialize_aws_resources()
+
+        v1 = get_device_data("lora-v1", limit=24)
+        v2 = get_device_data("loradev2", limit=24)
+        v3 = get_device_data("lora-v3", limit=24)
+
+        # Process data
+        l1, a1, s1, h1 = process_device_items(v1)
+        l2, a2, s2, h2 = process_device_items(v2)
+        l3, a3, s3, h3 = process_device_items(v3)
+
+        station_locations = {
+            'lora-v1': {'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)'},
+            'loradev2': {'lat': 10.1822047218, 'lng': 76.4285034311, 'name': 'Station 2 (Pothiyakkara Road)'},
+            'lora-v3': {'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Mattoor Junction)'},
+        }
+
+        realtime_data = {
+            'lora-v1': {
+                "averages": a1,
+                "highest_sub_index": h1,
+                "sub_indices": s1,
+                "station_info": station_locations["lora-v1"],
+                "latest_readings": l1,
+            },
+            'loradev2': {
+                "averages": a2,
+                "highest_sub_index": h2,
+                "sub_indices": s2,
+                "station_info": station_locations["loradev2"],
+                "latest_readings": l2,
+            },
+            'lora-v3': {
+                "averages": a3,
+                "highest_sub_index": h3,
+                "sub_indices": s3,
+                "station_info": station_locations["lora-v3"],
+                "latest_readings": l3,
+            }
+        }
+
     except Exception as e:
-        logger.error(f"Error fetching health data for '{username}': {e}")
-        return Response({'error': 'Could not fetch health data'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.error(f"Realtime fetch error: {e}")
+        return Response({"error": "Failed to fetch realtime AWS data"}, status=500)
+    print("🔥🔥🔥 DASHBOARD API HIT 🔥🔥🔥")
 
-    # --- Fetch all sensor and forecast data (using the same logic as HomeAPI) ---
-    api = HomeAPI()
-    api.get(request._request) # This ensures the 'all_stations_realtime_data' cache is populated
-    all_stations_data = cache.get('all_stations_realtime_data')
-
-    if not all_stations_data:
-        return Response({'error': 'Could not fetch sensor data for dashboard'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # --- Fetch Forecasts ---
+    # 4. Forecasts
     forecasts = {}
-    for station_id in all_stations_data.keys():
-        source_station_id = 'lora-v1' if station_id.startswith('temp-') else station_id
-        forecast_data, _ = get_s3_forecast_data(source_station_id)
-        forecasts[station_id] = forecast_data
+    for sid in realtime_data:
+        forecast_data, _ = get_s3_forecast_data(sid)
+        forecasts[sid] = forecast_data
 
-    # --- Construct Final Response ---
-    response_data = {
-        'health_data': health_data,
-        'stations': all_stations_data,
-        'forecasts': forecasts
-    }
-    return Response(response_data, status=status.HTTP_200_OK)
+    # 5. Return Final Response
+    return Response({
+        "health_data": health_data,
+        "stations": realtime_data,
+        "forecasts": forecasts,
+        "updated_at": timezone.now().isoformat()
+    })
 
 
-@api_view(['GET'])
+
+
+
+
+
+
+@api_view(['GET', 'POST'])
 @csrf_exempt
 def health_assessment_status(request):
-    """Check if user has completed health assessment"""
+    """
+    Checks if a user has completed a health assessment.
+    Accepts either phone_number or username via GET or POST.
+    """
     try:
-        username = request.GET.get('username')
-        if not username:
-            return Response({'error': 'Username is required'}, 
-                          status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            user = User.objects.get(name=username)
-            assessment = HealthAssessment.objects.get(user=user)
-            
-            return Response({
-                'has_assessment': True,
-                'health_score': assessment.health_score,
-                'risk_level': assessment.get_risk_level(),
-                'risk_color': assessment.get_risk_color(),
-                'is_high_risk': assessment.is_high_risk_individual(),
-                'last_updated': assessment.updated_at.isoformat(),
-                'recommendations_count': len(assessment.get_recommendations()),
-                'priority_actions_count': len(assessment.get_priority_actions())
-            })
-            
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, 
-                          status=status.HTTP_404_NOT_FOUND)
-        except HealthAssessment.DoesNotExist:
-            return Response({
-                'has_assessment': False,
-                'message': 'No health assessment found'
-            })
-            
+        phone_number = request.GET.get('phone_number') or request.data.get('phone_number')
+        username = request.GET.get('username') or request.data.get('username')
+
+        user_qs = None
+        if phone_number:
+            user_qs = Signup.objects.filter(phone_number=phone_number)
+        elif username:
+            user_qs = Signup.objects.filter(username=username)
+
+        if not user_qs or not user_qs.exists():
+            return JsonResponse({
+                "success": False,
+                "error": "User not found"
+            }, status=404)
+
+        user = user_qs.first()
+        has_assessment = HealthAssessment.objects.filter(phone_number=user.phone_number).exists()
+
+        return JsonResponse({
+            "success": True,
+            "has_assessment": has_assessment
+        })
+
     except Exception as e:
-        return Response({'error': f'Failed to check assessment status: {str(e)}'}, 
-                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=400)
 
     # Add this to your views.py file - No model changes needed!
 
@@ -1715,9 +1762,7 @@ def station_forecast_api(request, station_id):
         logger.error(f"Error in station_forecast_api for {station_id}: {e}")
         return Response({'error': 'Failed to fetch forecast data'}, status=500)
     
-# In myapp/views.py
 
-# In myapp/views.py
 
 @api_view(['GET'])
 @csrf_exempt
@@ -1726,28 +1771,39 @@ def health_report_api(request):
     FINAL, CORRECTED API: Provides all necessary data for the Health Report,
     is self-sufficient, and NO LONGER incorrectly redirects the user.
     """
+    # Accept either phone_number or username for compatibility.
+    phone_number = request.GET.get('phone_number') or request.GET.get('phone')
     username = request.GET.get('username')
-    if not username:
-        return Response({'error': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not phone_number and not username:
+        return Response({'error': 'phone_number or username is required'}, status=status.HTTP_400_BAD_REQUEST)
 
     # --- START: THE KEY FIX ---
-    # We now check for the user and their assessment separately for clearer errors.
-
+    # Prefer lookup by phone_number; fall back to username if phone_number not provided.
+    user = None
     try:
-        # Step 1: Find the user.
-        user = User.objects.get(name=username)
-    except User.DoesNotExist:
-        # If the user doesn't exist, it's a login problem. Send a 404 error.
-        logger.error(f"User '{username}' not found when trying to access health report.")
-        return Response({'error': f"User '{username}' not found. Please log in again."}, status=status.HTTP_404_NOT_FOUND)
+        if phone_number:
+            user = Signup.objects.get(phone_number=phone_number)
+        else:
+            user = Signup.objects.get(username=username)
+    except Signup.DoesNotExist:
+        lookup_val = phone_number if phone_number else username
+        logger.error(f"User '{lookup_val}' not found when trying to access health report.")
+        return Response({'error': f"User '{lookup_val}' not found. Please log in again."}, status=status.HTTP_404_NOT_FOUND)
 
     try:
         # Step 2: Find the assessment for that specific user.
-        assessment = HealthAssessment.objects.get(user=user)
+        # HealthAssessment may be linked by phone_number or user foreign key; try both.
+        assessment = None
+        if phone_number:
+            assessment = HealthAssessment.objects.filter(phone_number=phone_number).first()
+        if not assessment:
+            assessment = HealthAssessment.objects.filter(user=user).first()
+        if not assessment:
+            raise HealthAssessment.DoesNotExist()
     except HealthAssessment.DoesNotExist:
         # If the assessment is missing, it's a data problem.
-        # We send a clear error message INSTEAD OF a redirect command.
-        logger.error(f"Health assessment not found for user '{username}'.")
+        logger.error(f"Health assessment not found for user '{user.username}'.")
         return Response({
             'error': 'Your health assessment data could not be found. Please complete it again to generate a report.'
         }, status=status.HTTP_404_NOT_FOUND)
@@ -1784,7 +1840,7 @@ def health_report_api(request):
         
     except Exception as e:
         logger.error(f"CRITICAL ERROR fetching sensor data for health report: {e}", exc_info=True)
-        return Response({'error': 'Could not fetch required sensor data to generate the report.'}, status=500)
+        return Response({'error': 'Could not fetch required sensor data to generate the report.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     # --- Fetch Forecast for all stations ---
     forecasts = {}
@@ -1794,19 +1850,31 @@ def health_report_api(request):
         forecasts[station_id] = {'data': forecast_data, 'updated_at': updated_at}
 
     # --- Construct Final JSON Response for React ---
+    # Safely build recommendations and priority actions
+    try:
+        recs = assessment.get_recommendations()
+    except Exception:
+        recs = []
+    if isinstance(recs, str):
+        recs = [recs]
+    try:
+        priority_actions = assessment.get_priority_actions() if hasattr(assessment, 'get_priority_actions') else []
+    except Exception:
+        priority_actions = []
+
     response_data = {
-        'username': user.name,
+        'username': getattr(user, 'username', getattr(user, 'phone_number', '')),
         'health_assessment': {
-            'score': assessment.health_score,
-            'risk_level': assessment.get_risk_level(),
-            'recommendations': assessment.get_recommendations(),
-            'priority_actions': assessment.get_priority_actions(),
+            'score': getattr(assessment, 'health_score', None),
+            'risk_level': assessment.get_risk_level() if hasattr(assessment, 'get_risk_level') else None,
+            'recommendations': recs,
+            'priority_actions': priority_actions,
             'details': {
-                'Age Group': assessment.age_group,
-                'Gender': assessment.gender,
-                'Respiratory Conditions': assessment.respiratory_conditions,
-                'Smoking History': assessment.smoking_history,
-                'Living Environment': assessment.living_environment,
+                'Age Group': getattr(assessment, 'age_group', None),
+                'Gender': getattr(assessment, 'gender', None),
+                'Respiratory Conditions': getattr(assessment, 'respiratory_conditions', []),
+                'Smoking History': getattr(assessment, 'smoking_history', None),
+                'Living Environment': getattr(assessment, 'living_environment', []),
             }
         },
         'stations': all_stations_data,
@@ -1814,6 +1882,18 @@ def health_report_api(request):
     }
     
     return Response(response_data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@csrf_exempt
+def csrf_token_api(request):
+    """Return a CSRF token for the frontend to consume (GET /csrf/)."""
+    try:
+        token = get_token(request)
+        return JsonResponse({'csrf': token})
+    except Exception as e:
+        logger.error(f"Failed to generate CSRF token: {e}")
+        return JsonResponse({'error': 'Failed to generate CSRF token'}, status=500)
 
 
 from django.shortcuts import get_object_or_404
@@ -1830,8 +1910,8 @@ def family_members_api(request):
         return Response({'error': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        parent_user = User.objects.get(name=username)
-    except User.DoesNotExist:
+        parent_user = Signup.objects.get(username=username)
+    except Signup.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
@@ -1876,6 +1956,47 @@ def delete_family_member_api(request, member_id):
         return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     # In myapp/views.py
+
+
+@api_view(['GET', 'POST'])
+@csrf_exempt
+def support_api(request):
+    """
+    Simple API for user support/complaints.
+    GET: list recent support cases (optional ?email= filter)
+    POST: create a new support case with JSON body { email, case_description }
+    """
+    try:
+        if request.method == 'GET':
+            email = request.GET.get('email')
+            qs = Support.objects.all().order_by('-submitted_at')
+            if email:
+                qs = qs.filter(email__iexact=email)
+            data = [
+                {
+                    'sl_no': s.sl_no,
+                    'email': s.email,
+                    'case_description': s.case_description,
+                    'submitted_at': s.submitted_at,
+                }
+                for s in qs[:100]
+            ]
+            return Response(data, status=status.HTTP_200_OK)
+
+        # POST
+        payload = request.data
+        email = (payload.get('email') or '').strip()
+        case_description = (payload.get('case_description') or '').strip()
+
+        if not email or not case_description:
+            return Response({'error': 'Both email and case_description are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        support = Support.objects.create(email=email, case_description=case_description)
+        return Response({'sl_no': support.sl_no, 'message': 'Support case submitted'}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        logger.exception('Error in support_api')
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -2342,3 +2463,181 @@ def admin_export_data_api(request):
     except Exception as e:
         logger.error(f"Error exporting data: {e}")
         return Response({'error': f'Failed to export data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# In views.py, REPLACE your user_aqi_api function with this:
+
+@api_view(['GET'])
+@csrf_exempt
+def user_aqi_api(request):
+    """
+    FIXED: Calculates and returns personalized AQI AND all individual
+    pollutant values using Inverse Distance Weighting (IDW).
+    This now populates the "MetricCards" on the dashboard.
+    """
+    try:
+        user_lat = float(request.GET.get("lat"))
+        user_lon = float(request.GET.get("lng"))
+    except (TypeError, ValueError):
+        return Response({"error": "Invalid or missing lat/lng coordinates"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # 1. Get all live station data from cache
+        all_stations_data = cache.get('all_stations_realtime_data')
+
+        if not all_stations_data:
+            # If cache is empty, run the map API logic to fill it
+            logger.warning("Cache miss for all_stations_realtime_data. Triggering fetch.")
+            # We call the function version of your map API
+            map_api_response = map_realtimedata_api(request._request)
+            all_stations_data = map_api_response.data.get('stations')
+
+            if not all_stations_data:
+                logger.error("Failed to fetch all_stations_realtime_data even after trigger.")
+                return Response({"error": "Sensor data is not available"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # 2. Format data for IDW function
+        sensor_data_for_idw = []
+        nearest_sensors = []
+
+        for station_id, data in all_stations_data.items():
+            # Only use REAL stations with valid AQI for calculation
+            if not station_id.startswith('temp-') and data.get('highest_sub_index') is not None:
+                info = data['station_info']
+                distance = calculate_distance(user_lat, user_lon, info['lat'], info['lng'])
+
+                # --- START: THE FIX ---
+                # Build a richer object for the interpolation function
+                sensor_info = {
+                    "sensor_id": station_id,
+                    "lat": info['lat'],
+                    "lon": info['lng'],
+                    "aqi": data['highest_sub_index'], # The final AQI
+                    "averages": data.get('averages', {}), # The safe averages
+                    "latest_readings": data.get('latest_readings', {}), # For weather
+                    "distance": distance
+                }
+                # --- END: THE FIX ---
+                sensor_data_for_idw.append(sensor_info)
+                nearest_sensors.append(sensor_info)
+
+        if not sensor_data_for_idw:
+            return Response({"error": "No valid sensor data for calculation"}, status=status.HTTP_404_NOT_FOUND)
+
+        # 3. Calculate IDW using the NEW helper
+        # This returns both the individual values and the final AQI
+        interpolated_values, final_aqi = idw_interpolate_all(user_lat, user_lon, sensor_data_for_idw)
+        
+        aqi_status = get_aqi_status(final_aqi) if final_aqi is not None else "Unknown"
+
+        # 4. Find closest sensor for reference
+        nearest_sensor = min(nearest_sensors, key=lambda x: x["distance"])
+
+        # 5. Return the final, RICH answer
+        return Response({
+            "user_aqi": final_aqi, # The main AQI number
+            "interpolated_values": interpolated_values, # The fix for metric cards
+            "status": aqi_status,
+            "source": "idw_interpolation",
+            "sensor_count": len(sensor_data_for_idw),
+            "closest_sensor": {
+                "sensor_id": nearest_sensor["sensor_id"],
+                "distance_km": round(nearest_sensor["distance"], 3)
+            }
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error in user_aqi_api: {e}", exc_info=True)
+        return Response({"error": f"Internal server error: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+
+
+# In views.py, add this new function
+
+def idw_interpolate_all(user_lat, user_lon, sensors, power=2):
+    """
+    Calculates interpolated values for all pollutants AND weather using IDW.
+    'sensors' must be a list of dicts, where each dict has:
+    - 'lat', 'lon' (float)
+    - 'distance' (float)
+    - 'averages' (dict of 24hr pollutant averages)
+    - 'latest_readings' (dict of latest sensor item, for weather)
+    - 'aqi' (the final station AQI)
+    """
+    try:
+        # Pollutants from 24hr average
+        pollutants_to_interpolate = ['nh3', 'o3', 'pm25', 'pm10', 'co', 'so2', 'no2']
+        # Weather from latest reading
+        weather_to_interpolate = ['temp', 'hum', 'pre']
+        
+        all_params = pollutants_to_interpolate + weather_to_interpolate
+        numerator = {p: 0 for p in all_params}
+        denominator = {p: 0 for p in all_params}
+
+        for sensor in sensors:
+            distance = sensor.get('distance', 0.001)
+            
+            # Use 0.001 as a minimum to avoid division by zero
+            if distance < 0.001: 
+                # User is AT the sensor. Return this sensor's data.
+                final_values = sensor.get('averages', {})
+                latest = sensor.get('latest_readings', {}) or {}
+                
+                # Add weather data, checking alternate keys
+                final_values['temp'] = latest.get('temp', latest.get('temperature'))
+                final_values['hum'] = latest.get('hum', latest.get('humidity'))
+                final_values['pre'] = latest.get('pre', latest.get('pressure'))
+                
+                # Clean Nones and return
+                final_values = {k: v for k, v in final_values.items() if v is not None and k in all_params}
+                return final_values, sensor.get('aqi', 0)
+
+            weight = 1.0 / (distance ** power)
+            
+            sensor_averages = sensor.get('averages', {})
+            sensor_readings = sensor.get('latest_readings', {}) or {} # Handle None
+            
+            # Interpolate 24hr pollutants
+            for pollutant in pollutants_to_interpolate:
+                value = sensor_averages.get(pollutant)
+                if value is not None:
+                    try:
+                        numerator[pollutant] += float(value) * weight
+                        denominator[pollutant] += weight
+                    except (ValueError, TypeError):
+                        continue 
+                        
+            # Interpolate latest weather
+            for param in weather_to_interpolate:
+                # Check for 'temp' or 'temperature' etc.
+                value = sensor_readings.get(param)
+                if param == 'temp' and value is None: value = sensor_readings.get('temperature')
+                if param == 'hum' and value is None: value = sensor_readings.get('humidity')
+                if param == 'pre' and value is None: value = sensor_readings.get('pressure')
+
+                if value is not None:
+                    try:
+                        numerator[param] += float(value) * weight
+                        denominator[param] += weight
+                    except (ValueError, TypeError):
+                        continue
+
+        # Calculate final interpolated values
+        interpolated_values = {}
+        for pollutant in all_params:
+            if denominator[pollutant] > 0:
+                interpolated_values[pollutant] = numerator[pollutant] / denominator[pollutant]
+            else:
+                interpolated_values[pollutant] = 0 # Fallback
+
+        # Calculate the final AQI based on the new interpolated pollutant values
+        interpolated_sub_indices = calculate_subindices(interpolated_values)
+        valid_indices = [v for v in interpolated_sub_indices.values() if v is not None]
+        final_aqi = round(max(valid_indices)) if valid_indices else None
+
+        return interpolated_values, final_aqi
+
+    except Exception as e:
+        logger.error(f"Error in idw_interpolate_all: {e}", exc_info=True)
+        return {}, None
+  

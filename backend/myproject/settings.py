@@ -26,30 +26,21 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 # In myproject/settings.py
 
 # This is the new, corrected configuration
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT', '5432'),  # default to 5432 if not set
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
-    }
-
+}
 
 # Environment-specific settings (Production vs. Development)
 if os.environ.get('RENDER'):
     # --- PRODUCTION Settings (on Render) ---
-    ALLOWED_HOSTS = [
-        'airaware.it.com',
-        'www.airaware.it.com',
-        'airaware-app-gcw7.onrender.com',
-        '.onrender.com'
-    ]
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'airaware.it.com', 'www.airaware.it.com']
 
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
@@ -73,17 +64,22 @@ if os.environ.get('RENDER'):
         "https://airaware-app-gcw7.onrender.com",
     ]
 
+    CORS_ALLOW_ALL_ORIGINS = True
 
+    # --- THIS IS THE CORRECTED PRODUCTION LIST ---
     CSRF_TRUSTED_ORIGINS = [
-    "https://airaware.it.com",
-    "https://www.airaware.it.com",
-    "https://airaware-app-gcw7.onrender.com",
-]
+        "http://localhost:3000", 
+        "https://airaware.it.com",
+        "https://www.airaware.it.com",
+        "https://airaware-app-gcw7.onrender.com",
+    ]
+    # --- 'http://localhost:3001' has been REMOVED ---
 
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
+# ...
 else:
     # --- DEVELOPMENT Settings (local) ---
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'airaware.it.com', 'www.airaware.it.com']
@@ -104,6 +100,11 @@ else:
 
     CORS_ALLOW_ALL_ORIGINS = True
 
+    # --- THIS IS THE CORRECT LOCATION FOR THE FIX ---
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:3001',
+    ]
+    # --- END OF FIX ---
 
 # Application definition
 INSTALLED_APPS = [
@@ -184,3 +185,23 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# ✅ Unified CORS and CSRF configuration
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:3001",
+]
+
+CORS_ALLOW_CREDENTIALS = True

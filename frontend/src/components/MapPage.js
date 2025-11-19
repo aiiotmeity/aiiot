@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 import { useAuth } from '../App';
 import './css/MapPage.css';
+import { calculateDistance, formatDistance } from '../utils/distance';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler
@@ -40,23 +41,26 @@ const getAQIStatus = (aqi) => {
 };
 
 // ...
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    // REMOVED: * 1000 to return km instead of meters
-    return R * c; 
-};
+// Using shared calculateDistance & formatDistance from utils/distance.js
 // ..
 
 
-const createAqiIcon = (aqi, isComingSoon = false) => {
+const createAqiIcon = (aqi, isComingSoon = false, label = '') => {
     const color = isComingSoon ? '#cbd5e1' : getAQIColor(aqi);
     const displayValue = isComingSoon ? '?' : (Math.round(aqi) || 'N/A');
-    const iconHtml = `<div style="background-color: ${color};" class="aqi-marker-icon ${isComingSoon ? 'coming-soon' : ''}"><div class="aqi-marker-icon-inner">${displayValue}</div></div>`;
-    return window.L.divIcon({ html: iconHtml, className: 'custom-div-icon', iconSize: [40, 40], iconAnchor: [20, 40] });
+
+    // Larger, high-contrast icon HTML with subtle border and shadow for clarity
+    const iconHtml = `
+        <div class="aqi-marker-icon ${isComingSoon ? 'coming-soon' : ''}" style="display:flex;flex-direction:column;align-items:center;">
+            <div class="aqi-marker-icon-inner" style="width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:700;font-size:1rem;box-shadow:0 2px 6px rgba(0,0,0,0.25);border:2px solid #ffffff;">
+                ${displayValue}
+            </div>
+            ${label ? `<div class=\"aqi-marker-label\" style=\"margin-top:4px;font-size:0.75rem;color:#111827;background:rgba(255,255,255,0.9);padding:2px 6px;border-radius:6px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;\">${label}</div>` : ''}
+        </div>
+    `;
+
+    // Increase iconSize and anchor to accommodate label
+    return window.L.divIcon({ html: iconHtml, className: 'custom-div-icon', iconSize: [64, label ? 84 : 68], iconAnchor: [32, label ? 84 : 68] });
 };
 
 // Enhanced popup content creator
@@ -133,6 +137,37 @@ const createStationPopupContent = (station, stationId) => {
     `;
 };
 
+// Create popup content for the user's location marker
+const createUserPopupContent = (data, isFetching = false) => {
+    if (!data) {
+        return `
+            <div class="user-popup">
+                <div style="font-weight:600;">No location data</div>
+                <div style="color:#6b7280;font-size:0.9rem">Click the marker or "Find My Location" to get personalized AQI.</div>
+            </div>
+        `;
+    }
+
+    const aqiDisplay = (data.aqi != null && !isNaN(data.aqi)) ? Math.round(data.aqi) : 'N/A';
+    const status = getAQIStatus(data.aqi);
+    const dist = (data.distance_to_nearest != null) ? formatDistance(data.distance_to_nearest) : 'N/A';
+
+    return `
+        <div class="user-popup" style="min-width:200px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${getAQIColor(data.aqi)};color:#fff;font-weight:700;">
+                    ${aqiDisplay}
+                </div>
+                <div style="flex:1;">
+                    <div style="font-weight:700">Your AQI ${isFetching ? '<span style=\"font-weight:400;font-size:0.85rem;color:#6b7280;\">(updating…)</span>' : ''}</div>
+                    <div style="font-size:0.95rem;color:#374151">${status}</div>
+                    <div style="font-size:0.85rem;color:#6b7280;margin-top:4px">Nearest sensor • ${dist}</div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
 const MapPage = () => {
     // === STATE MANAGEMENT ===
     const [mapInstance, setMapInstance] = useState(null);
@@ -148,6 +183,7 @@ const MapPage = () => {
     // User location states
     const [userLocation, setUserLocation] = useState(null);
     const [userLocationData, setUserLocationData] = useState(null);
+    const [isFetchingUserAqi, setIsFetchingUserAqi] = useState(false);
     const [nearestStation, setNearestStation] = useState(null);
     const [isLocationLoading, setIsLocationLoading] = useState(false);
     
@@ -167,6 +203,8 @@ const MapPage = () => {
     // Hooks
     const navigate = useNavigate();
     const { user, logout, loading: authLoading } = useAuth();
+    const _storedUser = (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; } })();
+    const displayName = user?.username || user?.name || _storedUser?.username || _storedUser?.name || _storedUser?.phone_number || '';
     const [authInitialized, setAuthInitialized] = useState(false);
     const API_BASE_URL = process.env.NODE_ENV === 'production' 
         ? 'https://airaware-app-gcw7.onrender.com' 
@@ -215,7 +253,7 @@ const MapPage = () => {
                     );
                     
                     // Only center map if more than 1km away to prevent constant reloads
-                    if (distance > 1000) {
+                    if (distance > 1) { // 1 km
                         mapInstance.setView([loc.lat, loc.lng], 15);
                     }
                     
@@ -230,9 +268,20 @@ const MapPage = () => {
                     if (userLocationMarkerRef.current) {
                         userLocationMarkerRef.current.setLatLng([loc.lat, loc.lng]);
                     } else {
-                        userLocationMarkerRef.current = window.L.marker([loc.lat, loc.lng], { 
-                            icon: userIcon 
+                        const marker = window.L.marker([loc.lat, loc.lng], {
+                            icon: userIcon,
+                            title: 'Your location'
                         }).addTo(mapInstance);
+
+                        // Bind an initial popup (may show "No location data" until backend responds)
+                        marker.bindPopup(createUserPopupContent(null, false));
+
+                        // Open popup on click (makes marker interactive)
+                        marker.on('click', () => {
+                            marker.openPopup();
+                        });
+
+                        userLocationMarkerRef.current = marker;
                     }
                 }
             },
@@ -263,29 +312,17 @@ const MapPage = () => {
 
     // Auto-track location when user logs in and map is ready
     useEffect(() => {
-    // FIXED: Only auto-track once when conditions are met
-    if (!user || !mapInstance || userLocation) return;
-    
-    // Add a longer delay to prevent immediate requests
-    const timer = setTimeout(() => {
-        trackUserLocation();
-    }, 2000); // 2 second delay
-    
-    return () => clearTimeout(timer);
-}, [user, mapInstance]); // Remove userLocation from dependencies to prevent loops
-
-// MINIMAL FIX: Add this debounced effect for user location data calculation
-    useEffect(() => {
-        if (!userLocation || Object.keys(stations).length === 0) return;
+        // FIXED: Only auto-track once when conditions are met
+        if (!user || !mapInstance || userLocation) return;
         
-        // FIXED: Debounce the calculation to prevent excessive updates
-        const timeoutId = setTimeout(() => {
-            console.log('Calculating user location data...');
-            // ... your existing calculation code here ...
-        }, 1000); // 1 second debounce
+        // Add a longer delay to prevent immediate requests
+        const timer = setTimeout(() => {
+            trackUserLocation();
+        }, 2000); // 2 second delay
         
-        return () => clearTimeout(timeoutId);
-    }, [userLocation, stations]);
+        return () => clearTimeout(timer);
+    }, [user, mapInstance, trackUserLocation]); // Added trackUserLocation as dependency
+    
     // Make component instance available globally for popup callbacks
     useEffect(() => {
         window.mapPageInstance = {
@@ -342,102 +379,24 @@ const MapPage = () => {
         return () => { if (map) map.remove(); };
     }, []);
             
-    // === CORRECTED IDW INTERPOLATION - ONLY REAL STATIONS ===
-    const calculateIDWInterpolation = useCallback((locationData, stations) => {
-        console.log('🔍 Starting IDW calculation with ONLY real stations...');
-        
-        // FIXED: Only use the 2 real stations for interpolation
-        const realStationIds = ['lora-v1', 'loradev2','lora-v3'];
-        const realStations = {};
-        
-        realStationIds.forEach(id => {
-            if (stations[id] && stations[id].averages) {
-                realStations[id] = stations[id];
-            }
-        });
-        
-        console.log('📊 Real stations for interpolation:', Object.keys(realStations));
-        
-        if (Object.keys(realStations).length === 0) {
-            console.warn('⚠️ No real stations available for interpolation');
-            return {
-                interpolated_values: {},
-                interpolated_aqi: 50,
-                stations_used: 0,
-                method: 'fallback'
-            };
-        }
-        
-        let totalWeight = 0;
-        const weightedValues = {
-            pm25: 0, pm10: 0, so2: 0, no2: 0, 
-            co: 0, o3: 0, nh3: 0
-        };
-        let weightedAqi = 0;
-
-        Object.entries(realStations).forEach(([stationId, station]) => {
-            const distance = calculateDistance(
-                locationData.lat,
-                locationData.lng,
-                station.station_info.lat,
-                station.station_info.lng
-            );
-
-            console.log(`📍 Station ${stationId}: ${distance.toFixed(2)}km away`);
-
-            // Avoid division by zero
-            const safeDistance = Math.max(distance, 0.001);
-            const weight = 1.0 / (safeDistance ** 2);
-            totalWeight += weight;
-
-            // Add weighted values
-            const averages = station.averages || {};
-            Object.keys(weightedValues).forEach(param => {
-                if (averages[param] !== undefined) {
-                    weightedValues[param] += averages[param] * weight;
-                }
-            });
-
-            // Add weighted AQI
-            weightedAqi += (station.highest_sub_index || 0) * weight;
-            
-            console.log(`⚖️ Station ${stationId}: weight=${weight.toFixed(4)}, AQI=${station.highest_sub_index}`);
-        });
-
-        // Calculate final interpolated values
-        const interpolated_values = {};
-        Object.keys(weightedValues).forEach(param => {
-            interpolated_values[param] = totalWeight > 0 ? 
-                Math.round((weightedValues[param] / totalWeight) * 100) / 100 : 0;
-        });
-
-        const interpolated_aqi = totalWeight > 0 ? 
-            Math.round(weightedAqi / totalWeight) : 50;
-
-        console.log('✅ IDW Result:', {
-            interpolated_aqi,
-            stations_used: Object.keys(realStations).length,
-            total_weight: totalWeight.toFixed(4)
-        });
-
-        return {
-            interpolated_values,
-            interpolated_aqi,
-            stations_used: Object.keys(realStations).length,
-            method: 'idw'
-        };
-    }, []);
+    // --- DELETED `calculateIDWInterpolation` function ---
     
     // === DATA FETCHING - CORRECTED ===
     const fetchRealtimeData = useCallback(async () => {
         setIsLoading(true);
         try {
+            // *** URL FIX: Added /api/ prefix ***
             const response = await fetch(`${API_BASE_URL}/api/map/realtime/`);
             if (!response.ok) throw new Error('Failed to fetch data');
             
+            // --- Robust JSON Check ---
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new TypeError(`Expected JSON from /api/map/realtime/ but got HTML. Check your ROOT urls.py file.`);
+            }
+            
             const data = await response.json();
             
-            // FIXED: Only show real stations with data, and coming soon stations without data
             const processedStations = {};
             
             // Add real stations with data
@@ -484,100 +443,93 @@ const MapPage = () => {
         return () => clearInterval(interval);
     }, [fetchRealtimeData]);
 
-    // === CORRECTED USER LOCATION DATA CALCULATION - ONLY REAL STATIONS ===
-    useEffect(() => {
-        if (userLocation && Object.keys(stations).length > 0) {
-            console.log('🔍 Calculating user location data with ONLY real stations for interpolation...');
-            
-            // FIXED: Only use real stations for distance calculation and interpolation
-            const realStationIds = ['lora-v1', 'loradev2','lora-v3'];
-            const realStations = {};
-            
-            realStationIds.forEach(id => {
-                if (stations[id] && stations[id].averages) {
-                    realStations[id] = stations[id];
-                }
-            });
-            
-            if (Object.keys(realStations).length === 0) {
-                console.warn('⚠️ No real stations available');
-                return;
-            }
-            
-            // Calculate distances to ONLY real stations
-            let nearestDist = Infinity;
-            let nearestId = null;
-            
-            Object.entries(realStations).forEach(([id, station]) => {
-                const dist = calculateDistance(
-                    userLocation.lat, 
-                    userLocation.lng, 
-                    station.station_info.lat, 
-                    station.station_info.lng
-                );
-                
-                if (dist < nearestDist) { 
-                    nearestDist = dist; 
-                    nearestId = id; 
-                }
-            });
-            
-            setNearestStation({ 
-                id: nearestId, 
-                distance: nearestDist,
-                station: realStations[nearestId]
-            });
-
-            console.log(`📍 Nearest real station: ${nearestId} at ${nearestDist.toFixed(2)}m`);
-            
-            // Check if user is within 2km of any real station for interpolation
-            if (nearestDist <= 2.0) {
-                // Within 2km - use interpolation with ONLY real stations
-                const idwResult = calculateIDWInterpolation(userLocation, realStations);
-                
-                setUserLocationData({
-                    method: 'location_interpolation',
-                    source: 'interpolated',
-                    values: idwResult.interpolated_values,
-                    aqi: idwResult.interpolated_aqi,
-                    station_name: `Your Location`,
-                    is_interpolated: true,
-                    distance_to_nearest: nearestDist,
-                    nearest_station_name: realStations[nearestId]?.station_info?.name,
-                    stations_used_for_calculation: Object.keys(realStations)
-                });
-                
-                console.log('✅ Using interpolated data from real stations:', idwResult);
-            } else {
-                // Beyond 5km from all real sensors - show nearest real station data
-                const nearestStationData = realStations[nearestId];
-                
-                setUserLocationData({
-                    method: 'nearest_station',
-                    source: 'nearest_station',
-                    values: nearestStationData.averages || {},
-                    aqi: nearestStationData.highest_sub_index || 50,
-                    station_name: nearestStationData.station_info.name,
-                    is_interpolated: false,
-                    distance_to_nearest: nearestDist,
-                    nearest_station_name: nearestStationData.station_info.name,
-                    distance_warning: `You are ${nearestDist.toFixed(1)}km away from sensors`
-                });
-                
-                console.log('✅ Using nearest real station data (beyond 1km):', nearestStationData.station_info.name);
-            }
-        }
-    }, [userLocation, stations, calculateIDWInterpolation]);
     
-    // === FORECAST DATA FETCHING ===
+    // --- *** THIS IS THE MAIN FIX *** ---
+    // === REPLACED USER LOCATION DATA CALCULATION ===
+    // This now calls your backend instead of doing math
+    
+    useEffect(() => {
+        // Only run if we have a location AND stations
+        if (userLocation && Object.keys(stations).length > 0) {
+            console.log('🔍 MapPage: Fetching user-specific AQI from backend...');
+            
+            const fetchUserAqi = async () => {
+                try {
+                    setIsFetchingUserAqi(true);
+                    // Call the new backend endpoint
+                    const aqiResponse = await fetch(`${API_BASE_URL}/api/user-aqi/?lat=${userLocation.lat}&lng=${userLocation.lng}`);
+                    
+                    if (!aqiResponse.ok) throw new Error(`Failed to fetch user AQI: ${aqiResponse.status}`);
+                    const aqiContentType = aqiResponse.headers.get("content-type");
+                    if (!aqiContentType || !aqiContentType.includes("application/json")) {
+                        throw new TypeError(`Expected JSON from /api/user-aqi/ but got HTML.`);
+                    }
+
+                    const aqiData = await aqiResponse.json();
+                    console.log("✅ MapPage: Got personalized AQI:", aqiData.user_aqi);
+
+                    // Set state with the data from the backend
+                    setUserLocationData({
+                        method: 'location_interpolation',
+                        source: 'interpolated',
+                        aqi: aqiData.user_aqi,
+                        station_name: `Your Location`,
+                        is_interpolated: true,
+                        distance_to_nearest: aqiData.closest_sensor.distance_km,
+                        nearest_station_name: aqiData.closest_sensor.sensor_id,
+                        values: {} // API currently only returns AQI
+                    });
+
+                    setNearestStation({
+                        id: aqiData.closest_sensor.sensor_id,
+                        distance: aqiData.closest_sensor.distance_km,
+                    });
+                } catch (err) {
+                    console.error("Failed to fetch user AQI, falling back to nearest station.", err);
+                    // don't clear existing userLocationData here; keep previous value until a new one arrives
+                } finally {
+                    setIsFetchingUserAqi(false);
+                }
+            };
+
+            fetchUserAqi();
+        }
+    }, [userLocation, stations, API_BASE_URL]); // Removed calculateIDWInterpolation
+
+
+    // Update the user location marker popup whenever personalized AQI or fetching state changes
+    useEffect(() => {
+        const marker = userLocationMarkerRef.current;
+        if (!marker) return;
+
+        const content = createUserPopupContent(userLocationData, isFetchingUserAqi);
+        try {
+            if (marker.getPopup && marker.getPopup()) {
+                marker.getPopup().setContent(content);
+            } else {
+                marker.bindPopup(content);
+            }
+        } catch (err) {
+            console.warn('Failed to update user marker popup:', err);
+        }
+    }, [userLocationData, isFetchingUserAqi]);
+    
+    
+    // === FORECAST DATA FETCHING - URL FIX ===
     useEffect(() => {
         if (!selectedStationId || selectedStationId.startsWith('temp-')) return;
         
         const fetchForecast = async () => {
             setIsForecastLoading(true);
             try {
+                // *** URL FIX: Added /api/ prefix ***
                 const response = await fetch(`${API_BASE_URL}/api/station/${selectedStationId}/forecast/`);
                 if (!response.ok) throw new Error('Failed to fetch forecast');
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    throw new TypeError(`Expected JSON from /api/station/.../forecast/ but got HTML.`);
+                }
                 
                 const data = await response.json();
                 setForecastData(data.forecast_data || []);
@@ -633,6 +585,25 @@ const MapPage = () => {
             markersRef.current[id] = marker;
         });
     }, [mapInstance, stations, isMobile]);
+
+    // *** THIS IS THE RESPONSIVENESS FIX ***
+    // === MAP RESIZE HANDLER ===
+    useEffect(() => {
+        if (!mapInstance) return;
+
+        // Use a timeout to ensure the DOM has finished resizing
+        // This is crucial for CSS transitions to complete
+        const timer = setTimeout(() => {
+            console.log('Refreshing map size...');
+            mapInstance.invalidateSize();
+        }, 400); // 400ms delay
+
+        // Cleanup the timer if the component re-renders
+        return () => clearTimeout(timer);
+        
+    // Re-run this effect anytime a layout state variable changes
+    }, [mapInstance, isMobile, isFullScreenMap, isBottomSheetCollapsed]);
+
 
     // === EVENT HANDLERS ===
     const handleLogout = useCallback(() => {
@@ -954,7 +925,7 @@ const MapPage = () => {
                                             <div className="distance-info">
                                                 {/* This check prevents the crash */}
                                                 {nearestStation && nearestStation.distance != null ? (
-                                                    `📏 ${nearestStation.distance.toFixed(1)}km from nearest sensor`
+                                                    `📏 ${formatDistance(nearestStation.distance)} from nearest sensor`
                                                 ) : (
                                                     '📏 Calculating distance...'
                                                 )}
@@ -971,7 +942,9 @@ const MapPage = () => {
                                     <div className="mobile-readings-section">
                                         <h4><i className="fas fa-user-circle"></i> Your Air Quality</h4>
                                         <div className="mobile-readings-grid">
-                                            {pollutants.map(p => (
+                                            {pollutants
+                                                .filter(p => p.key !== 'temp' && p.key !== 'pre') // Filter out temp/pressure
+                                                .map(p => (
                                                 <div className="mobile-reading-card user-reading" key={p.key}>
                                                     <div className="reading-label">{p.name}</div>
                                                     <div className="reading-value">
@@ -983,28 +956,6 @@ const MapPage = () => {
                                                     </div>
                                                 </div>
                                             ))}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Methodology info */}
-                                    <div className="methodology-section">
-                                        
-                                        <div className="methodology-card">
-                                            {userLocationData.is_interpolated ? (
-                                                <>
-                                                   
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="method-item">
-                                                        
-                                                    </div>
-                                                    <div className="method-item">
-                                                        
-                                                        
-                                                    </div>
-                                                </>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -1068,12 +1019,11 @@ const MapPage = () => {
                     {!isMobile && (
                         <div className="nav-center">
                             <ul className="nav-links">
-                                <li><Link to="/" className="nav-link">🏠 Home</Link></li>
+                                <li><Link to="/homepage" className="nav-link">🏠 Home</Link></li>
                                 <li><Link to="/map" className="nav-link active">Live Map</Link></li>
                                 {user && (
                                     <>
-                                       {/*<li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
-                                        <li><Link to="/add-family" className="nav-link">Family</Link></li>*/}
+                                       <li><Link to="/dashboard" className="nav-link">Dashboard</Link></li>
                                     </>
                                 )}
                             </ul>
@@ -1088,7 +1038,7 @@ const MapPage = () => {
                                         <div className="user-avatar">
                                             <i className="fas fa-user"></i>
                                         </div>
-                                        <span className="user-name">{user.name}</span>
+                                        <span className="user-name">{displayName}</span>
                                     </div>
                                 )}
                                 <button onClick={handleLogout} className="logout-btn">
@@ -1181,6 +1131,11 @@ const MapPage = () => {
                                                 <div className="aqi-circle" style={{ backgroundColor: getAQIColor(userLocationData.aqi) }}>
                                                     <span className="aqi-value">{Math.round(userLocationData.aqi)}</span>
                                                     <span className="aqi-label">AQI</span>
+                                                    {isFetchingUserAqi && (
+                                                        <span className="aqi-refresh-indicator" title="Updating...">
+                                                            <i className="fas fa-spinner fa-spin" style={{ marginLeft: 8, fontSize: '0.8rem' }}></i>
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="location-details">
                                                     <div className="location-status">
@@ -1190,24 +1145,13 @@ const MapPage = () => {
                                                         }
                                                     </div>
                                                     <div className="distance-info">
-                                                        📏 {nearestStation.distance.toFixed(1)}km from nearest sensor
+                                                        📏 {formatDistance(nearestStation.distance)} from nearest sensor
                                                     </div>
                                                 </div>
                                             </div>
                                             
                                             {/* Quick readings */}
-                                            <div className="quick-readings">
-                                                <div className="quick-reading">
-                                                    <span>PM2.5</span>
-                                                    <span>{userLocationData.values?.pm25?.toFixed(1) || 'N/A'}</span>
-                                                    <span className="data-badge">{userLocationData.is_interpolated ? '🎯' : '📍'}</span>
-                                                </div>
-                                                <div className="quick-reading">
-                                                    <span>PM10</span>
-                                                    <span>{userLocationData.values?.pm10?.toFixed(1) || 'N/A'}</span>
-                                                    <span className="data-badge">{userLocationData.is_interpolated ? '🎯' : '📍'}</span>
-                                                </div>
-                                            </div>
+                                            
                                         </div>
                                     </div>
                                 )}

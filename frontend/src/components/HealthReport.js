@@ -3,21 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../App';
 import './css/HealthReport.css';
 import logoImage from '../assets/aqi.webp'; 
+import { calculateDistance, formatDistance } from '../utils/distance';
 
 const LazyChart = React.lazy(() => import('./LazyChart'));
 
-// --- Helper Functions (same as Dashboard.js) ---
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    // REMOVED: * 1000 to return km instead of meters
-    return R * c; 
-};
+// Using shared distance utilities from ../utils/distance
 
 const getAQIColor = (aqi) => {
+    if (!aqi) return '#6b7280'; // Handle null or undefined
     if (aqi <= 50) return '#10b981';
     if (aqi <= 100) return '#f59e0b';
     if (aqi <= 150) return '#ef4444';
@@ -25,6 +18,7 @@ const getAQIColor = (aqi) => {
 };
 
 const getAQIStatus = (aqi) => {
+    if (!aqi) return 'Unknown'; // Handle null or undefined
     if (aqi <= 50) return 'Good';
     if (aqi <= 100) return 'Moderate';
     if (aqi <= 150) return 'Unhealthy';
@@ -35,7 +29,9 @@ const getAQIStatus = (aqi) => {
 const getFriendlyStationName = (stationName) => {
     if (!stationName) return 'Local Monitoring Station';
     
-    // Remove technical terms and make user-friendly
+    // Handle "Your Exact Location"
+    if (stationName === "Your Exact Location") return stationName;
+
     const cleanName = stationName
         .replace(/lora|LoRa|LORA/gi, '')
         .replace(/v1|v2|V1|V2/gi, '')
@@ -47,12 +43,10 @@ const getFriendlyStationName = (stationName) => {
         .replace(/\s+/g, ' ')
         .trim();
     
-    // If name becomes too short or empty, provide a generic name
     if (cleanName.length < 3) {
         return 'Local Air Quality Monitor';
     }
     
-    // Capitalize properly
     return cleanName
         .toLowerCase()
         .split(' ')
@@ -161,35 +155,19 @@ const getEmergencyContacts = (aqi) => {
 };
 
 function HealthReport() {
-    // In HealthReport.js, add this function near the top with your other helpers.
-const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
-const calculateInterpolatedAqi = (locationData, stations) => {
-    let totalWeight = 0;
-    let weightedAqi = 0;
+    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
     
-    stations.forEach(station => {
-        const distance = calculateDistance(
-            locationData.lat,
-            locationData.lng,
-            station.station_info.lat,
-            station.station_info.lng
-        );
-        // Use a small minimum distance to avoid division by zero
-        const safeDistance = Math.max(distance, 0.001);
-        const weight = 1.0 / (safeDistance ** 2);
-        totalWeight += weight;
-        weightedAqi += (station.highest_sub_index || 0) * weight;
-    });
+    // --- DELETED `calculateInterpolatedAqi` FUNCTION ---
 
-    if (totalWeight > 0) {
-        return Math.round(weightedAqi / totalWeight);
-    }
-    // Fallback to the first station's AQI if something goes wrong
-    return stations[0]?.highest_sub_index || 50; 
-};
-    // AFTER (Correct):
-    const { user, loading: authLoading } = useAuth();
-    const [username] = useState(user?.name || null);
+    const { user, loading: authLoading, logout } = useAuth();
+    // Fallback to localStorage user if auth context is not populated yet
+    const storedUser = React.useMemo(() => {
+        try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { return null; }
+    }, []);
+    const effectiveUser = user || storedUser || null;
+    // For display prefer username or name, but we will still send phone_number to the API when available
+    const initialDisplayName = effectiveUser?.username || effectiveUser?.name || effectiveUser?.phone_number || null;
+    const [displayName] = useState(initialDisplayName);
     const [reportData, setReportData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -199,11 +177,10 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     // --- State for location and interpolation (same as Dashboard) ---
     const [userLocation, setUserLocation] = useState(null);
     const [nearestStation, setNearestStation] = useState(null);
-    const [interpolatedData, setInterpolatedData] = useState(null);
+    // This state will now hold the AQI info, whether it's interpolated or default
     const [currentDataInfo, setCurrentDataInfo] = useState(null);
 
     const navigate = useNavigate();
-    // This will automatically use the correct URL for both local and deployed environments
     const API_BASE_URL = process.env.NODE_ENV === 'production' 
         ? 'https://airaware-app-gcw7.onrender.com' // Your deployed backend URL
         : 'http://localhost:8000';                   // Your local backend URL
@@ -214,40 +191,52 @@ const calculateInterpolatedAqi = (locationData, stations) => {
         return () => clearInterval(timer);
     }, []);
 
-    // In HealthReport.js, replace the entire fetchReportData function
-
+    // Fetch main report data (health assessment, stations, forecasts)
     const fetchReportData = useCallback(async () => {
-        // This check is now robust and waits for the user object from useAuth
-        if (!user || !user.name) {
-            console.log("Health Report fetch blocked: User name not available yet.");
-            return;
-        }
+                // Allow fetch when we have any identifier from auth or localStorage
+                if (!effectiveUser || (!effectiveUser.phone_number && !effectiveUser.username && !effectiveUser.name)) {
+                    console.log("Health Report fetch blocked: user identifier not available yet.");
+                    return;
+                }
 
         setLoading(true);
         setError(null);
         try {
-            // --- THIS IS THE KEY FIX ---
-            // The backend view expects 'username', so we must send 'user.name'
             const url = new URL(`${API_BASE_URL}/api/health-report/`);
-            url.searchParams.append('username', user.name); // Send username, NOT user_id
+            // Prefer sending phone_number if available (backend accepts either)
+            const identifier = effectiveUser.phone_number || effectiveUser.username || effectiveUser.name;
+            if (effectiveUser.phone_number) url.searchParams.append('phone_number', effectiveUser.phone_number);
+            else url.searchParams.append('username', identifier);
 
             console.log(`🚀 Calling health report API: ${url.toString()}`);
 
             const response = await fetch(url);
 
             if (!response.ok) {
-                throw new Error(`The server responded with an error (Status: ${response.status})`);
+                // Try to surface useful error information (text or JSON)
+                const text = await response.text().catch(() => null);
+                let parsed = null;
+                try { parsed = text ? JSON.parse(text) : null; } catch (e) { /* not JSON */ }
+                const message = (parsed && parsed.error) ? parsed.error : (text || `Server responded with ${response.status}`);
+                throw new Error(message);
             }
-            
+
             const data = await response.json();
             setReportData(data);
             
-            // Set the default station for the forecast chart
+            // --- SET DEFAULT AQI DATA FIRST ---
+            // This runs before location is fetched, so the page loads fast
             if (data.stations) {
                 const stationEntries = Object.entries(data.stations);
                 if (stationEntries.length > 0) {
-                    const [defaultId] = stationEntries[0];
-                    setNearestStation({ id: defaultId });
+                    const [defaultId, defaultStation] = stationEntries[0]; // Use lora-v1 as default
+                    setCurrentDataInfo({
+                        is_interpolated: false,
+                        aqi: defaultStation.highest_sub_index,
+                        distance: null,
+                        station_name: defaultStation.station_info.name
+                    });
+                    setNearestStation({ id: defaultId, distance: null });
                 }
             }
 
@@ -257,7 +246,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
         } finally {
             setLoading(false);
         }
-    }, [user, navigate, API_BASE_URL]);
+    }, [effectiveUser, navigate, API_BASE_URL]);
 
 
     // ===== INITIALIZATION =====
@@ -265,100 +254,81 @@ const calculateInterpolatedAqi = (locationData, stations) => {
         if (authLoading) {
             return; // Wait for auth check
         }
-        
+        // If neither auth context nor localStorage contain a user, redirect to login
+        if (!user && !storedUser) {
+            navigate('/login');
+            return;
+        }
+
         fetchReportData();
     }, [authLoading, user, fetchReportData, navigate]);
 
    
-    // In HealthReport.js
-// Add this corrected block in place of the two you deleted.
-
-  useEffect(() => {
-    // Start by fetching the main report data
-    fetchReportData();
-
-    // Then, try to get the user's GPS location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          // If successful, update the userLocation state
-          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        (err) => {
-          console.warn("Geolocation failed. Using default station data.");
-          // If GPS fails, set location to null
+    // --- THIS IS THE NEW LOGIC ---
+    // This useEffect runs separately to get location
+    useEffect(() => {
+        // Try to get the user's GPS location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              // If successful, update the userLocation state
+              setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            },
+            (err) => {
+              console.warn("Geolocation failed. Using default station data.");
+              // If GPS fails, set location to null
+              setUserLocation(null);
+            }
+          );
+        } else {
+          // If the browser doesn't support geolocation, set location to null
           setUserLocation(null);
         }
-      );
-    } else {
-      // If the browser doesn't support geolocation, set location to null
-      setUserLocation(null);
-    }
-  }, [fetchReportData]); // This effect runs once to fetch data and location
+    }, []); // Runs once on mount
 
-  // --- THIS NEW useEffect PERFORMS THE CALCULATIONS AND FIXES THE BUG ---
-  // In HealthReport.js, replace the entire location-processing useEffect
+    // --- THIS IS THE NEW LOGIC ---
+    // This useEffect runs *after* reportData and userLocation are set
+    // It calls the new API endpoint for the personalized AQI.
+    useEffect(() => {
+        // Only run if we have the main report data AND we have a location
+        if (reportData?.stations && userLocation) {
+            console.log("🚀 HealthReport: Have location and data, fetching user-specific AQI...");
 
-  useEffect(() => {
-    // Only run this logic if we have the main report data
-    if (!reportData?.stations) return;
+            const fetchUserAqi = async () => {
+                try {
+                    const aqiResponse = await fetch(`${API_BASE_URL}/api/user-aqi/?lat=${userLocation.lat}&lng=${userLocation.lng}`);
+                    const aqiData = await aqiResponse.json();
 
-    // Use Object.entries to get both the ID and the station data
-    const stationEntries = Object.entries(reportData.stations);
-    if (stationEntries.length === 0) return;
+                    if (!aqiResponse.ok) throw new Error(aqiData.error);
 
-    // --- If we have the user's location (within 1km), calculate their specific AQI ---
-    if (userLocation) {
-      let nearestDist = Infinity;
-      let nearestStationId = null;
-      let nearestStationDetails = null;
+                    console.log("✅ HealthReport: Got personalized AQI:", aqiData.user_aqi);
 
-      stationEntries.forEach(([id, station]) => {
-        const dist = calculateDistance(userLocation.lat, userLocation.lng, station.station_info.lat, station.station_info.lng);
-        if (dist < nearestDist) {
-          nearestDist = dist;
-          nearestStationId = id; // Store the correct ID ('lora-v1')
-          nearestStationDetails = station;
+                    // --- UPDATE AQI DATA ---
+                    // This now matches the Dashboard
+                    setCurrentDataInfo({
+                        is_interpolated: true,
+                        aqi: aqiData.user_aqi,
+                        distance: aqiData.closest_sensor.distance_km,
+                        station_name: "Your Exact Location"
+                    });
+                    
+                    // --- UPDATE FORECAST ---
+                    // This fixes the forecast chart
+                    setNearestStation({ 
+                        id: aqiData.closest_sensor.sensor_id, 
+                        distance: aqiData.closest_sensor.distance_km 
+                    });
+                    
+                } catch (err) {
+                    console.warn("Failed to fetch user-specific AQI, using default station.", err);
+                    // If this fails, the default data set in fetchReportData() is used, so the page still works.
+                }
+            };
+            
+            fetchUserAqi();
         }
-      });
-      
-      // Check if the user is within the 1km radius for interpolation
-      if (nearestDist <= 1.0) {
-        const interpolatedAqi = calculateInterpolatedAqi(userLocation, Object.values(reportData.stations));
-        setCurrentDataInfo({
-          is_interpolated: true,
-          aqi: interpolatedAqi,
-          distance: nearestDist,
-          station_name: "Your Exact Location"
-        });
-      } else {
-        // If user is outside 1km, use the nearest station's data
-        setCurrentDataInfo({
-          is_interpolated: false,
-          aqi: nearestStationDetails.highest_sub_index,
-          distance: nearestDist,
-          station_name: nearestStationDetails.station_info.name
-        });
-      }
-      // CRITICAL FIX: Set the nearestStation with the correct ID for the forecast
-      setNearestStation({ id: nearestStationId, distance: nearestDist });
-
-    } else {
-      // --- If we DON'T have a location, use the first station as the default ---
-      const [defaultId, defaultStation] = stationEntries[0];
-      
-      setCurrentDataInfo({
-        is_interpolated: false,
-        aqi: defaultStation.highest_sub_index,
-        distance: null,
-        station_name: defaultStation.station_info.name
-      });
-      // Set nearestStation with the default ID for the forecast
-      setNearestStation({ id: defaultId, distance: null });
-    }
-  }, [reportData, userLocation]); // This effect re-runs whenever data or location changes
-
-
+        // If userLocation is null, we just keep the default data that was set in fetchReportData
+    }, [reportData, userLocation, API_BASE_URL]); // This effect re-runs whenever data or location changes
 
 
     // Memoized calculations
@@ -389,20 +359,19 @@ const calculateInterpolatedAqi = (locationData, stations) => {
         return getFriendlyStationName(currentDataInfo?.station_name);
     }, [currentDataInfo]);
 
-    // Helper function to safely format distance
-    const formatDistance = useCallback((distance) => {
-        if (distance === null || distance === undefined || typeof distance !== 'number') {
-            return 'N/A';
-        }
-        return distance.toFixed(1);
-    }, []);
+    // Use shared formatDistance from ../utils/distance for consistent display
 
     // Event handlers
     const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
     const handleLogout = useCallback(() => {
-        localStorage.clear();
-        navigate('/login');
-    }, [navigate]);
+        try {
+            logout();
+            navigate('/login');
+        } catch (e) {
+            console.error('Logout failed:', e);
+            navigate('/login');
+        }
+    }, [logout, navigate]);
 
     const handleRefresh = useCallback(() => {
         fetchReportData();
@@ -415,23 +384,14 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     // This is the primary fix that prevents the crash.
     // This one-line change prevents the crash
     if (loading) {
-    return (
-        <div className="panel-loader">
-            <h2>🏥 Generating Your Health Report...</h2>
-            <div className="loading-spinner"></div>
-            <button 
-                onClick={() => window.location.href = "/health-report"} 
-                className="retry-btn" 
-                style={{ marginTop: "20px" }}
-            >
-                🔄 Refresh
-            </button>
-        </div>
-    );
-}
-
-
-
+        return (
+            <div className="panel-loader">
+                <h2>🏥 Generating Your Health Report...</h2>
+                <div className="loading-spinner"></div>
+                
+            </div>
+        );
+    }
 
     // CORRECTED: Check for an error state second
     if (error) {
@@ -447,27 +407,28 @@ const calculateInterpolatedAqi = (locationData, stations) => {
     }
 
     // CORRECTED: Check if data is missing third
+    // We must check for both reportData (health profile) and currentDataInfo (AQI)
     if (!reportData || !currentDataInfo) {
-        return <div className="error-message"><h2>📊 No Report Data</h2><p>Network error occurred. Please refresh the page and try again..</p></div>;
+        return <div className="error-message"><h2>📊 No Report Data</h2><p>Could not load all required data. Please refresh the page and try again.</p></div>;
     }
 
     // If all checks pass, then safely render the page
-    const { health_assessment, forecasts } = reportData;
-    const forecastForNearest = nearestStation ? forecasts[nearestStation.id] : null;
+    const { health_assessment = {}, forecasts = {} } = reportData || {};
+    // This is now safe, because nearestStation is set in all scenarios
+    const forecastForNearest = nearestStation ? (forecasts && forecasts[nearestStation.id] ? forecasts[nearestStation.id] : null) : null;
 
     return (
         <div className="report-page">
             {/* Real-time Status Bar */}
             <div className="realtime-status">
                 🔴 LIVE HEALTH REPORT • Updated: {currentTime.toLocaleTimeString('en-IN')} • 
-                {interpolatedData ? ' Location-Based Analysis' : ' Government Standards Applied'}
+                {currentDataInfo.is_interpolated ? ' Location-Based Analysis' : ' Nearest Station Data'}
             </div>
 
             {/* Navigation (same as Dashboard) */}
             <nav className="navbar">
                 <div className="navbar-content">
                     <Link to="/" className="navbar-brand">
-                        {/* 2. USE THE IMPORTED VARIABLE */}
                         <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
                         AirAware
                     </Link>
@@ -480,7 +441,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                         <li><Link to="/health-assessment" className="nav-link">📋 Health Update</Link></li>
                         <li><Link to="/add-family" className="nav-link">👥 Add Family</Link></li>
                         {/*<li><Link to="/map" className="nav-link">🗺️ Live Map</Link></li>*/}
-                        <li className="user-info">👤 <span>{username}</span></li>
+                        <li className="user-info">👤 <span>{displayName}</span></li>
                         <li>
                             <button onClick={handleLogout} className="nav-link login-btn">🚪 Logout</button>
                         </li>
@@ -501,8 +462,8 @@ const calculateInterpolatedAqi = (locationData, stations) => {
             <div className={`alert-banner ${aqiStatus.status.toLowerCase()}`} style={{ backgroundColor: getAQIColor(displayAqi) + '20', borderBottom: `3px solid ${getAQIColor(displayAqi)}` }}>
                 ℹ️ <span>
                     <strong>CURRENT AIR QUALITY:</strong> 
-                    {interpolatedData ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
-                    {nearestStation && nearestStation.distance !== null && nearestStation.distance !== undefined && ` • Distance: ${formatDistance(nearestStation.distance)}km from nearest monitor`}
+                    {currentDataInfo.is_interpolated ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
+                    {nearestStation && nearestStation.distance !== null && nearestStation.distance !== undefined && ` • Distance: ${formatDistance(nearestStation.distance)} from nearest monitor`}
                 </span>
             </div>
 
@@ -514,23 +475,20 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                         Air Quality Monitoring
                     </div>
                     <div className="document-id">
-                        DOC-ID: HR-{username}-{new Date().getFullYear()}{String(new Date().getMonth() + 1).padStart(2, '0')}{String(new Date().getDate()).padStart(2, '0')}
+                        DOC-ID: HR-{displayName}-{new Date().getFullYear()}{String(new Date().getMonth() + 1).padStart(2, '0')}{String(new Date().getDate()).padStart(2, '0')}
                     </div>
                     <h1>🏥 Official Air Quality Health Report</h1>
                     <p>
                         Personalized health assessment based on your location's air quality and personal health profile.
-                        {interpolatedData && ' Using advanced location analysis for precise monitoring.'}
+                        {currentDataInfo.is_interpolated && ' Using advanced location analysis for precise monitoring.'}
                     </p>
                     <div className="report-metadata">
                         <div className="metadata-item">
                             <strong>Generated:</strong> {new Date().toLocaleString('en-IN')}
                         </div>
                         <div className="metadata-item">
-                            <strong>Name:</strong> {username}
+                            <strong>Name:</strong> {displayName}
                         </div>
-                        {/*<div className="metadata-item">
-                            <strong>Location:</strong> {interpolatedData ? 'Your Current Location' : 'Nearest Monitor Data'}
-                        </div>*/}
                         <div className="metadata-item">
                             <strong>Data Source:</strong> {friendlyStationName}
                         </div>
@@ -558,10 +516,10 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                         <div className="overview-card aqi-card">
                             <h4>🌬️ Current Air Quality</h4>
                             <div className="station-name">
-                                {interpolatedData ? '🎯 Your Location' : `📍 ${friendlyStationName}`}
+                                {currentDataInfo.is_interpolated ? '🎯 Your Location' : `📍 ${friendlyStationName}`}
                                 {nearestStation && nearestStation.distance !== null && nearestStation.distance !== undefined && (
                                     <div className="distance-info">
-                                        Distance: {formatDistance(nearestStation.distance)}km
+                                        Distance: {formatDistance(nearestStation.distance)}
                                     </div>
                                 )}
                             </div>
@@ -575,7 +533,7 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                             }}>
                                 {aqiStatus.status}
                             </div>
-                            {interpolatedData && (
+                            {currentDataInfo.is_interpolated && (
                                 <div className="interpolation-badge">
                                     🎯 Calculated for Your Location
                                 </div>
@@ -616,9 +574,13 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                             <div className="emergency-actions">
                                 <h3>🚨 IMMEDIATE ACTIONS:</h3>
                                 <ul className="emergency-list">
-                                    {healthRecommendations.recommendations.map((rec, index) => (
-                                        <li key={index}>{rec}</li>
-                                    ))}
+                                    {(healthRecommendations && Array.isArray(healthRecommendations.recommendations)) ? (
+                                        healthRecommendations.recommendations.map((rec, index) => (
+                                            <li key={index}>{rec}</li>
+                                        ))
+                                    ) : (
+                                        <li>No specific recommendations available.</li>
+                                    )}
                                 </ul>
                             </div>
                         </div>
@@ -642,19 +604,23 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                     </div>
 
                     <div className="recommendations-grid">
-                        {healthRecommendations?.recommendations.map((action, index) => (
-                            <div key={index} className={`recommendation-card ${healthRecommendations.category} ${healthRecommendations.isSensitive ? 'sensitive' : ''}`}>
-                                <div className="rec-icon">
-                                    <i className={healthRecommendations.isEmergency ? "fas fa-exclamation-triangle" : "fas fa-check-circle"}></i>
-                                </div>
-                                <div className="rec-content">
-                                    <div className="rec-priority">
-                                        {healthRecommendations.isEmergency ? 'URGENT' : healthRecommendations.category.toUpperCase()}
+                        {(healthRecommendations && Array.isArray(healthRecommendations.recommendations) && healthRecommendations.recommendations.length > 0) ? (
+                            healthRecommendations.recommendations.map((action, index) => (
+                                <div key={index} className={`recommendation-card ${healthRecommendations.category || ''} ${healthRecommendations.isSensitive ? 'sensitive' : ''}`}>
+                                    <div className="rec-icon">
+                                        <i className={healthRecommendations.isEmergency ? "fas fa-exclamation-triangle" : "fas fa-check-circle"}></i>
                                     </div>
-                                    <div className="rec-text">{action}</div>
+                                    <div className="rec-content">
+                                        <div className="rec-priority">
+                                            {healthRecommendations.isEmergency ? 'URGENT' : (healthRecommendations.category || '').toUpperCase()}
+                                        </div>
+                                        <div className="rec-text">{action}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <div className="no-recommendations">No recommendations available.</div>
+                        )}
                     </div>
 
                     {/* Additional Recommendations from Health Assessment */}
@@ -724,7 +690,10 @@ const calculateInterpolatedAqi = (locationData, stations) => {
                         </div>
                         <div className="forecast-chart-container">
                             <Suspense fallback={<div className="panel-loader">📊 Loading forecast chart...</div>}>
-                                <LazyChart forecastData={forecastForNearest?.data} selectedParameter={'pm25'} />
+                                <LazyChart 
+                                    forecastData={forecastForNearest?.data} 
+                                    selectedParameter={'pm25'} 
+                                />
                             </Suspense>
                         </div>
                     </div>

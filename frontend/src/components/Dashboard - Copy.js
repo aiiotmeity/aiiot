@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useAuth } from '../App';
 import { useNavigate, Link } from 'react-router-dom'; // Import Link
 import './css/Dashboard.css';
 import logoImage from '../assets/aqi.webp'; 
@@ -717,20 +718,18 @@ useEffect(() => {
   if (isMobileView) closeMenu(); 
 }, [isMobileView, closeMenu]);
 
+  const { logout } = useAuth();
+
   const handleLogout = useCallback(() => {
     if (isMobileView) closeMenu();
-    
-    // FIXED: Clear storage and navigate properly
     try {
-      localStorage.clear();
-      // Force a clean navigation to login
-      window.location.href = '/login';
+      logout();
+      navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      // Fallback navigation
       navigate('/login');
     }
-  }, [navigate, isMobileView, closeMenu]);
+  }, [navigate, isMobileView, closeMenu, logout]);
 
 
 

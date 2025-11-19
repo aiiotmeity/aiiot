@@ -130,31 +130,26 @@ const AIIOT_INDEX = () => {
     {
       title: "Intelligent Sensor Module",
       description: "Developing a smart sensor module for real-time monitoring and management of environmental pollutants.",
-      icon: "💻",
       image: "/sensor_modules/module2.jpg"
     },
     {
       title: "Smart Water Level Monitoring",
       description: "A robust solution for monitoring water levels with an integrated alert system to mitigate flood risks.",
-      icon: "💧",
       image: "/sensor_modules/water_authorityy.jpeg"
     },
     {
       title: "Digital Water Distribution",
       description: "Creating a digital twin to efficiently monitor and manage water distribution networks in urban areas.",
-      icon: "🌊",
       image: "/sensor_modules/water_authorityy.jpeg"
     },
     {
       title: "Startup & Skill Development",
       description: "Fostering a vibrant startup ecosystem and providing skill development programs centered around our IoT solutions.",
-      icon: "📈",
       image: "/sensor_modules/skill.jpg"
     },
     {
       title: "Explainable AI Software",
       description: "Building analysis software based on Explainable AI (XAI) to bring transparency and trust to complex IoT systems.",
-      icon: "👁️",
       image: "/sensor_modules/ai.jpeg"
     }
   ];
@@ -177,22 +172,23 @@ const AIIOT_INDEX = () => {
             {/* Logo - Enhanced */}
             <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{
-                width: '4rem',
-                height: '4rem',
-                borderRadius: '0.75rem',
+                width: '10rem',
+                height: '3.25rem',
+                borderRadius: '0.5rem',
                 background: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '0.5rem',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                border: '2px solid #e2e8f0'
+                padding: '0.25rem',
+                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.12)',
+                border: '1px solid #e2e8f0'
               }}>
                 <img src="/logo/logo.png" alt="Adi Shankara Institute" style={{ 
                   width: '100%', 
                   height: '100%',
-                  objectFit: 'contain'
-                }} />
+                  objectFit: 'contain',
+                  imageRendering: 'auto'
+                }} srcSet="/logo/logo.png 1x" />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>
@@ -260,7 +256,7 @@ const AIIOT_INDEX = () => {
                   onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
                   onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
                 >
-                  Our Deployments
+                  Launches
                   <span style={{ fontSize: '0.75rem' }}>▼</span>
                 </button>
 
@@ -695,18 +691,7 @@ const AIIOT_INDEX = () => {
 
                   {/* Project Content */}
                   <div style={{ padding: '1.5rem' }}>
-                    <div style={{
-                      width: '3rem',
-                      height: '3rem',
-                      borderRadius: '0.5rem',
-                      background: '#eff6ff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '1rem'
-                    }}>
-                      <span style={{ fontSize: '1.5rem' }}>{project.icon}</span>
-                    </div>
+                    
                     <h4 style={{ fontWeight: 700, color: '#1e293b', marginBottom: '0.75rem', fontSize: '1.125rem' }}>
                       {project.title}
                     </h4>

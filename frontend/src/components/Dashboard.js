@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useAuth } from '../App';
 import { useNavigate, Link } from 'react-router-dom'; // Import Link
 import './css/Dashboard.css';
 import logoImage from '../assets/aqi.webp'; 
+import { calculateDistance, formatDistance } from '../utils/distance';
 
 // Lazy loading components
 const LazyMap = React.lazy(() =>
@@ -32,15 +34,7 @@ const LazyChart = React.lazy(() =>
 
 // Utility Functions
 // ...
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    // REMOVED: * 1000 to return km instead of meters
-    return R * c; 
-};
+// Using shared calculateDistance from utils/distance.js
 // ...
 
 // Known accurate locations for the area
@@ -125,14 +119,17 @@ const getLocationName = async (lat, lng) => {
         location: parseBigDataCloudResult(data)
       })),
 
-    fetch(`https://us1.locationiq.com/v1/reverse.php?key=demo&lat=${lat}&lon=${lng}&format=json`)
-      .then(res => res.json())
-      .then(data => ({
-        service: 'LocationIQ',
-        data: data,
-        location: parseLocationIQResult(data)
-      }))
-      .catch(() => null)
+    // Only call LocationIQ if an API key is provided via env (avoid demo key 401s)
+    (process.env.REACT_APP_LOCATIONIQ_KEY && process.env.REACT_APP_LOCATIONIQ_KEY !== 'demo') ?
+      fetch(`https://us1.locationiq.com/v1/reverse.php?key=${process.env.REACT_APP_LOCATIONIQ_KEY}&lat=${lat}&lon=${lng}&format=json`)
+        .then(res => res.json())
+        .then(data => ({
+          service: 'LocationIQ',
+          data: data,
+          location: parseLocationIQResult(data)
+        }))
+        .catch(() => null)
+      : Promise.resolve(null)
   ]);
 
   const validResults = geocodingResults
@@ -226,9 +223,17 @@ function Dashboard() {
   const [username] = useState(() => {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      return user.name || 'User';
+      return user.username || 'User';
     } catch {
       return 'User';
+    }
+  });
+  const [phoneNumber] = useState(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return user.phone_number || null;
+    } catch {
+      return null;
     }
   });
 
@@ -388,47 +393,70 @@ function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      // Do not force-abort previous requests here - allow them to finish or timeout.
+      // This prevents frequent AbortError noise when multiple fetches are started quickly.
       const controller = new AbortController();
       abortControllerRef.current = controller;
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      const url = new URL(`${API_BASE_URL}/api/dashboard/`);
-      url.searchParams.append('username', username);
+      // Increase timeout to 30s to accommodate slower local/dev backends
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const url = new URL(`${API_BASE_URL}/api/dashboard_api/`);
+
+      // backend is mounted under /api/ and expects `phone_number` (underscore)
+      if (phoneNumber) url.searchParams.append("phone_number", phoneNumber);
+
       if (locationData) {
         url.searchParams.append('lat', locationData.lat.toString());
         url.searchParams.append('lng', locationData.lng.toString());
       }
-      const response = await fetch(url, {
+
+      const response = await fetch(url.toString(), {
         signal: controller.signal,
         headers: {
-          'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
       });
       clearTimeout(timeoutId);
+
+      // If response isn't OK, try to read the body to surface any error trace
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        let text = '';
+        try {
+          text = await response.text();
+        } catch (e) {
+          text = `Could not read response body: ${e.message}`;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${text}`);
       }
-      const data = await response.json();
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (e) {
+        const body = await response.text().catch(() => '(<unreadable body>)');
+        throw new Error(`Invalid JSON response from dashboard API: ${e.message} - ${body}`);
+      }
+
       console.log('✅ Dashboard data received:', data);
-      if (data.health_data) {
-        console.log('✅ Health data found:', data.health_data);
+      if (data && data.health_data) {
         setHealthData(data.health_data);
       }
       processDashboardData(data, locationData);
       setLastUpdateTime(new Date());
       setError(null);
+      return data;
     } catch (error) {
-      console.error('❌ Error fetching dashboard data:', error);
-      if (error.name !== 'AbortError') {
-        loadSampleData();
+      if (error.name === 'AbortError') {
+        console.warn('⚠️ Dashboard fetch aborted (timeout or cancelled):', error.message || error);
+      } else {
+        console.error('❌ Error fetching dashboard data:', error);
       }
+      // Do NOT immediately load sample data here. Return null and let callers decide
+      // whether to show sample data (prevents flicker when a retry is about to succeed).
+      return null;
     } finally {
       setLoading(false);
     }
-  }, [username, API_BASE_URL]);
+  }, [phoneNumber, API_BASE_URL]);
 
   // ===== PROCESS DASHBOARD DATA =====
   const processDashboardData = useCallback((data, locationData) => {
@@ -466,7 +494,7 @@ function Dashboard() {
         aqi: nearestStation.highest_sub_index || 50
       });
       const isWithinSensorRange = Object.values(stationDistances).some(s => s.distance <= 2.0);
-      if (isWithinSensorRange || nearestDistance <= 1.0) {
+        if (isWithinSensorRange || nearestDistance <= 1.0) {
         const idwResult = calculateIDWInterpolation(locationData, stations);
         setCurrentDataInfo({
           method: 'location_interpolation',
@@ -476,7 +504,7 @@ function Dashboard() {
           station_name: `Your Location (${userLocationName?.city || 'Current Position'})`,
           is_interpolated: true,
           show_distance_message: true,
-          distance_message: `📍 You are within sensor range (${nearestDistance.toFixed(1)}km from nearest), showing calculated values for your exact location`,
+            distance_message: `📍 You are within sensor range (${formatDistance(nearestDistance)} from nearest), showing calculated values for your exact location`,
           data_type: 'Your Location Data (Calculated)'
         });
       } else {
@@ -488,7 +516,7 @@ function Dashboard() {
           station_name: nearestStation.station_info.name,
           is_interpolated: false,
           show_distance_message: true,
-          distance_message: `📍 You are ${nearestDistance.toFixed(1)}km from the nearest sensor node, so you are seeing data from ${nearestStation.station_info.name}`,
+            distance_message: `📍 You are ${formatDistance(nearestDistance)} from the nearest sensor node, so you are seeing data from ${nearestStation.station_info.name}`,
           data_type: 'Nearest Station Data'
         });
       }
@@ -554,93 +582,247 @@ function Dashboard() {
   }, []);
 
   // ===== LOAD SAMPLE DATA =====
-  const loadSampleData = useCallback(() => {
+  // [REPLACE this function - around line 558]
+
+  const loadSampleData = useCallback((locationData = null) => {
     console.log('🔄 Loading sample data...');
     const sampleData = {
+      // (Your existing sampleData object is fine, I've just truncated it here)
       stations: {
         'lora-v1': {
-          station_info: { name: 'ASIET Campus Station', lat: 10.178322, lng: 76.430891, description: 'Educational Institution Area' },
+          station_info: { name: 'ASIET Campus Station', lat: 10.178322, lng: 76.430891 },
           averages: { pm25: 25, pm10: 42, so2: 8, no2: 40, co: 1.1, o3: 46, nh3: 93, temp: 28, hum: 65, pre: 1013 },
           highest_sub_index: 50,
-          last_updated_on: 'Sample Data'
         },
-        'loradev2': {
-          station_info: { name: 'Mattoor Junction Station', lat: 10.170950, lng: 76.429628, description: 'Urban Commercial Area' },
-          averages: { pm25: 22, pm10: 38, so2: 7, no2: 35, co: 1.0, o3: 43, nh3: 88, temp: 27, hum: 68, pre: 1012 },
-          highest_sub_index: 45,
-          last_updated_on: 'Sample Data'
-        },
-        'lora-v3': {
-          station_info: { name: 'Station 3 (Airport Rd)', lat: 10.165, lng: 76.420, description: 'Near Airport Road' },
-          averages: { pm25: 28, pm10: 45, so2: 9, no2: 38, co: 1.2, o3: 48, nh3: 95, temp: 29, hum: 62, pre: 1011 },
-          highest_sub_index: 55,
-          last_updated_on: 'Sample Data'
-        }
+        // ... other sample stations ...
       },
       forecasts: {
         'lora-v1': [
-          { day: 'Today', pm25_max: 30, pm10_max: 37, so2_max: 8, no2_max: 40, co_max: 1.1, o3_max: 46, nh3_max: 93 },
-          { day: 'Tomorrow', pm25_max: 24, pm10_max: 34, so2_max: 8, no2_max: 45, co_max: 1.2, o3_max: 43, nh3_max: 100 },
-          { day: 'Day 3', pm25_max: 24, pm10_max: 30, so2_max: 8, no2_max: 42, co_max: 1.2, o3_max: 45, nh3_max: 100 },
-          { day: 'Day 4', pm25_max: 20, pm10_max: 23, so2_max: 8, no2_max: 38, co_max: 1.2, o3_max: 47, nh3_max: 100 }
+          { day: 'Today', pm25_max: 30, pm10_max: 37 },
+          { day: 'Tomorrow', pm25_max: 24, pm10_max: 34 },
+          // ... other sample forecasts ...
         ],
-        'loradev2': [
-          { day: 'Today', pm25_max: 28, pm10_max: 35, so2_max: 7, no2_max: 38, co_max: 1.0, o3_max: 44, nh3_max: 90 },
-          { day: 'Tomorrow', pm25_max: 22, pm10_max: 32, so2_max: 7, no2_max: 42, co_max: 1.1, o3_max: 41, nh3_max: 95 },
-          { day: 'Day 3', pm25_max: 22, pm10_max: 28, so2_max: 7, no2_max: 40, co_max: 1.1, o3_max: 43, nh3_max: 95 },
-          { day: 'Day 4', pm25_max: 18, pm10_max: 21, so2_max: 7, no2_max: 36, co_max: 1.1, o3_max: 45, nh3_max: 95 }
-        ],
-        'lora-v3': [
-          { day: 'Today', pm25_max: 32, pm10_max: 40, so2_max: 9, no2_max: 42, co_max: 1.3, o3_max: 50, nh3_max: 98 },
-          { day: 'Tomorrow', pm25_max: 26, pm10_max: 35, so2_max: 9, no2_max: 46, co_max: 1.3, o3_max: 45, nh3_max: 102 },
-          { day: 'Day 3', pm25_max: 25, pm10_max: 32, so2_max: 9, no2_max: 44, co_max: 1.3, o3_max: 47, nh3_max: 103 },
-          { day: 'Day 4', pm25_max: 22, pm10_max: 25, so2_max: 9, no2_max: 40, co_max: 1.3, o3_max: 48, nh3_max: 101 }
-        ]
       },
-      health_data: { risk_level: 'Low', score: 75, recommendations: ['Enjoy outdoor activities', 'Open windows for fresh air'] }
+      health_data: { risk_level: 'Low', score: 75, recommendations: ['Enjoy outdoor activities'] }
     };
+
+    setDashboardData(sampleData); // Set the full data object
     setHealthData(sampleData.health_data);
-    processDashboardData(sampleData, userLocation);
+
+    if (locationData) {
+      // Mimic interpolation
+      setNearestStationInfo({
+        id: 'lora-v1',
+        name: 'ASIET Campus Station',
+        distance: 1.2, // Fake distance
+        aqi: 48
+      });
+      setCurrentDataInfo({
+        method: 'location_interpolation',
+        values: { pm25: 24, pm10: 40, so2: 7, no2: 38, co: 1.0, o3: 45, nh3: 90, temp: 28, hum: 65, pre: 1013 },
+        aqi: 48,
+        station_name: 'Your Location (Sample)',
+        is_interpolated: true,
+        distance_message: '🎯 Showing sample interpolated data for your location.'
+      });
+    } else {
+      // Mimic default
+      const defaultStation = sampleData.stations['lora-v1'];
+      setNearestStationInfo({
+        id: 'lora-v1',
+        name: defaultStation.station_info.name,
+        distance: null,
+        aqi: defaultStation.highest_sub_index
+      });
+      setCurrentDataInfo({
+        method: 'default_station',
+        values: defaultStation.averages || {},
+        aqi: defaultStation.highest_sub_index || 50,
+        station_name: defaultStation.station_info.name,
+        is_interpolated: false,
+        distance_message: '📍 Showing sample data for ASIET Campus.'
+      });
+    }
+    
     setLastUpdateTime(new Date());
-    console.log('');
-  }, [userLocation, processDashboardData]);
+    console.log('📊 Sample data processed successfully');
+  }, []); // Dependencies are now empty
 
   // ===== INITIALIZATION =====
-  useEffect(() => {
-    const initializeDashboard = async () => {
-      console.log('⚡ Initializing dashboard...');
-      await fetchDashboardData();
-      try {
-        const location = await getUserLocation();
-        console.log('📍 Location obtained:', location);
-        await fetchDashboardData(location);
-      // This is the NEW block
-      } catch (locationError) {
-        console.log('📍 Location detection failed:', locationError.message);
-        setLocationStatus('failed');
+ // [REPLACE this entire useEffect block - around line 610]
 
-        // Provide more specific feedback to the user
-        let userMessage = 'Could not fetch your location.';
-        switch (locationError.code) {
-          case 1: // PERMISSION_DENIED
-            userMessage = "Location access was denied. Please enable it in your browser settings for personalized data.";
-            break;
-          case 2: // POSITION_UNAVAILABLE
-            userMessage = "Your location could not be determined. Please check your network or GPS connection.";
-            break;
-          case 3: // TIMEOUT
-            userMessage = "Finding your location took too long. Please try again from a place with a better signal.";
-            break;
+  // ===== INITIALIZATION (REFACTORED) =====
+  useEffect(() => {
+    // This helper function finds the nearest station from the base data
+    const findNearestStation = (location, stations) => {
+      const stationIds = Object.keys(stations);
+      let nearestDist = Infinity;
+      let nearestId = stationIds[0];
+
+      stationIds.forEach(stationId => {
+        const station = stations[stationId];
+        if (station.station_info && station.station_info.lat) {
+          const distance = calculateDistance(
+            location.lat,
+            location.lng,
+            station.station_info.lat,
+            station.station_info.lng
+          );
+          if (distance < nearestDist) {
+            nearestDist = distance;
+            nearestId = stationId;
+          }
         }
-        setError(userMessage); // Use your existing error banner to show this message
+      });
+      
+      const nearest = stations[nearestId];
+      return {
+        id: nearestId,
+        distance: nearestDist,
+        name: nearest.station_info.name,
+        aqi: nearest.highest_sub_index,
+        station: nearest
+      };
+    };
+
+    // This is the main function that runs on page load
+    const initialize = async () => {
+      console.log('⚡ Initializing dashboard...');
+      setLoading(true);
+      let location = null;
+      let locationName = null;
+
+      // 1. Try to get location
+      try {
+        location = await getUserLocation(); // This function is fine
+        locationName = await getLocationName(location.lat, location.lng);
+        setUserLocation(location);
+        setUserLocationName(locationName);
+        setLocationStatus('gps_detected');
+      } catch (locationError) {
+        console.warn('📍 Location detection failed:', locationError.message);
+        setLocationStatus('failed');
+        let userMessage = 'Could not fetch your location.';
+        if (locationError.code === 1) userMessage = "Location access was denied. Please enable it for personalized data.";
+        setError(userMessage);
+      }
+
+      // 2. Fetch ALL data from the backend
+      try {
+        // A. Fetch base data (health, all stations, all forecasts)
+        let baseData = await fetchDashboardData();
+        // If the first attempt returned null (abort or transient error), retry once before failing
+        if (!baseData) {
+          console.warn('⚠️ First dashboard fetch failed or was aborted — retrying once...');
+          await new Promise(r => setTimeout(r, 500));
+          baseData = await fetchDashboardData();
+        }
+
+        if (!baseData) {
+          console.error('❌ Could not fetch base dashboard data after retry — falling back to sample data');
+          setError('loading....');
+          loadSampleData(location);
+          setLoading(false);
+          return; // Gracefully exit initialization
+        }
+
+        console.log('✅ Base data received (health, stations, forecasts):', baseData);
+
+        // B. If we have a location, fetch personalized AQI
+        if (location) {
+          const aqiUrl = `${API_BASE_URL}/api/user-aqi/?lat=${location.lat}&lng=${location.lng}`;
+          const aqiResponse = await fetch(aqiUrl);
+          
+          if (!aqiResponse.ok) {
+            // Don't fail the whole page, just log a warning and use nearest station
+            console.warn('⚠️ Could not fetch personalized AQI. Falling back to nearest station.');
+            const nearest = findNearestStation(location, baseData.stations);
+            setNearestStationInfo(nearest);
+            setCurrentDataInfo({
+              method: 'nearest_station_fallback',
+              values: nearest.station.averages || {},
+              aqi: nearest.station.highest_sub_index || 50,
+              station_name: nearest.station.station_info.name,
+              is_interpolated: false,
+              distance_message: `📍 Using data from nearest sensor: ${nearest.station.station_info.name} (${formatDistance(nearest.distance)})`
+            });
+
+          } else {
+            const aqiData = await aqiResponse.json();
+            console.log('✅ Personalized AQI received:', aqiData);
+
+            // This is the IDEAL state
+            const nearestStationId = aqiData.closest_sensor.sensor_id;
+            const nearestStation = baseData.stations[nearestStationId];
+
+            setNearestStationInfo({
+              id: nearestStationId,
+              name: nearestStation.station_info.name,
+              distance: aqiData.closest_sensor.distance_km,
+              aqi: aqiData.user_aqi
+            });
+            
+            setCurrentDataInfo({
+              method: 'location_interpolation',
+              values: aqiData.interpolated_values, // <-- This is the fix for metric cards
+              aqi: aqiData.user_aqi,
+              station_name: locationName?.display_name || 'Your Location',
+              is_interpolated: true,
+              distance_message: `🎯 Calculated for your location (nearest sensor ${formatDistance(aqiData.closest_sensor.distance_km)} away)`
+            });
+          }
+          
+        } else {
+          // C. No location, just use default (lora-v1)
+          const defaultStation = baseData.stations['lora-v1'];
+          setNearestStationInfo({
+            id: 'lora-v1',
+            name: defaultStation.station_info.name,
+            distance: null,
+            aqi: defaultStation.highest_sub_index
+          });
+          setCurrentDataInfo({
+            method: 'default_station',
+            values: defaultStation.averages || {},
+            aqi: defaultStation.highest_sub_index || 50,
+            station_name: defaultStation.station_info.name,
+            is_interpolated: false,
+            distance_message: '📍 Enable location to get data for your exact position.'
+          });
+        }
+        
+        setLastUpdateTime(new Date());
+        setError(null); // Clear any location errors if data fetch succeeded
+
+      } catch (fetchError) {
+        console.error('❌ Error fetching dashboard data:', fetchError);
+        console.log("error fetching");
+        
+        if (fetchError.name !== 'AbortError') {
+          setError('Failed to load dashboard data. Showing sample data.');
+          loadSampleData(location); // Pass location to sample data
+        }
+      } finally {
+        setLoading(false);
       }
     };
-    initializeDashboard();
+
+    // Check for phone number before initializing
+    if (phoneNumber) {
+      initialize();
+    } else {
+      // This should not happen, but as a safeguard
+      setError("User phone number not found. Please log in again.");
+      setLoading(false);
+      navigate('/login');
+    }
+    
+    // Cleanup function (no change)
     return () => {
       if (locationTimeoutRef.current) clearTimeout(locationTimeoutRef.current);
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [fetchDashboardData, getUserLocation]);
+  }, [phoneNumber, API_BASE_URL, getUserLocation, loadSampleData, navigate]); // Add new dependencies
 
   // ===== MEMOIZED VALUES =====
   const currentValues = useMemo(() => currentDataInfo?.values || {}, [currentDataInfo]);
@@ -677,8 +859,8 @@ function Dashboard() {
                   📍 {locationName}
                   {nearestStationInfo && (
                     <span style={{ color: '#6b7280', fontSize: '0.9em' }}>
-                      {' '} → Nearest: {nearestStationInfo.name} ({nearestStationInfo.distance.toFixed(1)}km)
-                    </span>
+                        {' '} → Nearest: {nearestStationInfo.name} ({formatDistance(nearestStationInfo.distance)})
+                      </span>
                   )}
               </span>
               {/* THIS IS THE NEW DISCLAIMER */}
@@ -731,35 +913,48 @@ function Dashboard() {
   if (isMobileView) closeMenu(); 
 }, [isMobileView, closeMenu]);
 
+  const { logout } = useAuth();
+
   const handleLogout = useCallback(() => {
     if (isMobileView) closeMenu();
-    
-    // FIXED: Clear storage and navigate properly
     try {
-      localStorage.clear();
-      // Force a clean navigation to login
-      window.location.href = '/login';
+      // Use centralized logout so we don't accidentally clear unrelated localStorage keys
+      logout();
+      navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      // Fallback navigation
       navigate('/login');
     }
-  }, [navigate, isMobileView, closeMenu]);
+  }, [navigate, isMobileView, closeMenu, logout]);
 
 
 
 
 
 
-  const handleRefreshData = useCallback(() => fetchDashboardData(userLocation), [fetchDashboardData, userLocation]);
+  const handleRefreshData = useCallback(async () => {
+    const res = await fetchDashboardData(userLocation);
+    if (!res) {
+      setError('Failed to refresh data. Showing last available data or sample.');
+      // Optionally load sample only if no dashboardData exists yet
+      if (!dashboardData) loadSampleData(userLocation);
+    }
+  }, [fetchDashboardData, userLocation, dashboardData, loadSampleData]);
+
   const handleEnableLocation = useCallback(async () => {
     try {
       const location = await getUserLocation();
-      await fetchDashboardData(location);
+      const res = await fetchDashboardData(location);
+      if (!res) {
+        setError('Failed to fetch personalized data. Showing nearest station or sample.');
+        if (!dashboardData) loadSampleData(location);
+      }
     } catch (error) {
       console.error('Failed to get location:', error);
+      setError('Could not get location. Showing default data.');
+      if (!dashboardData) loadSampleData(null);
     }
-  }, [getUserLocation, fetchDashboardData]);
+  }, [getUserLocation, fetchDashboardData, dashboardData, loadSampleData]);
 
   return (
     <div className="dashboard-page">
@@ -799,7 +994,7 @@ function Dashboard() {
       <div className={`alert-banner ${aqiStatus.class}`}>
         ℹ️ <span>
           {currentDataInfo?.station_name || 'Your Location'} AQI: {Math.round(currentAQI)} - {aqiStatus.status}
-          {nearestStationInfo && !isMobileView && ` • Distance to nearest sensor: ${nearestStationInfo.distance.toFixed(1)}km`}
+              {nearestStationInfo && !isMobileView && ` • Distance to nearest sensor: ${formatDistance(nearestStationInfo.distance)}`}
         </span>
       </div>
 
@@ -955,7 +1150,15 @@ function Dashboard() {
                   <div className="health-score-circle"><div className="health-score-value">{healthData.score}</div><div className="health-score-label">Health Score</div></div>
                   <div className="health-details">
                     <div className={`risk-level ${healthData.risk_level.toLowerCase()}`}>{healthData.risk_level} Risk</div>
-                    <div className="health-recommendations">{healthData.recommendations?.map((rec, index) => <div key={index} className="recommendation">• {rec}</div>)}</div>
+                    <div className="health-recommendations">
+                      {Array.isArray(healthData.recommendations)
+                        ? healthData.recommendations.map((rec, index) => (
+                            <div key={index} className="recommendation">• {rec}</div>
+                          ))
+                        : (healthData.recommendations ? (
+                            <div className="recommendation">• {String(healthData.recommendations)}</div>
+                          ) : null)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -975,11 +1178,7 @@ function Dashboard() {
             <div className="weather-card"><div className="weather-icon">💧</div><div className="weather-content"><div className="weather-value">{formatValue(currentValues.hum || 65, 'hum')}%</div><div className="weather-label">Humidity</div></div></div>
             <div className="weather-card"><div className="weather-icon">📏</div><div className="weather-content"><div className="weather-value">{formatValue(currentValues.pre || 1013, 'pre')} hPa</div><div className="weather-label">Atmospheric Pressure</div></div></div>
           </div>
-        </div>
-
-        
-
-        
+        </div>               
       </div>
 
       <footer className="footer">

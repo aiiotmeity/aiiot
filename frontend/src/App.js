@@ -1,9 +1,9 @@
-// App.js
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 // Import Components
 import HomePage from './components/HomePage';
+import Support from './components/Support';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import HealthAssessment from './components/HealthAssessment';
@@ -17,7 +17,6 @@ import AiIotInnovationCenter from './component_aiiot/Aiiot_index';
 import WeatherHomepage from './weather_component/WeatherHomepage';
 import MapComponent from './weather_component/MapComponent';
 import RiverDashboard from './weather_component/RiverDashboard';
-
 
 // Session Manager
 const SessionManager = {
@@ -43,8 +42,14 @@ const SessionManager = {
   getCurrentUser: () => {
     if (!SessionManager.isLoggedIn()) return null;
     try {
-      return JSON.parse(localStorage.getItem('user'));
-    } catch {
+      const raw = JSON.parse(localStorage.getItem('user') || 'null');
+      if (!raw) return null;
+      // Normalize fields so UI can rely on `name` and `username`
+      if (!raw.name) raw.name = raw.username || raw.phone_number || '';
+      if (!raw.username) raw.username = raw.name || raw.phone_number || '';
+      return raw;
+    } catch (err) {
+      console.error('Failed to parse stored user:', err);
       SessionManager.logout();
       return null;
     }
@@ -85,15 +90,75 @@ const SessionManager = {
 };
 
 // Auth Context
-const AuthContext = createContext();
+
+// Create AuthContext and helper hook
+const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
-// Protected Route
-const ProtectedRoute = ({ children }) => {
-  return SessionManager.isLoggedIn() ? children : <Navigate to="/login" replace />;
+
+// Protected Route with Health Assessment Check (async-aware)
+const ProtectedRoute = ({ children, requireHealthAssessment = false }) => {
+  const { user } = useAuth();
+  const [checking, setChecking] = React.useState(false);
+  const [allowed, setAllowed] = React.useState(null);
+
+  useEffect(() => {
+    // If no user, nothing to check here
+    if (!user) return;
+
+    // If the route doesn't require health assessment, allow immediately
+    if (!requireHealthAssessment) {
+      setAllowed(true);
+      return;
+    }
+
+    // If user object already indicates assessment completed, allow
+    if (user.has_health_assessment) {
+      setAllowed(true);
+      return;
+    }
+
+    // Otherwise, check with backend
+    let cancelled = false;
+    const check = async () => {
+      setChecking(true);
+      try {
+        const identifier = user.username || user.name || user.phone_number || '';
+        const url = new URL(`${window.location.origin.replace(/:\d+$/, ':8000')}/api/health-assessment-status/`);
+        // Prefer query param 'username' as used elsewhere
+        url.searchParams.append('username', identifier);
+        const resp = await fetch(url.toString());
+        if (!resp.ok) {
+          setAllowed(false);
+        } else {
+          const data = await resp.json();
+          if (!cancelled) setAllowed(Boolean(data.has_assessment));
+        }
+      } catch (err) {
+        console.error('ProtectedRoute: failed to verify health assessment', err);
+        if (!cancelled) setAllowed(false);
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    };
+
+    check();
+    return () => { cancelled = true; };
+  }, [user, requireHealthAssessment]);
+
+  // No user -> redirect to login
+  if (!user) return <Navigate to="/login" replace />;
+
+  // While checking, show loading
+  if (requireHealthAssessment && (checking || allowed === null)) return <LoadingScreen />;
+
+  // If assessment required but not allowed, redirect to assessment
+  if (requireHealthAssessment && allowed === false) return <Navigate to="/health-assessment" replace />;
+
+  return children;
 };
 
-// Admin Protected Route - Fixed to check for admin_user
+// Admin Protected Route
 const AdminProtectedRoute = ({ children }) => {
   const adminUser = localStorage.getItem('admin_user');
   return adminUser ? children : <Navigate to="/admin/login" replace />;
@@ -173,23 +238,69 @@ function App() {
           <Route path="/" element={<AiIotInnovationCenter/>} />
           <Route path="/homepage" element={<HomePage />} />
           <Route path="/weather-home" element={<WeatherHomepage/>} />
-          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
-          <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <Signup />} />
+          
+          {/* Redirect logged-in users from login/signup */}
+          <Route 
+            path="/login" 
+            element={user ? <Navigate to="/dashboard" replace /> : <Login />} 
+          />
+          <Route 
+            path="/signup" 
+            element={user ? <Navigate to="/dashboard" replace /> : <Signup />} 
+          />
+
+          {/* Public Routes */}
           <Route path="/map" element={<MapPage />} />
+          <Route path="/support" element={<Support />} />
           <Route path="/weather-map" element={<MapComponent />} />
           <Route path="/river-forecast" element={<RiverDashboard />} />
 
-          {/* Protected Routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/health-assessment" element={<ProtectedRoute><HealthAssessment /></ProtectedRoute>} />
-          <Route path="/health-report" element={<ProtectedRoute><HealthReport /></ProtectedRoute>} />
-          <Route path="/add-family" element={<ProtectedRoute><FamilyPage /></ProtectedRoute>} />
+          {/* Protected Routes with Health Assessment Check */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute requireHealthAssessment={true}>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/health-assessment" 
+            element={
+              <ProtectedRoute>
+                <HealthAssessment />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/health-report" 
+            element={
+              <ProtectedRoute requireHealthAssessment={true}>
+                <HealthReport />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/add-family" 
+            element={
+              <ProtectedRoute requireHealthAssessment={true}>
+                <FamilyPage />
+              </ProtectedRoute>
+            } 
+          />
 
-          {/* Admin Routes - Fixed paths */}
+          {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route 
+            path="/admin/dashboard" 
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboard />
+              </AdminProtectedRoute>
+            } 
+          />
           
-          {/* Legacy admin routes for backwards compatibility */}
+          {/* Legacy admin routes */}
           <Route path="/admin-login" element={<Navigate to="/admin/login" replace />} />
           <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>
@@ -199,3 +310,6 @@ function App() {
 }
 
 export default App;
+
+
+
