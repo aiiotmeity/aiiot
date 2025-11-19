@@ -1,4 +1,4 @@
-
+// filepath: c:\React\my-django-react-app\frontend\src\component_aiiot\Aiiot_index.js
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import './Aiiot.css';
@@ -8,6 +8,15 @@ const AIIOT_INDEX = () => {
   const [projectsDropdownOpen, setProjectsDropdownOpen] = useState(false);
   const [heroImages, setHeroImages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Map project titles to IDs
+  const projectIdMap = {
+    'Intelligent Sensor Module': 'intelligent-sensor',
+    'Smart Water Level Monitoring': 'water-level',
+    'Digital Water Distribution': 'digital-water',
+    'Startup & Skill Development': 'startup-skill',
+    'Explainable AI Software': 'xai-software'
+  };
 
   useEffect(() => {
     // Initialize Feather Icons (if available)
@@ -275,9 +284,6 @@ const AIIOT_INDEX = () => {
                     zIndex: 100,
                     overflow: 'hidden'
                   }}>
-                      
-
-
                       <Link
                             to="/homepage"
                             style={{
@@ -629,81 +635,117 @@ const AIIOT_INDEX = () => {
         </section>
 
         {/* Projects Section */}
-        <section id="projects" className="reveal-on-scroll" style={{ padding: '5rem 0' }}>
-          <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
-            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-              <h2 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
-                Our Ongoing Projects
-              </h2>
-              <p style={{ fontSize: '1.125rem', color: '#475569' }}>
-                From concept to reality, we're building solutions that matter.
-              </p>
+<section id="projects" className="reveal-on-scroll" style={{ padding: '5rem 0' }}>
+  <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
+    <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+      <h2 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
+        Our Ongoing Projects
+      </h2>
+      <p style={{ fontSize: '1.125rem', color: '#475569' }}>
+        From concept to reality, we're building solutions that matter.
+      </p>
+    </div>
+
+    {/* Projects as Paragraphs with Images */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+      {projects.map((project, index) => {
+        const projectId = projectIdMap[project.title] || 'unknown';
+        return (
+          <div 
+            key={index}
+            className="reveal-on-scroll"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3rem',
+              flexDirection: index % 2 === 0 ? 'row' : 'row-reverse',
+              '@media (max-width: 768px)': {
+                flexDirection: 'column'
+              }
+            }}
+          >
+            {/* Image Section */}
+            <div style={{
+              flex: '0 0 45%',
+              minWidth: 0
+            }}>
+              <img 
+                src={project.image}
+                alt={project.title}
+                style={{
+                  width: '100%',
+                  height: '280px',
+                  objectFit: 'cover',
+                  borderRadius: '1rem',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+                  transition: 'transform 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.style.background = '#eff6ff';
+                  e.target.parentElement.style.display = 'flex';
+                  e.target.parentElement.style.alignItems = 'center';
+                  e.target.parentElement.style.justifyContent = 'center';
+                  e.target.parentElement.style.borderRadius = '1rem';
+                  e.target.parentElement.innerHTML = `<div style="text-align: center;"><span style="font-size: 4rem;">📊</span></div>`;
+                }}
+              />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-              {projects.map((project, index) => (
-                <div key={index} style={{
-                  background: 'white',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '0.75rem',
-                  overflow: 'hidden',
-                  transition: 'all 0.3s ease',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.1)';
-                  e.currentTarget.style.transform = 'translateY(-8px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = 'none';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
+            {/* Text Content Section */}
+            <div style={{ flex: '0 0 55%' }}>
+              <h3 style={{
+                fontSize: '1.875rem',
+                fontWeight: 700,
+                color: '#1e293b',
+                marginBottom: '1rem'
+              }}>
+                {project.title}
+              </h3>
+              <p style={{
+                fontSize: '1rem',
+                color: '#475569',
+                lineHeight: 1.8,
+                marginBottom: '1.5rem'
+              }}>
+                {project.description}
+              </p>
+              <Link 
+                  to={`/project/${projectId}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem 1.5rem',
+                    background: '#3b82f6',
+                    color: 'white',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    borderRadius: '0.5rem',
+                    textDecoration: 'none',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#2563eb';
+                    e.currentTarget.style.transform = 'translateX(4px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#3b82f6';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
                 >
-                  {/* Project Image */}
-                  <div style={{
-                    width: '100%',
-                    height: '12rem',
-                    overflow: 'hidden',
-                    position: 'relative'
-                  }}>
-                    <img 
-                      src={project.image}
-                      alt={project.title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-                      onError={(e) => {
-                        // Fallback if image doesn't load
-                        e.target.style.display = 'none';
-                        e.target.parentElement.style.background = '#eff6ff';
-                        e.target.parentElement.style.display = 'flex';
-                        e.target.parentElement.style.alignItems = 'center';
-                        e.target.parentElement.style.justifyContent = 'center';
-                        e.target.parentElement.innerHTML = `<span style="font-size: 4rem;">${project.icon}</span>`;
-                      }}
-                    />
-                  </div>
-
-                  {/* Project Content */}
-                  <div style={{ padding: '1.5rem' }}>
-                    
-                    <h4 style={{ fontWeight: 700, color: '#1e293b', marginBottom: '0.75rem', fontSize: '1.125rem' }}>
-                      {project.title}
-                    </h4>
-                    <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.6 }}>
-                      {project.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                  Learn More 
+                  <span style={{ fontSize: '1.125rem' }}>→</span>
+                </Link>
             </div>
           </div>
-        </section>
+        );
+      })}
+    </div>
+  </div>
+</section>
 
         {/* Contact Section */}
         <section id="contact" className="reveal-on-scroll" style={{ padding: '5rem 0', background: '#f8fafc' }}>

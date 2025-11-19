@@ -14,6 +14,7 @@ import FamilyPage from './components/FamilyPage';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLogin from './components/AdminLogin';
 import AiIotInnovationCenter from './component_aiiot/Aiiot_index';
+import ProjectDetail from './component_aiiot/ProjectDetail';
 import WeatherHomepage from './weather_component/WeatherHomepage';
 import MapComponent from './weather_component/MapComponent';
 import RiverDashboard from './weather_component/RiverDashboard';
@@ -236,6 +237,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<AiIotInnovationCenter/>} />
+          <Route path="/project/:projectId" element={<ProjectDetail />} />
           <Route path="/homepage" element={<HomePage />} />
           <Route path="/weather-home" element={<WeatherHomepage/>} />
           

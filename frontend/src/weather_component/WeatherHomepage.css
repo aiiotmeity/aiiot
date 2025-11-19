@@ -821,8 +821,3 @@
   }
 }
 
-/*
-  NOTE: All global html, body, and #root rules have been REMOVED
-  from this file as they were the source of the conflict.
-  This file is now fully scoped to '.weather-homepage-container'.
-*/
