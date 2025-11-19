@@ -45,7 +45,7 @@ const ProjectDetail = () => {
     'water-level': {
       title: 'Smart Water Level Monitoring',
       subtitle: 'Flood Risk Mitigation System',
-      mainImage: '/sensor_modules/water_authorityy.jpeg',
+      mainImage: '/sensor_modules/water_monitor.jpg',
       description: 'A robust solution for monitoring water levels with an integrated alert system to mitigate flood risks.',
       fullDescription: `
         The Smart Water Level Monitoring system provides real-time water level tracking across rivers, dams, and urban areas. 
@@ -72,7 +72,7 @@ const ProjectDetail = () => {
         features: ['Push notifications', 'Map view', 'Data charts', 'Community alerts']
       },
       gallery: [
-        '/sensor_modules/water_authorityy.jpeg',
+        '/sensor_modules/water_monitor.jpg',
         '/sensor_modules/water_detail1.jpg',
         '/sensor_modules/water_detail2.jpg'
       ]

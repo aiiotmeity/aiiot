@@ -144,7 +144,7 @@ const AIIOT_INDEX = () => {
     {
       title: "Smart Water Level Monitoring",
       description: "A robust solution for monitoring water levels with an integrated alert system to mitigate flood risks.",
-      image: "/sensor_modules/water_authorityy.jpeg"
+      image: "/sensor_modules/water_monitor.jpg"
     },
     {
       title: "Digital Water Distribution",
