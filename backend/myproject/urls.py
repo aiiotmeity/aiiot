@@ -4,16 +4,21 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from myapp import views as myapp_views
+from django.conf.urls.static import static
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 urlpatterns = [
-    # 1. The admin path comes first.
     path('admin/', admin.site.urls),
-
-    # 2. Your API paths come next.
     path('api/', include('myapp.urls')),
-    path('api/weather/', include('weather_monitoring.urls')),  # ← ADD THIS LINE
-    # Simple CSRF token endpoint used by the frontend (optional)
+    path('api/weather/', include('weather_monitoring.urls')),
     path('csrf/', myapp_views.csrf_token_api),
-
-  
 ]
+
+
+# Serve STATIC files (admin CSS, JS)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Serve MEDIA files (uploaded PDFs/images)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

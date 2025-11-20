@@ -8,6 +8,8 @@ const AIIOT_INDEX = () => {
   const [projectsDropdownOpen, setProjectsDropdownOpen] = useState(false);
   const [heroImages, setHeroImages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [resourcesDropdownOpen, setResourcesDropdownOpen] = useState(false);
+
 
   // Map project titles to IDs
   const projectIdMap = {
@@ -17,6 +19,36 @@ const AIIOT_INDEX = () => {
     'Startup & Skill Development': 'startup-skill',
     'Explainable AI Software': 'xai-software'
   };
+  const resources = [
+  {
+    title: "Center Brochure",
+    description: "Overview of AI-IoT Center",
+    icon: "📄",
+    url: "/documents/vision.pdf",
+    type: "PDF"
+  },
+  {
+    title: "Our vision And Mission",
+    description: "Latest publications and research",
+    icon: "📚",
+    url: "/documents/ajaysir.pdf",
+    type: "PDF"
+  },
+  {
+    title: "Setup Guide",
+    description: "How to setup IoT devices",
+    icon: "⚙️",
+    url: "/documents/skill.pdf",
+    type: "PDF"
+  },
+  {
+    title: "Annual Report",
+    description: "2024-2025 Annual Report",
+    icon: "📊",
+    url: "/documents/project.pdf",
+    type: "PDF"
+  }
+];
 
   useEffect(() => {
     // Initialize Feather Icons (if available)
@@ -39,6 +71,9 @@ const AIIOT_INDEX = () => {
         if (elementInView(el, 1.25)) displayScrollElement(el);
       });
     };
+  
+
+  
 
     handleScrollAnimation(); // Initial check
     window.addEventListener("scroll", handleScrollAnimation);
@@ -138,22 +173,22 @@ const AIIOT_INDEX = () => {
   const projects = [
     {
       title: "Intelligent Sensor Module",
-      description: "Developing a smart sensor module for real-time monitoring and management of environmental pollutants.",
+      description: "Developed a smart sensor module capable of real-time monitoring and management of environmental pollutants. The module integrates multiple gas and environmental sensors to continuously measure air quality parameters such as PM2.5, PM10, CO₂, CO, NH₃, temperature, and humidity.",
       image: "/sensor_modules/module2.jpg"
     },
     {
       title: "Smart Water Level Monitoring",
-      description: "A robust solution for monitoring water levels with an integrated alert system to mitigate flood risks.",
+      description: "A robust and intelligent system designed for real-time water level tracking with an integrated early-warning alert mechanism to mitigate flood risks. The solution continuously monitors water fluctuations using sensor-based measurements and ensures timely notifications during critical water level rises.",
       image: "/sensor_modules/water_monitor.jpg"
     },
     {
       title: "Digital Water Distribution",
-      description: "Creating a digital twin to efficiently monitor and manage water distribution networks in urban areas.",
+      description: "The Digital Water Distribution system creates a virtual replica of water distribution networks, enabling real-time monitoring, leak detection, and predictive maintenance. Using IoT sensors and AI analytics, it optimizes water flow and reduces wastage.",
       image: "/sensor_modules/water_authorityy.jpeg"
     },
     {
       title: "Startup & Skill Development",
-      description: "Fostering a vibrant startup ecosystem and providing skill development programs centered around our IoT solutions.",
+      description: "Building a vibrant startup ecosystem while offering hands-on skill development programs centered around our IoT solutions. These initiatives empower innovators, students, and professionals to adopt emerging technologies and bring their ideas to market.",
       image: "/sensor_modules/skill.jpg"
     },
     {
@@ -233,6 +268,86 @@ const AIIOT_INDEX = () => {
               >
                 Team
               </a>
+              <div style={{ position: 'relative' }}>
+  <button
+    onClick={() => setResourcesDropdownOpen(!resourcesDropdownOpen)}
+    style={{
+      fontSize: '0.875rem',
+      fontWeight: 500,
+      color: '#475569',
+      background: 'transparent',
+      border: 'none',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+      padding: '0.5rem',
+      transition: 'color 0.3s ease'
+    }}
+    onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
+    onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
+  >
+    📋 Resources
+    <span style={{ fontSize: '0.75rem' }}>▼</span>
+  </button>
+
+  {/* Resources Dropdown Menu */}
+  {resourcesDropdownOpen && (
+    <div style={{
+      position: 'absolute',
+      top: '100%',
+      right: 0,
+      marginTop: '0.5rem',
+      background: 'white',
+      borderRadius: '0.5rem',
+      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+      border: '1px solid #e2e8f0',
+      minWidth: '14rem',
+      zIndex: 100,
+      overflow: 'hidden',
+      maxHeight: '400px',
+      overflowY: 'auto'
+    }}>
+      {resources.map((resource, idx) => (
+        <div key={idx}>
+          <a
+            href={resource.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              color: '#1e293b',
+              textDecoration: 'none',
+              transition: 'background 0.2s ease',
+              borderBottom: idx < resources.length - 1 ? '1px solid #e2e8f0' : 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#eff6ff';
+              e.currentTarget.style.color = '#3b82f6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#1e293b';
+            }}
+          >
+            <span style={{ fontSize: '1.25rem' }}>{resource.icon}</span>
+            <div>
+              <div style={{ fontWeight: 600 }}>{resource.title}</div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                {resource.description}
+              </div>
+            </div>
+          </a>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
               <a href="#projects" style={{ 
                 fontSize: '0.875rem', 
                 fontWeight: 500, 
@@ -712,8 +827,9 @@ const AIIOT_INDEX = () => {
               }}>
                 {project.description}
               </p>
-              <Link 
+                            <Link 
                   to={`/project/${projectId}`}
+                  onClick={() => window.scrollTo(0, 0)}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',

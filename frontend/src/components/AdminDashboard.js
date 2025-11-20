@@ -465,6 +465,8 @@ const AdminDashboard = () => {
                                 <span className="nav-text">Stations</span>
                             </a>
                         </li>
+                        <li onClick={()=>setActiveTab("resources")}>Resources</li>
+
                         <li className="nav-item">
                             <a 
                                 className={`nav-link ${activeTab === 'users' ? 'active' : ''}`} 

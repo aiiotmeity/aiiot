@@ -23,7 +23,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 
-# In myproject/settings.py
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / "media"
+
 
 # This is the new, corrected configuration
 DATABASES = {
@@ -63,6 +67,9 @@ if os.environ.get('RENDER'):
         "https://www.airaware.it.com",
         "https://airaware-app-gcw7.onrender.com",
     ]
+    STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
     CORS_ALLOW_ALL_ORIGINS = True
 
@@ -205,3 +212,12 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_FILTER_BACKENDS': ['rest_framework.filters.SearchFilter'],
+}
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

@@ -52,5 +52,10 @@ urlpatterns = [
     path('admin/users/delete/<int:user_id>/', views.delete_user_api, name='delete_user_api'),
     path('admin/export/', views.admin_export_data_api, name='admin_export_data_api'),
 
+    path('api/resources/', views.list_resources, name='list_resources'),
+    path('api/resources/upload/', views.upload_resource,name='upload_resource'),
+
     path('csrf/', get_csrf_token, name='csrf'),
+
+    
 ]

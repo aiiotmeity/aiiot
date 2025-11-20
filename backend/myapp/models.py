@@ -6,6 +6,10 @@ import os
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
+from rest_framework import viewsets
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.files.storage import default_storage
+
 
 # --- PASTE THESE TWO MODELS ---
 # (Delete your old 'User' and 'login' models)
@@ -132,24 +136,7 @@ class HealthAssessment(models.Model):
         return f"Health Assessment for {self.user.username if self.user else self.phone_number}"
 
 
-class AirQualityData(models.Model):
-        co = models.FloatField(null=True)
-        nh3 = models.FloatField(null=True)
-        no2 = models.FloatField(null=True)
-        o3 = models.FloatField(null=True)
-        pm25 = models.FloatField(null=True)
-        pm10 = models.FloatField(null=True)
-        so2 = models.FloatField(null=True)
-        hum = models.FloatField(null=True)
-        temp = models.FloatField(null=True)
-        pre = models.FloatField(null=True)
-        date = models.DateField(null=True)
-        time = models.TimeField(null=True)
-        received_at = models.DateTimeField(auto_now_add=True)
-        aqi = models.FloatField(null=True)
 
-        class Meta:
-            ordering = ['-received_at']
 
 class AirQualityForecast(models.Model):
     date = models.DateField()
@@ -203,3 +190,34 @@ class Support(models.Model):
 
     def __str__(self):
         return f"Support #{self.sl_no} from {self.email}"
+    
+
+class ResourceFile(models.Model):
+    CATEGORY_CHOICES = [
+        ('brochure', 'Brochure'),
+        ('poster', 'Poster'),
+        ('slide', 'Slide'),
+        ('image', 'Image'),
+        ('other', 'Other'),
+    ]
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    file = models.FileField(upload_to="resources/%Y/%m/%d/")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+class Resource(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    file = models.FileField(upload_to='resources/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title

@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './Aiiot.css';
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
+
+  // Scroll to top on mount and when projectId changes
+  
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [projectId]);
 
   // Project details data
   const projectsData = {
@@ -48,8 +54,7 @@ const ProjectDetail = () => {
       mainImage: '/sensor_modules/water_monitor.jpg',
       description: 'A robust solution for monitoring water levels with an integrated alert system to mitigate flood risks.',
       fullDescription: `
-        The Smart Water Level Monitoring system provides real-time water level tracking across rivers, dams, and urban areas. 
-        It combines ultrasonic sensors with AI-powered predictive analytics to forecast flooding events and send timely alerts to authorities and residents.
+        A smart digital system for real-time monitoring and management of urban water distribution, offering flow analysis, leak detection, and optimized allocation. The integrated Smart Water Level Monitoring module tracks river and dam levels, uses AI to predict floods, and sends timely alerts—creating a unified platform for safer and more efficient water management.
       `,
       features: [
         'Ultrasonic water level sensors',
@@ -83,8 +88,7 @@ const ProjectDetail = () => {
       mainImage: '/sensor_modules/water_authorityy.jpeg',
       description: 'Creating a digital twin to efficiently monitor and manage water distribution networks in urban areas.',
       fullDescription: `
-        The Digital Water Distribution system creates a virtual replica of water distribution networks, enabling real-time monitoring, 
-        leak detection, and predictive maintenance. Using IoT sensors and AI analytics, it optimizes water flow and reduces wastage.
+        Digital Water Distribution involves creating a digital model of water pipelines, tanks, pumps, and valves within a specific ward, zone, or local distribution area. Instead of modeling an entire city, the system focuses on localized water networks, making monitoring and management more accurate and actionable at a smaller scale.
       `,
       features: [
         'IoT-enabled pipeline monitoring',
@@ -116,8 +120,7 @@ const ProjectDetail = () => {
       mainImage: '/sensor_modules/skill.jpg',
       description: 'Fostering a vibrant startup ecosystem and providing skill development programs centered around our IoT solutions.',
       fullDescription: `
-        Our Startup & Skill Development program provides comprehensive training, mentorship, and resources for aspiring entrepreneurs 
-        and technology enthusiasts. We offer hands-on workshops, business incubation, and access to cutting-edge IoT hardware and software tools.
+        Our Startup & Skill Development initiative provides aspiring entrepreneurs, students, and technology enthusiasts with comprehensive training, structured mentorship, and essential resources needed to transform ideas into impactful solutions. Participants gain access to hands-on IoT workshops, business incubation support, and state-of-the-art hardware and software tools—empowering them to innovate, prototype, and build real-world products with confidence.
       `,
       features: [
         'IoT development bootcamps',
@@ -400,7 +403,7 @@ const ProjectDetail = () => {
                 boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
               }}>
                 <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>📱</div>
-                <p style={{ color: '#64748b' }}>Available on iOS and Android</p>
+                <p style={{ color: '#64748b' }}>Available on  Android</p>
               </div>
             </div>
           </div>

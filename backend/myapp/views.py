@@ -1,6 +1,7 @@
 
 from datetime import datetime, timedelta
 import boto3
+from rest_framework import viewsets
 from django.utils import timezone
 from botocore.exceptions import ClientError, NoCredentialsError  # ADDED MISSING IMPORT
 import json
@@ -42,18 +43,20 @@ from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import api_view
 import json
 
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
+from .serializers import ResourceSerializer
  # <-- Make sure this is imported
 
 
 
 # Import your models
-from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support
+from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support, ResourceFile,Resource
 
 # Import DynamoDB functions with error handling
 try:
@@ -2641,3 +2644,34 @@ def idw_interpolate_all(user_lat, user_lon, sensors, power=2):
         logger.error(f"Error in idw_interpolate_all: {e}", exc_info=True)
         return {}, None
   
+@api_view(['GET'])
+def list_resources(request):
+    items = ResourceFile.objects.all().order_by('-uploaded_at')
+    return Response(ResourceFileSerializer(items, many=True, context={'request': request}).data)
+
+@api_view(['POST'])
+@csrf_exempt
+def upload_resource(request):
+    title = request.data.get('title')
+    file = request.FILES.get('file')
+    category = request.data.get('category', 'other')
+    description = request.data.get('description','')
+
+    r = ResourceFile.objects.create(
+        title=title,
+        category=category,
+        description=description
+    )
+    r.file.save(file.name, file, save=True)
+
+    return Response({"message": "Uploaded successfully"})
+
+# Add this class
+class ResourceViewSet(viewsets.ModelViewSet):
+    queryset = Resource.objects.all()
+    serializer_class = ResourceSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def perform_create(self, serializer):
+        serializer.save()
+
