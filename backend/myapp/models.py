@@ -221,3 +221,26 @@ class Resource(models.Model):
 
     def __str__(self):
         return self.title
+    
+class Brochure(models.Model):
+    CATEGORY_CHOICES = [
+        ('center', 'Center Brochure'),
+        ('vision', 'Vision & Mission'),
+        ('setup', 'Setup Guide'),
+        ('report', 'Annual Report'),
+    ]
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    file = models.FileField(upload_to='brochures/%Y/%m/%d/')
+    icon = models.CharField(max_length=10, default='📄')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title

@@ -13,8 +13,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / ".." / "frontend" / "build"
 
 # Define STATICFILES_DIRS globally for both dev and production
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 STATICFILES_DIRS = [
-    FRONTEND_DIR / "static",
+    os.path.join(BASE_DIR, 'static'),
 ]
 # ------------------------------------
 
@@ -23,7 +26,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 
-
+DEBUG=True
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "media"
@@ -44,7 +47,7 @@ DATABASES = {
 # Environment-specific settings (Production vs. Development)
 if os.environ.get('RENDER'):
     # --- PRODUCTION Settings (on Render) ---
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'airaware.it.com', 'www.airaware.it.com']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
 
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
@@ -58,18 +61,20 @@ if os.environ.get('RENDER'):
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
     ]
 
-    STATIC_URL = '/static/'
-    STATIC_ROOT = BASE_DIR / "staticfiles"
+  
+
+
+    DEBUG = True
+
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
     CORS_ALLOWED_ORIGINS = [
-        "https://airaware.it.com",
-        "https://www.airaware.it.com",
-        "https://airaware-app-gcw7.onrender.com",
-    ]
-    STATICFILES_DIRS = [
-    BASE_DIR / "static",
+        
+    "https://www.your-new-domain.com",
+    "https://your-new-domain.com",
 ]
+    
+    
 
     CORS_ALLOW_ALL_ORIGINS = True
 
@@ -89,7 +94,7 @@ if os.environ.get('RENDER'):
 # ...
 else:
     # --- DEVELOPMENT Settings (local) ---
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'airaware.it.com', 'www.airaware.it.com']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '', '']
 
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
@@ -100,11 +105,11 @@ else:
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        'whitenoise.middleware.WhiteNoiseMiddleware',
     ]
 
-    STATIC_URL = '/static/'
-    STATIC_ROOT = BASE_DIR / "staticfiles" # Also useful in dev
-
+    
+   
     CORS_ALLOW_ALL_ORIGINS = True
 
     # --- THIS IS THE CORRECT LOCATION FOR THE FIX ---
@@ -115,6 +120,7 @@ else:
 
 # Application definition
 INSTALLED_APPS = [
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -201,6 +207,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
+    "https://your-domain.com",
+    "https://www.your-domain.com",
+    "https://your-backend.onrender.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -209,6 +218,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3001",
     "http://127.0.0.1:3001",
     "http://localhost:3001",
+    "https://www.your-new-domain.com",
+    "https://your-new-domain.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

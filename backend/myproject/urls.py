@@ -16,9 +16,5 @@ urlpatterns = [
     path('csrf/', myapp_views.csrf_token_api),
 ]
 
-
-# Serve STATIC files (admin CSS, JS)
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-# Serve MEDIA files (uploaded PDFs/images)
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

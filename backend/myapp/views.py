@@ -50,13 +50,13 @@ import json
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
-from .serializers import ResourceSerializer
+from .serializers import ResourceSerializer, BrochureSerializer
  # <-- Make sure this is imported
 
 
 
 # Import your models
-from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support, ResourceFile,Resource
+from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support, ResourceFile,Resource,Brochure
 
 # Import DynamoDB functions with error handling
 try:
@@ -2646,25 +2646,19 @@ def idw_interpolate_all(user_lat, user_lon, sensors, power=2):
   
 @api_view(['GET'])
 def list_resources(request):
-    items = ResourceFile.objects.all().order_by('-uploaded_at')
-    return Response(ResourceFileSerializer(items, many=True, context={'request': request}).data)
+    """Get all resources"""
+    resources = Resource.objects.all()
+    serializer = ResourceSerializer(resources, many=True)
+    return Response(serializer.data)
 
 @api_view(['POST'])
-@csrf_exempt
 def upload_resource(request):
-    title = request.data.get('title')
-    file = request.FILES.get('file')
-    category = request.data.get('category', 'other')
-    description = request.data.get('description','')
-
-    r = ResourceFile.objects.create(
-        title=title,
-        category=category,
-        description=description
-    )
-    r.file.save(file.name, file, save=True)
-
-    return Response({"message": "Uploaded successfully"})
+    """Upload a new resource"""
+    serializer = ResourceSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Add this class
 class ResourceViewSet(viewsets.ModelViewSet):
@@ -2675,3 +2669,25 @@ class ResourceViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save()
 
+
+class BrochureViewSet(viewsets.ModelViewSet):
+    queryset = Brochure.objects.filter(is_active=True)
+    serializer_class = BrochureSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+@api_view(['GET'])
+def get_brochures(request):
+    """Get all active brochures"""
+    brochures = Brochure.objects.filter(is_active=True)
+    serializer = BrochureSerializer(brochures, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def get_brochures_by_category(request, category):
+    """Get brochures by category"""
+    brochures = Brochure.objects.filter(category=category, is_active=True)
+    serializer = BrochureSerializer(brochures, many=True)
+    return Response(serializer.data)

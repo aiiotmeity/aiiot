@@ -243,7 +243,7 @@ function HomePage() {
             <li><a href="#cities" className="nav-link" onClick={() => setIsMenuOpen(false)}>Cities</a></li>
             <li><a href="#services" className="nav-link" onClick={() => setIsMenuOpen(false)}>Services</a></li>
             <li><a href="#contact" className="nav-link" onClick={() => setIsMenuOpen(false)}>Contact</a></li>
-            <li><a href="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>Aiiot</a></li>
+            <li><a href="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>AI-IOT</a></li>
            
             {user ? (
               <>

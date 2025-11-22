@@ -1,95 +1,623 @@
-/* AI-IoT Innovations - Complete SCOPED CSS */
+/* Aiiot Enhanced Design System - Premium Edition */
+:root {
+    /* Modern Color Palette */
+    --primary-color: #3b82f6;
+    --secondary-color: #cabaf0;
+    --accent-color: #10b981;
+    --text-color: #1f2937;
+    --background-color: #f9fafb;
+    
+    /* Advanced Typography */
+    --font-primary: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-secondary: 'Clash Display', 'Inter', sans-serif;
+    
+    /* Advanced Spacing */
+    --space-xs: 0.5rem;
+    --space-sm: 1rem;
+    --space-md: 1.5rem;
+    --space-lg: 2.5rem;
+    --space-xl: 4rem;
+}
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* Enhanced Responsive Base Styles */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 
-/* ROOT CONTAINER FOR THIS PAGE
-  This now contains the 'body' styles and the inline styles
-  from your Aiiot_index.js file.
-*/
+body, html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 .aiiot-page-container {
-    font-family: 'Inter', sans-serif;
-    background-color: #f8fafc; /* A slightly cooler light gray (slate-50) */
+    font-family: var(--font-primary);
+    background: linear-gradient(
+        -45deg, 
+        color-mix(in srgb, var(--primary-color) 20%, white),
+        color-mix(in srgb, var(--secondary-color) 20%, white),
+        color-mix(in srgb, var(--accent-color) 20%, white)
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+    color: var(--text-color);
+    line-height: 1.6;
 }
 
-/* REMOVED: ::-webkit-scrollbar
-  This was the cause of your global scrolling bug.
-  It is impossible to scope scrollbar styles, so they must be removed
-  from component-specific CSS files.
-*/
-
-/* A subtle gradient for the hero section background */
-.aiiot-page-container .hero-gradient {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(240, 245, 255, 1) 100%);
+/* Advanced Gradient Animation */
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
-/* Animation for cards and sections on scroll */
-.aiiot-page-container .reveal-on-scroll {
+/* ========== ENHANCED LAYERED BACKGROUND WITH PREMIUM ANIMATIONS ========== */
+
+/* Floating Orbs - Primary Layer */
+body::before {
+    content: '';
+    position: fixed;
+    top: 10%;
+    left: -15%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(
+        circle at 30% 30%,
+        color-mix(in srgb, var(--primary-color) 25%, transparent) 0%,
+        color-mix(in srgb, var(--primary-color) 10%, transparent) 40%,
+        transparent 70%
+    );
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(40px);
+    animation: orbFloat1 28s ease-in-out infinite;
+    box-shadow: 0 0 100px color-mix(in srgb, var(--primary-color) 15%, transparent);
+}
+
+/* Floating Orbs - Secondary Layer */
+body::after {
+    content: '';
+    position: fixed;
+    bottom: -10%;
+    right: -15%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(
+        circle at 70% 70%,
+        color-mix(in srgb, var(--secondary-color) 22%, transparent) 0%,
+        color-mix(in srgb, var(--secondary-color) 8%, transparent) 40%,
+        transparent 70%
+    );
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(50px);
+    animation: orbFloat2 32s ease-in-out infinite;
+    box-shadow: 0 0 120px color-mix(in srgb, var(--secondary-color) 12%, transparent);
+}
+
+/* Primary Gradient & Radial Layers */
+.aiiot-page-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(
+            ellipse 800px 600px at 20% 50%,
+            color-mix(in srgb, var(--primary-color) 18%, transparent) 0%,
+            transparent 50%
+        ),
+        radial-gradient(
+            ellipse 700px 500px at 80% 80%,
+            color-mix(in srgb, var(--secondary-color) 15%, transparent) 0%,
+            transparent 50%
+        ),
+        radial-gradient(
+            ellipse 600px 400px at 40% 20%,
+            color-mix(in srgb, var(--accent-color) 12%, transparent) 0%,
+            transparent 50%
+        ),
+        linear-gradient(
+            180deg,
+            rgba(255,255,255,0.1) 0%,
+            rgba(255,255,255,0.02) 50%,
+            rgba(0,0,0,0.05) 100%
+        );
+    pointer-events: none;
+    z-index: 1;
+    animation: advancedGradientShift 20s ease-in-out infinite;
+}
+
+/* Wave Layers - Triple Layered Waves */
+.aiiot-page-container::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 360"><path fill="rgba(59,130,246,0.06)" d="M0,160L48,165.3C96,171,192,181,288,170.7C384,160,480,128,576,133.3C672,139,768,181,864,192C960,203,1056,181,1152,165.3C1248,149,1344,139,1392,133.3L1440,128L1440,360L0,360Z"></path></svg>'),
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 360"><path fill="rgba(139,92,246,0.05)" d="M0,120L60,130.7C120,141,240,163,360,160C480,157,600,123,720,117.3C840,112,960,133,1080,144C1200,155,1320,155,1380,155L1440,155L1440,360L1380,360C1320,360,1200,360,1080,360C960,360,840,360,720,360C600,360,480,360,360,360C240,360,120,360,60,360L0,360Z"></path></svg>'),
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 360"><path fill="rgba(16,185,129,0.04)" d="M0,200L80,210C160,220,320,240,480,235C640,230,800,200,960,190C1120,180,1280,180,1360,180L1440,180L1440,360L1360,360C1280,360,1120,360,960,360C800,360,640,360,480,360C320,360,160,360,80,360L0,360Z"></path></svg>');
+    background-repeat: repeat-x, repeat-x, repeat-x;
+    background-size: 1440px 360px, 1440px 360px, 1440px 360px;
+    background-position: 0 0, 0 50px, 0 100px;
+    pointer-events: none;
+    z-index: 2;
+    animation: 
+        waveAnimation1 30s linear infinite,
+        waveAnimation2 40s linear infinite reverse,
+        waveAnimation3 50s linear infinite;
+}
+
+/* ========== PREMIUM ANIMATION KEYFRAMES ========== */
+
+/* Advanced Multi-Layer Gradient Shift with Dynamic Brightness */
+@keyframes advancedGradientShift {
+    0% {
+        background-position: 0% 50%, 100% 50%, 50% 0%;
+        filter: brightness(1) saturate(1) contrast(1);
+    }
+    25% {
+        background-position: 50% 0%, 50% 100%, 0% 50%;
+        filter: brightness(1.08) saturate(1.15) contrast(1.05);
+    }
+    50% {
+        background-position: 100% 50%, 0% 50%, 100% 100%;
+        filter: brightness(1.05) saturate(1.08) contrast(1);
+    }
+    75% {
+        background-position: 50% 100%, 100% 0%, 50% 50%;
+        filter: brightness(1.06) saturate(1.2) contrast(1.03);
+    }
+    100% {
+        background-position: 0% 50%, 100% 50%, 50% 0%;
+        filter: brightness(1) saturate(1) contrast(1);
+    }
+}
+
+/* Multi-Wave Animations - Each with different speeds and directions */
+@keyframes waveAnimation1 {
+    0% { 
+        background-position: 0 0, 0 50px, 0 100px;
+        filter: brightness(1);
+    }
+    50% {
+        filter: brightness(1.05);
+    }
+    100% { 
+        background-position: 1440px 0, 0 50px, 0 100px;
+        filter: brightness(1);
+    }
+}
+
+@keyframes waveAnimation2 {
+    0% { 
+        background-position: 0 0, 0 50px, 0 100px;
+        filter: brightness(0.98);
+    }
+    50% {
+        filter: brightness(1.03);
+    }
+    100% { 
+        background-position: -1440px 0, 0 50px, 0 100px;
+        filter: brightness(0.98);
+    }
+}
+
+@keyframes waveAnimation3 {
+    0% { 
+        background-position: 0 0, 0 50px, 0 100px;
+        filter: brightness(1.02);
+    }
+    50% {
+        filter: brightness(1.07);
+    }
+    100% { 
+        background-position: 1440px 0, 0 50px, 0 100px;
+        filter: brightness(1.02);
+    }
+}
+
+/* Premium Floating Orb Animation #1 - Complex Path */
+@keyframes orbFloat1 {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        filter: blur(40px) brightness(1) saturate(1);
+        opacity: 0.8;
+    }
+    15% {
+        transform: translate(50px, -40px) scale(1.12) rotate(45deg);
+        filter: blur(42px) brightness(1.08) saturate(1.1);
+        opacity: 0.9;
+    }
+    30% {
+        transform: translate(80px, -80px) scale(1.05) rotate(90deg);
+        filter: blur(40px) brightness(1.05) saturate(1.05);
+        opacity: 0.85;
+    }
+    50% {
+        transform: translate(20px, -120px) scale(0.95) rotate(180deg);
+        filter: blur(38px) brightness(0.95) saturate(0.95);
+        opacity: 0.75;
+    }
+    70% {
+        transform: translate(-30px, -60px) scale(1.15) rotate(270deg);
+        filter: blur(43px) brightness(1.1) saturate(1.15);
+        opacity: 0.9;
+    }
+    85% {
+        transform: translate(10px, -20px) scale(1.08) rotate(315deg);
+        filter: blur(41px) brightness(1.07) saturate(1.12);
+        opacity: 0.88;
+    }
+    100% {
+        transform: translate(0, 0) scale(1) rotate(360deg);
+        filter: blur(40px) brightness(1) saturate(1);
+        opacity: 0.8;
+    }
+}
+
+/* Premium Floating Orb Animation #2 - Counter Flow */
+@keyframes orbFloat2 {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        filter: blur(50px) brightness(1) saturate(1);
+        opacity: 0.75;
+    }
+    20% {
+        transform: translate(-70px, 50px) scale(1.18) rotate(-45deg);
+        filter: blur(53px) brightness(1.12) saturate(1.15);
+        opacity: 0.88;
+    }
+    40% {
+        transform: translate(-100px, 120px) scale(1.08) rotate(-90deg);
+        filter: blur(51px) brightness(1.08) saturate(1.08);
+        opacity: 0.82;
+    }
+    60% {
+        transform: translate(-60px, 150px) scale(0.98) rotate(-180deg);
+        filter: blur(48px) brightness(0.98) saturate(0.98);
+        opacity: 0.7;
+    }
+    80% {
+        transform: translate(-20px, 80px) scale(1.15) rotate(-270deg);
+        filter: blur(52px) brightness(1.1) saturate(1.12);
+        opacity: 0.85;
+    }
+    100% {
+        transform: translate(0, 0) scale(1) rotate(-360deg);
+        filter: blur(50px) brightness(1) saturate(1);
+        opacity: 0.75;
+    }
+}
+
+/* Modern Glass Morphism */
+.aiiot-page-container section {
+    background: color-mix(in srgb, white 70%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid color-mix(in srgb, white 30%, transparent);
+    box-shadow: 
+        0 15px 35px rgba(0,0,0,0.05), 
+        0 5px 15px rgba(0,0,0,0.03);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* Advanced Reveal Animation */
+.reveal-on-scroll {
     opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    transform: translateY(50px);
+    transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.aiiot-page-container .reveal-on-scroll.is-visible {
+.reveal-on-scroll.is-visible {
     opacity: 1;
     transform: translateY(0);
 }
 
-/* Hero Image Carousel Styles */
-.aiiot-page-container #hero-image {
-    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+/* Enhanced Interactive Elements */
+.gradient-text {
+    background: linear-gradient(
+        135deg, 
+        var(--primary-color) 0%, 
+        var(--secondary-color) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: textShimmer 3s ease-in-out infinite;
 }
 
-.aiiot-page-container .indicator { 
-    transition: all 0.3s ease-in-out;
-    cursor: pointer;
+@keyframes textShimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
-.aiiot-page-container .indicator:hover {
-    transform: scale(1.3);
-    opacity: 0.8;
+/* Advanced Responsive Typography */
+@media (max-width: 768px) {
+    :root {
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+    }
+    
+    .aiiot-page-container {
+        font-size: 14px;
+    }
+    
+    /* Optimize animations for mobile */
+    body::before,
+    body::after {
+        width: 400px;
+        height: 400px;
+        filter: blur(30px);
+    }
 }
 
-.aiiot-page-container .indicator.active { 
-    animation: aiiotPulse 1s infinite alternate; 
+/* Accessibility and Print Styles */
+@media print {
+    .aiiot-page-container {
+        background: white;
+        color: black;
+    }
 }
 
-@keyframes aiiotPulse {
-    from { opacity: 1; }
-    to { opacity: 0.7; }
+/* Enhanced Performance and Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .aiiot-page-container,
+    .aiiot-page-container::before,
+    .aiiot-page-container::after,
+    body::before,
+    body::after {
+        animation: none;
+        transition: none;
+    }
 }
 
-/* Smooth transitions for all interactive elements */
-.aiiot-page-container a,
-.aiiot-page-container button {
-    transition: all 0.3s ease;
+a {
+    text-decoration: none !important;
 }
 
-/* Images */
-.aiiot-page-container img {
-    max-width: 100%;
-    height: auto;
+/* ========== ADDITIONAL UTILITY ANIMATIONS ========== */
+
+/* Subtle Pulse for Interactive Elements */
+@keyframes subtlePulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
 }
 
-/* Buttons */
-.aiiot-page-container button {
-    cursor: pointer;
+/* Smooth Fade In */
+@keyframes fadeInSmooth {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ========== NAVBAR RESPONSIVE STYLES ========== */
+
+/* Default Desktop Styles (applied by default or via your inline styles) */
+.desktop-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.mobile-menu-btn {
+  display: none; /* Hidden on desktop */
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #1e293b;
+}
+
+.mobile-menu-container {
+  display: none;
+}
+
+/* Mobile/Tablet Styles (Triggers when screen is smaller than 1024px) */
+@media (max-width: 1024px) {
+  /* Hide the horizontal links */
+  .desktop-nav-links {
+    display: none !important;
+  }
+
+  /* Show the hamburger button */
+  .mobile-menu-btn {
+    display: block;
+  }
+
+  /* Adjust Logo Text size */
+  .logo-text-primary {
+    font-size: 1rem !important;
+  }
+  .logo-text-secondary {
+    display: none; /* Hide the long college name on mobile to save space */
+  }
+
+  /* Mobile Menu Dropdown Styles */
+  .mobile-menu-container {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  .mobile-menu-link {
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+    display: block;
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* ========================================= */
+/* RESPONSIVE NAVIGATION STYLES        */
+/* ========================================= */
+
+/* 1. Default Desktop Layout */
+/* ========== RESPONSIVE NAVIGATION ========== */
+
+/* Desktop container: Holds your existing complex dropdowns */
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+/* Mobile elements: Hidden by default */
+.mobile-nav-toggle {
+  display: none;
+}
+.mobile-menu-wrapper {
+  display: none;
+}
+
+/* Tablet & Mobile Breakpoint */
+@media (max-width: 1024px) {
+  /* Hide the complex desktop menu */
+  .desktop-nav {
+    display: none !important;
+  }
+
+  /* Show Hamburger Button */
+  .mobile-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
     border: none;
-    background: none;
-    font-family: inherit;
+    font-size: 1.75rem;
+    color: #1e293b;
+    cursor: pointer;
+    padding: 0.5rem;
+    z-index: 1002;
+  }
+
+  /* Mobile Menu Overlay */
+  .mobile-menu-wrapper {
+    display: block;
+    position: fixed;
+    top: 5rem; /* Header height */
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 5rem);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(15px);
+    padding: 1.5rem;
+    overflow-y: auto;
+    z-index: 1001;
+    border-top: 1px solid #e2e8f0;
+    animation: slideDown 0.3s ease-out;
+  }
 }
 
-.aiiot-page-container a {
-    text-decoration: none;
-    color: inherit;
+/* Mobile Sub-menu styles */
+.mobile-submenu {
+  background: #f8fafc;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
 }
 
-/* Focus states for accessibility */
-.aiiot-page-container button:focus-visible,
-.aiiot-page-container a:focus-visible {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* ========== PROJECT SECTION RESPONSIVE STYLES ========== */
+
+.project-card {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  /* margin-bottom handled by your parent gap, but good to have base style */
+}
+
+/* Desktop: Alternating Layouts */
+.project-card.layout-normal {
+  flex-direction: row;
+}
+
+.project-card.layout-reverse {
+  flex-direction: row-reverse;
+}
+
+.project-image-wrapper {
+  flex: 0 0 45%; /* Takes 45% width on desktop */
+  min-width: 0;
+}
+
+.project-content-wrapper {
+  flex: 0 0 55%; /* Takes 55% width on desktop */
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 900px) {
+  /* Force column layout regardless of normal/reverse */
+  .project-card.layout-normal,
+  .project-card.layout-reverse {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Make items full width */
+  .project-image-wrapper,
+  .project-content-wrapper {
+    flex: 0 0 100%;
+    width: 100%;
+    text-align: center; /* Center text on mobile */
+  }
+
+  /* Adjust image height for mobile if needed */
+  .project-image-wrapper img {
+    height: 240px !important;
+  }
+
+  /* Center the 'Learn More' button on mobile */
+  .project-content-wrapper a {
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
 }

@@ -1,17 +1,25 @@
-
-# urls.py
-from django.urls import path
+from django.urls import path, include
+from django.middleware.csrf import get_token
+from django.http import JsonResponse
 from . import views
+from rest_framework.routers import DefaultRouter
+from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
+
+
+router = DefaultRouter()
+router.register(r'brochures', views.BrochureViewSet, basename='brochure')
 
 
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
-# THESE ARE THE FIXED URLS WITH THE '' PREFIX
+
 urlpatterns = [
     # Main API Endpoints
+   
     path('home/', views.HomeAPI.as_view(), name='home_api'),
     path('dashboard_api/', views.dashboard_api, name='dashboard_api'),
-
     path('health-check/', views.health_check_api, name='health_check_api'),
     path('user-aqi/', views.user_aqi_api, name='api_user_aqi'),
 
@@ -36,6 +44,7 @@ urlpatterns = [
     path('family-members/', views.family_members_api, name='family_members_api'),
     path('family-members/<int:member_id>/', views.delete_family_member_api, name='delete_family_member_api'),
     path('family-members/update/<int:member_id>/', views.update_family_member_api, name='update_family_member_api'),
+
     # Support / Complaints
     path('support/', views.support_api, name='support_api'),
 
@@ -52,10 +61,17 @@ urlpatterns = [
     path('admin/users/delete/<int:user_id>/', views.delete_user_api, name='delete_user_api'),
     path('admin/export/', views.admin_export_data_api, name='admin_export_data_api'),
 
-    path('api/resources/', views.list_resources, name='list_resources'),
-    path('api/resources/upload/', views.upload_resource,name='upload_resource'),
+    # Resources Endpoints
+    path('resources/', views.list_resources, name='list_resources'),
+    path('resources/upload/', views.upload_resource, name='upload_resource'),
 
+    # CSRF Token
     path('csrf/', get_csrf_token, name='csrf'),
-
-    
+    path('', include(router.urls)),
+    path('brochures-by-category/<str:category>/', views.get_brochures_by_category, name='brochures_by_category'),
+    path('brochures/', views.get_brochures, name='get_brochures'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
