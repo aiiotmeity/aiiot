@@ -7,6 +7,3 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
     startCommand: gunicorn myproject.wsgi:application
-    envVars:
-      - key: RENDER
-        value: "1"
