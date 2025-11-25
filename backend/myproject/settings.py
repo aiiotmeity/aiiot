@@ -75,7 +75,8 @@ if os.environ.get('RENDER'):
 
     # 3. CSRF: Your FRONTEND URL (with https://)
     CSRF_TRUSTED_ORIGINS = [
-        "https://aiiot-2.onrender.com",
+        "https://aiiot-2.onrender.com",  # Your Frontend
+        "https://aiiot-1.onrender.com",
     ]
 
     CORS_ALLOW_CREDENTIALS = True
