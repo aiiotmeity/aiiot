@@ -24,12 +24,13 @@ function HomePage() {
   const displayName = user?.username || user?.name || stored?.username || stored?.name || stored?.phone_number || 'Guest';
   
   // API Base URL configuration
+  // API Base URL configuration
+  // ✅ FIXED: Points to aiiot-1.onrender.com if not using custom domain
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
     ? (process.env.REACT_APP_USE_CUSTOM_DOMAIN === 'true' 
         ? 'https://airaware.it.com' 
-        : 'https://airaware-app-gcw7.onrender.com')
+        : 'https://aiiot-1.onrender.com') // <--- ADD YOUR BACKEND URL HERE
     : 'http://localhost:8000';
-
   // FIX: Added useEffect to handle window resizing for isMobileView
   useEffect(() => {
     const handleResize = () => {
