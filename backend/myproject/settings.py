@@ -46,11 +46,12 @@ DATABASES = {
 
 # Environment-specific settings (Production vs. Development)
 # Environment-specific settings (Production vs. Development)
+# Environment-specific settings (Production vs. Development)
 if os.environ.get('RENDER'):
     # --- PRODUCTION Settings (on Render) ---
     
-    # 1. ALLOWED_HOSTS = Your BACKEND URL (without https://)
-    ALLOWED_HOSTS = ['aiiot-1.onrender.com', 'localhost', '127.0.0.1']
+    # 1. ALLOWED_HOSTS = Your BACKEND URL identity
+    ALLOWED_HOSTS = ['aiiot-1.onrender.com']
 
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
@@ -64,18 +65,24 @@ if os.environ.get('RENDER'):
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
     ]
 
-    DEBUG = False  # Set to False in production
+    DEBUG = False 
 
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-    # 2. CORS: Your FRONTEND URL (with https://)
+    # 2. CORS: Who is allowed to fetch data from us? (The Frontend Domains)
     CORS_ALLOWED_ORIGINS = [
-        "https://aiiot-2.onrender.com",
+        "https://aiiot-2.onrender.com",    # Render Frontend
+        "https://aiiot.it.com",            # New Custom Domain
+        "https://www.aiiot.it.com",        # New WWW Domain
+        "https://app.aiiot.it.com",        # App Subdomain
     ]
 
-    # 3. CSRF: Your FRONTEND URL (with https://)
+    # 3. CSRF: Who is allowed to submit Forms/Login to us?
     CSRF_TRUSTED_ORIGINS = [
-        "https://aiiot-2.onrender.com",  # Your Frontend
+        "https://aiiot-2.onrender.com",
+        "https://aiiot.it.com",
+        "https://www.aiiot.it.com",
+        "https://app.aiiot.it.com",
         "https://aiiot-1.onrender.com",
     ]
 
@@ -85,22 +92,9 @@ if os.environ.get('RENDER'):
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-
-    CORS_ALLOW_ALL_ORIGINS = True
-
-    # --- THIS IS THE CORRECTED PRODUCTION LIST ---
-    CSRF_TRUSTED_ORIGINS = [
-        "http://localhost:3000", 
-        "https://airaware.it.com",
-        "https://www.airaware.it.com",
-        "https://airaware-app-gcw7.onrender.com",
-    ]
-    # --- 'http://localhost:3001' has been REMOVED ---
-
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
-
+    
+    # Ensure this is FALSE in production for security
+    CORS_ALLOW_ALL_ORIGINS = False
 # ...
 else:
     # --- DEVELOPMENT Settings (local) ---
@@ -124,7 +118,9 @@ else:
 
     # --- THIS IS THE CORRECT LOCATION FOR THE FIX ---
     CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:3000',
         'http://localhost:3001',
+        'http://127.0.0.1:3000',
     ]
     # --- END OF FIX ---
 
@@ -217,9 +213,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
-    "https://your-domain.com",
-    "https://www.your-domain.com",
-    "https://your-backend.onrender.com",
+    "https://aiiot.it.com",
+    "https://www.aiiot.it.com",
+    "https://aiiot-2.onrender.com",
+    
+    
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -228,9 +226,10 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3001",
     "http://127.0.0.1:3001",
     "http://localhost:3001",
-    "https://www.your-new-domain.com",
-    "https://your-new-domain.com",
-]
+    "https://aiiot.it.com",
+    "https://www.aiiot.it.com",
+    "https://aiiot-2.onrender.com",
+]  
 
 CORS_ALLOW_CREDENTIALS = True
 REST_FRAMEWORK = {

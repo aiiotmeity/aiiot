@@ -29,7 +29,9 @@ export default function Support() {
     }
     setSubmitting(true);
     try {
-      const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
+      const API_BASE = process.env.NODE_ENV === 'production'
+  ? 'https://aiiot-1.onrender.com'
+  : 'http://localhost:8000';
       const url = `${API_BASE}/api/support/`;
       // Use the safe helper to avoid JSON parse errors when server returns HTML
       const fetchJson = (await import('../utils/fetchJson')).default;

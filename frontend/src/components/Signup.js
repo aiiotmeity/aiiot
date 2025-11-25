@@ -23,10 +23,9 @@ function Signup() {
 
   const navigate = useNavigate();
 
-  const API_BASE_URL =
-    process.env.NODE_ENV === 'production'
-      ? 'https://airaware-app-gcw7.onrender.com'
-      : 'http://localhost:8000';
+  const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://aiiot-1.onrender.com'
+  : 'http://localhost:8000';
 
   useEffect(() => {
     const handleResize = () => {

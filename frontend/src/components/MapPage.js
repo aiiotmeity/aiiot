@@ -206,9 +206,9 @@ const MapPage = () => {
     const _storedUser = (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; } })();
     const displayName = user?.username || user?.name || _storedUser?.username || _storedUser?.name || _storedUser?.phone_number || '';
     const [authInitialized, setAuthInitialized] = useState(false);
-    const API_BASE_URL = process.env.NODE_ENV === 'production' 
-        ? 'https://airaware-app-gcw7.onrender.com' 
-        : 'http://localhost:8000';
+    const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://aiiot-1.onrender.com'
+  : 'http://localhost:8000';
 
     // === USER LOCATION TRACKING - FIXED ===
     const trackUserLocation = useCallback(() => {

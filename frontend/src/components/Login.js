@@ -28,10 +28,9 @@ function Login() {
     return null;
   };
 
-  const API_BASE_URL =
-    process.env.NODE_ENV === 'production'
-      ? 'https://airaware-app-gcw7.onrender.com'
-      : 'http://localhost:8000';
+  const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://aiiot-1.onrender.com'
+  : 'http://localhost:8000';
 
   useEffect(() => {
     // Fetch CSRF token when component mounts
