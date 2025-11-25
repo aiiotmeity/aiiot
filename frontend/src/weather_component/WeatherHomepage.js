@@ -19,7 +19,8 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
   useEffect(() => {
     const fetchWeatherData = async () => {
       try {
-        const response = await fetch('/api/weather');
+        // Pointing to your Backend URL
+        const response = await fetch('https://aiiot-1.onrender.com/api/current');
         if (response.ok) {
           const data = await response.json();
           setCurrentWeather(data);

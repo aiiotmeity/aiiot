@@ -45,9 +45,12 @@ DATABASES = {
 }
 
 # Environment-specific settings (Production vs. Development)
+# Environment-specific settings (Production vs. Development)
 if os.environ.get('RENDER'):
     # --- PRODUCTION Settings (on Render) ---
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
+    
+    # 1. ALLOWED_HOSTS = Your BACKEND URL (without https://)
+    ALLOWED_HOSTS = ['aiiot-1.onrender.com', 'localhost', '127.0.0.1']
 
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
@@ -61,20 +64,26 @@ if os.environ.get('RENDER'):
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
     ]
 
-  
-
-
-    DEBUG = True
+    DEBUG = False  # Set to False in production
 
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+    # 2. CORS: Your FRONTEND URL (with https://)
     CORS_ALLOWED_ORIGINS = [
-        
-    "https://www.your-new-domain.com",
-    "https://your-new-domain.com",
-]
+        "https://aiiot-2.onrender.com",
+    ]
+
+    # 3. CSRF: Your FRONTEND URL (with https://)
+    CSRF_TRUSTED_ORIGINS = [
+        "https://aiiot-2.onrender.com",
+    ]
+
+    CORS_ALLOW_CREDENTIALS = True
     
-    
+    # Security settings
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
     CORS_ALLOW_ALL_ORIGINS = True
 

@@ -724,7 +724,9 @@ const MapComponent = () => {
     const [notification, setNotification] = useState(null);
 
     const refreshIntervalRef = useRef(null);
-    const API_URL = 'http://localhost:5000/api';
+    // Change this to your Render Backend URL
+    // Pointing to your Backend URL
+    const API_URL = 'https://aiiot-1.onrender.com/api';
     const currentStation = weatherStations.find(s => s.id === currentStationId);
 
     // CORRECTED: Added hooks for navigation state
