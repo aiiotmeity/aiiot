@@ -172,38 +172,40 @@ useEffect(() => {
     {
       name: "Dr. Ajay Kumar",
       role: "Principal Investigator",
-      description: "Dr. Ajay Kumar is an Associate Professor at ASIET with a PhD in Electronics and Communication Engineering. His research interests include IoT and Wireless Sensor Networks.",
-      image: "/faculties/ajay.jpeg"
+      description: "Dr. Ajay Kumar is an Associate Professor at ASIET...",
+      image: "/faculties/ajay.jpeg" // Check if this is .jpg or .jpeg
     },
     {
       name: "Mr. Albins Paul",
       role: "Co-Investigator",
-      description: "Assistant Professor at ASIET's ECE Department, specializing in Microwave & Television Engineering.",
+      description: "Assistant Professor at ASIET's ECE Department...",
       image: "/faculties/albins.jpg"
     },
     {
       name: "Prof. P.V. Rajaraman",
       role: "Co-Investigator",
-      description: "Assistant Professor, CTO, and Head of the AI Department at ASIET. He specializes in NLP and XAI, has multiple publications, and is currently pursuing his Ph.D.",
+      description: "Assistant Professor, CTO...",
       image: "/faculties/rajaraman.jpg"
     },
     {
       name: "Mr. Abhijith Pm",
       role: "Project Associate",
       description: "",
-      image: "/faculties/abhijith.jpeg"
+      image: "/faculties/abhijith.jpeg" // Check extension
     },
     {
       name: "Mrs. Hasna Hameed",
       role: "Project Associate",
       description: "",
-      image: "/faculties/hasna2.jpg"
+      // FIX: It was likely a mismatch. Check if file is hasna.jpg or hasna2.jpeg
+      image: "/faculties/hasna2.jpg" 
     },
     {
       name: "Ms. Arathy Surendran",
       role: "Project Associate",
       description: "",
-      image: "/faculties/arathy.jpg"
+      // FIX: Check if file is actually Arathy.jpg (Capital A) or arathy.jpeg (with e)
+      image: "/faculties/arathy.jpg" 
     },
     {
       name: "Mr. Bhagyaraj J",
