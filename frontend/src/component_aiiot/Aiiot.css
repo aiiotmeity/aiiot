@@ -622,3 +622,76 @@ a {
     margin-top: 0.5rem;
   }
 }
+/* ========== CRITICAL MOBILE FIXES (Paste at the bottom of Aiiot.css) ========== */
+
+@media (max-width: 1024px) {
+    /* 1. DISABLE HEAVY ANIMATIONS (Fixes the "Vibration") */
+    .aiiot-page-container,
+    .aiiot-page-container::before,
+    .aiiot-page-container::after,
+    body::before,
+    body::after {
+        animation: none !important;
+        transition: none !important;
+        filter: none !important; /* Removes the heavy blur calculation */
+    }
+
+    /* Use a static, simple background for mobile to save battery and performance */
+    .aiiot-page-container {
+        background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%) !important;
+    }
+    
+    /* Hide the floating orbs on mobile */
+    body::before, body::after {
+        display: none !important;
+    }
+
+    /* 2. FIX HEADER VISIBILITY */
+    .desktop-nav {
+        display: none !important;
+    }
+
+    .mobile-nav-toggle {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem; 
+        font-size: 1.8rem;
+        z-index: 2000;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: #1e293b;
+    }
+
+    /* Ensure mobile menu sits on top */
+    .mobile-menu-wrapper {
+        position: fixed;
+        top: 5rem;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: calc(100vh - 5rem);
+        background: white;
+        z-index: 1999;
+        overflow-y: auto;
+        padding-bottom: 5rem;
+    }
+
+    /* 3. FIX TEXT & LAYOUT */
+    h1 {
+        font-size: 2rem !important;
+        word-wrap: break-word;
+    }
+    
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    /* Force content to be visible immediately (fixes "blank screen" on scroll) */
+    .reveal-on-scroll {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+}

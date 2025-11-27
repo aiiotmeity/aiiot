@@ -452,7 +452,7 @@ useEffect(() => {
       </header>
 
       {/* Main Content */}
-      <main style={{ flex: 1 }}>
+      <main style={{ flex: 1, paddingTop: '3rem' }}>
         {/* Hero Section */}
         <section className="hero-gradient reveal-on-scroll" style={{ padding: '5rem 0' }}>
           <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
