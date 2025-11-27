@@ -259,8 +259,11 @@ useEffect(() => {
     <div className="aiiot-page-container">
       {/* Header Section */}
       <header style={{
-        position: 'sticky',
+        position: 'fixed',    // CHANGED from 'sticky' to 'fixed' (Stops disappearing)
         top: 0,
+        left: 0,
+        right: 0,
+        height: '5rem',       // Explicit height
         zIndex: 1000,
         width: '100%',
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -272,7 +275,7 @@ useEffect(() => {
           <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '5rem' }}>
             
             {/* --- LOGO --- */}
-            <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '1rem', zIndex: 1001 }}>
+            <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '1rem', zIndex: 1001, textDecoration: 'none' }}>
               <div style={{
                 width: 'auto',
                 height: '3.25rem',
@@ -291,14 +294,14 @@ useEffect(() => {
                 <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>
                   AI-IoT Innovations
                 </span>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }} className="logo-text-secondary">
                   Adi Shankara Engineering Institute
                 </span>
               </div>
             </a>
 
             {/* ===================================================== */}
-            {/* DESKTOP NAVIGATION (Contains Your Exact Logic)        */}
+            {/* DESKTOP NAVIGATION                                    */}
             {/* ===================================================== */}
             <div className="desktop-nav">
               <a href="#about" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#475569' }} 
@@ -310,7 +313,7 @@ useEffect(() => {
                  Team
               </a>
 
-              {/* --- YOUR RESOURCES DROPDOWN (Desktop) --- */}
+              {/* Resources Dropdown */}
               <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => { setResourcesDropdownOpen(!resourcesDropdownOpen); setProjectsDropdownOpen(false); }}
@@ -325,7 +328,6 @@ useEffect(() => {
                     position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', background: 'white', borderRadius: '0.5rem',
                     boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)', border: '1px solid #e2e8f0', minWidth: '18rem', zIndex: 100, maxHeight: '500px', overflowY: 'auto'
                   }}>
-                    {/* Your Category Tabs */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0.75rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
                       <button onClick={() => setSelectedCategory(null)}
                         style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: selectedCategory === null ? 'white' : '#475569', background: selectedCategory === null ? '#3b82f6' : '#e2e8f0', border: 'none', borderRadius: '0.25rem', cursor: 'pointer' }}>
@@ -338,7 +340,6 @@ useEffect(() => {
                         </button>
                       ))}
                     </div>
-                    {/* Your List Items */}
                     <div>
                       {brochuresLoading ? <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>Loading...</div> : 
                        filteredBrochures.length > 0 ? filteredBrochures.map((brochure, idx) => (
@@ -362,7 +363,7 @@ useEffect(() => {
                  Projects
               </a>
 
-              {/* --- YOUR LAUNCHES DROPDOWN (Desktop) --- */}
+              {/* Launches Dropdown */}
               <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => { setProjectsDropdownOpen(!projectsDropdownOpen); setResourcesDropdownOpen(false); }}
@@ -391,7 +392,7 @@ useEffect(() => {
             </div>
 
             {/* ===================================================== */}
-            {/* MOBILE HAMBURGER BUTTON (Visible < 1024px)            */}
+            {/* MOBILE HAMBURGER BUTTON (Controlled by CSS now)       */}
             {/* ===================================================== */}
             <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? '✕' : '☰'}

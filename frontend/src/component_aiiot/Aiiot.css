@@ -46,13 +46,14 @@ body, html {
     );
     background-size: 400% 400%;
     animation: gradientShift 15s ease infinite;
-    min-height: 100vh;
+
     display: flex;
     flex-direction: column;
     position: relative;
     overflow-x: hidden;
     color: var(--text-color);
     line-height: 1.6;
+    height: auto;
 }
 
 /* Advanced Gradient Animation */
