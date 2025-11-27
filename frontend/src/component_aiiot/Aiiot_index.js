@@ -198,14 +198,14 @@ useEffect(() => {
       role: "Project Associate",
       description: "",
       // FIX: It was likely a mismatch. Check if file is hasna.jpg or hasna2.jpeg
-      image: "/faculties/hasna2.jpg" 
+      image: "/faculties/hasna2.jpeg" 
     },
     {
       name: "Ms. Arathy Surendran",
       role: "Project Associate",
       description: "",
       // FIX: Check if file is actually Arathy.jpg (Capital A) or arathy.jpeg (with e)
-      image: "/faculties/arathy.jpg" 
+      image: "/faculties/arathy.jpeg" 
     },
     {
       name: "Mr. Bhagyaraj J",
@@ -217,7 +217,7 @@ useEffect(() => {
       name: "Mr. Amaljith N Raj",
       role: "Project Assistant",
       description: "",
-      image: "/faculties/amaljith.jpg"
+      image: "/faculties/amaljith.jpeg"
     },
     {
       name: "Mrs. Jibina EA",

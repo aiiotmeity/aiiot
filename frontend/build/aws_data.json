@@ -1,0 +1,1 @@
+{"raw_data": "c000s005g011t090r507p423h05b10051", "parsed_data": {"wind_direction": 0.0, "avg_wind_speed": 0.5, "max_wind_speed": 1.1, "temperature": 32.22, "rain_1hr": 128.78, "rain_24hr": 107.44, "humidity": 5.0, "pressure": 1005.1}, "received_at": "2025-10-25 12:38:02", "rssi": -105}

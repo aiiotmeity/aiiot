@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkair_quality_app=self.webpackChunkair_quality_app||[]).push([[508],{8508:(t,a,e)=>{async function s(t){let a=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{};const e=await fetch(t,a),s=(e.headers.get("content-type")||"").toLowerCase();if(s.includes("application/json")){const t=await e.json();return{ok:e.ok,status:e.status,json:t}}const n=await e.text();return{ok:e.ok,status:e.status,text:n,contentType:s}}e.r(a),e.d(a,{default:()=>s})}}]);
+//# sourceMappingURL=508.c1e007e6.chunk.js.map
