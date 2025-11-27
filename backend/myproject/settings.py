@@ -28,8 +28,8 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 DEBUG=True
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "media"
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / "media"
 
 
 # This is the new, corrected configuration
@@ -137,9 +137,19 @@ INSTALLED_APPS = [
     'myapp',
     'corsheaders',
     'weather_monitoring',
+    'storages',
 ]
 
+
 ROOT_URLCONF = 'myproject.urls'
+
+
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+AWS_QUERYSTRING_AUTH = False
+
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
 
 TEMPLATES = [
     {
@@ -238,6 +248,6 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['rest_framework.filters.SearchFilter'],
 }
 
-# Media files configuration
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# # Media files configuration
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / 'media'
