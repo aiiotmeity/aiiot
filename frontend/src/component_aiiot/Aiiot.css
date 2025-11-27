@@ -46,7 +46,7 @@ body, html {
     );
     background-size: 400% 400%;
     animation: gradientShift 15s ease infinite;
-
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -102,7 +102,6 @@ body::after {
     );
     border-radius: 50%;
     pointer-events: none;
-
     z-index: 0;
     filter: blur(50px);
     animation: orbFloat2 32s ease-in-out infinite;
@@ -622,56 +621,4 @@ a {
     justify-content: center;
     margin-top: 0.5rem;
   }
-}
-/* ========== COPY AND PASTE THIS AT THE END OF Aiiot.css ========== */
-
-/* 1. Allow the sticky/fixed header to work by fixing the container height */
-.aiiot-page-container {
-    overflow-x: hidden; /* Keeps horizontal scroll hidden */
-    height: auto;       /* Allows full scrolling */
-    min-height: 100vh;
-}
-
-/* 2. Mobile Specific Fixes (Phones & Tablets) */
-@media (max-width: 1024px) {
-    /* Disable the heavy orb/wave animations that cause lag */
-    .aiiot-page-container::before,
-    .aiiot-page-container::after,
-    body::before,
-    body::after {
-        animation: none !important;
-        filter: none !important;
-        background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%) !important;
-        opacity: 1;
-        position: fixed;
-    }
-
-    /* Make the text readable on small screens */
-    h1 {
-        font-size: 2rem !important;
-        word-wrap: break-word;
-    }
-
-    /* Fix the hamburger menu button visibility */
-    .mobile-nav-toggle {
-        display: flex !important;
-        padding: 0.5rem; 
-        font-size: 1.8rem;
-        z-index: 2000;
-    }
-
-    /* Force the mobile menu to cover the screen properly */
-    .mobile-menu-wrapper {
-        position: fixed;
-        top: 5rem; 
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 100vh;
-        width: 100vw;
-        background: white;
-        z-index: 1999;
-        overflow-y: auto;
-        padding-bottom: 5rem;
-    }
 }
