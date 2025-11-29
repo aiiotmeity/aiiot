@@ -251,3 +251,16 @@ REST_FRAMEWORK = {
 # # Media files configuration
 # MEDIA_URL = '/media/'
 # MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# In settings.py
+
+# This creates clean URLs (e.g., https://bucket.s3.amazonaws.com/file.pdf)
+# instead of signed URLs with expiration tokens.
+AWS_QUERYSTRING_AUTH = False 
+
+# Optional: Set the file to be 'public-read' upon upload (for future uploads)
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+    'ACL': 'public-read', 
+}
