@@ -222,6 +222,157 @@ class Resource(models.Model):
     def __str__(self):
         return self.title
     
+from django.db import models
+from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone
+from django.contrib.auth.models import User  # Only keep if you use default Django auth
+
+# 1. AUTH MODELS (Managed = False)
+class Signup(models.Model):
+    id = models.AutoField(primary_key=True)
+    username = models.CharField(max_length=100)
+    phone_number = models.CharField(unique=True, max_length=15)
+    email = models.CharField(unique=True, max_length=100)
+    password = models.CharField(max_length=255)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'signup'
+
+class UserLogin(models.Model):
+    id = models.AutoField(primary_key=True)
+    phone_number = models.CharField(max_length=20, unique=True)
+    password = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'user_login'
+
+class AdminUserlogin(models.Model):
+    username = models.CharField(max_length=100, unique=True)
+    password = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.username
+
+# 2. HEALTH & USER DATA
+class HealthQuestionnaire(models.Model):
+    # FIXED: Changed 'User' to 'Signup' to match your other models
+    user = models.OneToOneField('Signup', on_delete=models.CASCADE) 
+    question1 = models.CharField(max_length=100)
+    question2 = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"Health Questionnaire for {self.user.username}"
+
+class HealthAssessment(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(
+        'Signup',
+        on_delete=models.CASCADE,
+        db_column='user_id',
+        related_name='health_assessment'
+    )
+    phone_number = models.CharField(max_length=15, unique=True, db_index=True)
+    age_group = models.CharField(max_length=20, null=True, blank=True)
+    gender = models.CharField(max_length=20, null=True, blank=True)
+    respiratory_conditions = models.JSONField(default=list, blank=True)
+    smoking_history = models.TextField(null=True, blank=True)
+    living_environment = models.JSONField(default=list, blank=True)
+    common_symptoms = models.JSONField(default=list, blank=True)
+    occupational_exposure = models.CharField(max_length=50, null=True, blank=True)
+    medical_history = models.JSONField(default=list, blank=True)
+    health_score = models.IntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    def get_risk_level(self):
+        if self.health_score is None: return "Unknown"
+        if self.health_score >= 80: return "Low"
+        elif self.health_score >= 50: return "Medium"
+        return "High"
+
+    def get_recommendations(self):
+        risk = self.get_risk_level()
+        if risk == "Low": return "Maintain healthy habits."
+        if risk == "Medium": return "Limit outdoor activity. Use a mask."
+        if risk == "High": return "High risk! Avoid outdoor exposure."
+        return "No recommendation available."
+
+    class Meta:
+        db_table = 'health_assessment'
+        managed = False
+        constraints = [
+            models.UniqueConstraint(fields=['user'], name='health_assessment_user_id_key'),
+            models.UniqueConstraint(fields=['phone_number'], name='health_assessment_phone_number_key'),
+        ]
+
+    def __str__(self):
+        return f"Assessment for {self.phone_number}"
+
+class FamilyMembers(models.Model):
+    parent_user = models.ForeignKey('Signup', on_delete=models.CASCADE, related_name='family_members')
+    name = models.CharField(max_length=100)
+    age = models.IntegerField()
+    relationship = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.name} ({self.relationship})"
+
+# 3. ENVIRONMENT & SUPPORT
+class AirQualityForecast(models.Model):
+    date = models.DateField()
+    gas_type = models.CharField(max_length=20)
+    forecasted_value = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('date', 'gas_type')
+        indexes = [models.Index(fields=['date']), models.Index(fields=['gas_type'])]
+
+    def __str__(self):
+        return f"{self.gas_type} forecast for {self.date}"
+
+class Support(models.Model):
+    sl_no = models.AutoField(primary_key=True, db_column='sl_no')
+    email = models.CharField(max_length=255)
+    case_description = models.TextField()
+    submitted_at = models.DateTimeField(auto_now_add=True, db_column='submitted_at')
+
+    class Meta:
+        db_table = 'support'
+        managed = False
+
+    def __str__(self):
+        return f"Support #{self.sl_no}"
+
+# 4. RESOURCES (S3 ENABLED)
+
+class Resource(models.Model):
+    # Consolidating Resource and ResourceFile into one smart model
+    CATEGORY_CHOICES = [
+        ('brochure', 'Brochure'),
+        ('poster', 'Poster'),
+        ('slide', 'Slide'),
+        ('image', 'Image'),
+        ('other', 'Other'),
+    ]
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    # This upload_to path ensures S3 creates folders like /resources/2025/11/27/
+    file = models.FileField(upload_to="resources/%Y/%m/%d/") 
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title
+
 class Brochure(models.Model):
     CATEGORY_CHOICES = [
         ('center', 'Center Brochure'),
@@ -229,10 +380,10 @@ class Brochure(models.Model):
         ('setup', 'Setup Guide'),
         ('report', 'Annual Report'),
     ]
-
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    # This upload_to path ensures S3 creates folders like /brochures/2025/11/27/
     file = models.FileField(upload_to='brochures/%Y/%m/%d/')
     icon = models.CharField(max_length=10, default='📄')
     is_active = models.BooleanField(default=True)
