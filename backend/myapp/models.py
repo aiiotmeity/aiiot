@@ -352,7 +352,7 @@ class Support(models.Model):
 # 4. RESOURCES (S3 ENABLED)
 
 class Resource(models.Model):
-    # Consolidating Resource and ResourceFile into one smart model
+    # This replaces your old Resource AND ResourceFile models
     CATEGORY_CHOICES = [
         ('brochure', 'Brochure'),
         ('poster', 'Poster'),
@@ -362,7 +362,7 @@ class Resource(models.Model):
     ]
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    # This upload_to path ensures S3 creates folders like /resources/2025/11/27/
+    # SAVES TO: resources/2025/11/29/filename.pdf
     file = models.FileField(upload_to="resources/%Y/%m/%d/") 
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -383,7 +383,7 @@ class Brochure(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
-    # This upload_to path ensures S3 creates folders like /brochures/2025/11/27/
+    # SAVES TO: brochures/2025/11/29/filename.pdf
     file = models.FileField(upload_to='brochures/%Y/%m/%d/')
     icon = models.CharField(max_length=10, default='📄')
     is_active = models.BooleanField(default=True)

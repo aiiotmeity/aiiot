@@ -3,164 +3,69 @@ from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
 
+# Load environment variables from .env file
 load_dotenv()
 
-# --- Core Paths (Corrected Order) ---
-# Define BASE_DIR first
+# ==========================================
+# 1. CORE PATHS & SECURITY
+# ==========================================
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Define FRONTEND_DIR right after so it's available everywhere
 FRONTEND_DIR = BASE_DIR / ".." / "frontend" / "build"
 
-# Define STATICFILES_DIRS globally for both dev and production
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-# ------------------------------------
-
-# Security and Debugging
+# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+
+# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-
-DEBUG=True
-
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = BASE_DIR / "media"
+ALLOWED_HOSTS = ['*']  # Allows all hosts
 
 
-# This is the new, corrected configuration
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT', '5432'),  # default to 5432 if not set
-    }
-}
-
-# Environment-specific settings (Production vs. Development)
-# Environment-specific settings (Production vs. Development)
-# Environment-specific settings (Production vs. Development)
-if os.environ.get('RENDER'):
-    # --- PRODUCTION Settings (on Render) ---
-    
-    # 1. ALLOWED_HOSTS = Your BACKEND URL identity
-    ALLOWED_HOSTS = ['aiiot-1.onrender.com']
-
-    MIDDLEWARE = [
-        'django.middleware.security.SecurityMiddleware',
-        'whitenoise.middleware.WhiteNoiseMiddleware',
-        'django.contrib.sessions.middleware.SessionMiddleware',
-        'corsheaders.middleware.CorsMiddleware',
-        'django.middleware.common.CommonMiddleware',
-        'django.middleware.csrf.CsrfViewMiddleware',
-        'django.contrib.auth.middleware.AuthenticationMiddleware',
-        'django.contrib.messages.middleware.MessageMiddleware',
-        'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    ]
-
-    DEBUG = False 
-
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-    # 2. CORS: Who is allowed to fetch data from us? (The Frontend Domains)
-    CORS_ALLOWED_ORIGINS = [
-        "https://aiiot-2.onrender.com",    # Render Frontend
-        "https://aiiot.it.com",            # New Custom Domain
-        "https://www.aiiot.it.com",        # New WWW Domain
-        "https://app.aiiot.it.com",        # App Subdomain
-    ]
-
-    # 3. CSRF: Who is allowed to submit Forms/Login to us?
-    CSRF_TRUSTED_ORIGINS = [
-        "https://aiiot-2.onrender.com",
-        "https://aiiot.it.com",
-        "https://www.aiiot.it.com",
-        "https://app.aiiot.it.com",
-        "https://aiiot-1.onrender.com",
-    ]
-
-    CORS_ALLOW_CREDENTIALS = True
-    
-    # Security settings
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
-    
-    # Ensure this is FALSE in production for security
-    CORS_ALLOW_ALL_ORIGINS = False
-# ...
-else:
-    # --- DEVELOPMENT Settings (local) ---
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '', '']
-
-    MIDDLEWARE = [
-        'django.middleware.security.SecurityMiddleware',
-        'django.contrib.sessions.middleware.SessionMiddleware',
-        'corsheaders.middleware.CorsMiddleware',
-        'django.middleware.common.CommonMiddleware',
-        'django.middleware.csrf.CsrfViewMiddleware',
-        'django.contrib.auth.middleware.AuthenticationMiddleware',
-        'django.contrib.messages.middleware.MessageMiddleware',
-        'django.middleware.clickjacking.XFrameOptionsMiddleware',
-        'whitenoise.middleware.WhiteNoiseMiddleware',
-    ]
-
-    
-   
-    CORS_ALLOW_ALL_ORIGINS = True
-
-    # --- THIS IS THE CORRECT LOCATION FOR THE FIX ---
-    CSRF_TRUSTED_ORIGINS = [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3000',
-    ]
-    # --- END OF FIX ---
-
-# Application definition
+# ==========================================
+# 2. INSTALLED APPS
+# ==========================================
 INSTALLED_APPS = [
-    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third-party apps
     'rest_framework',
-    'myapp',
     'corsheaders',
+    'storages',  # REQUIRED for AWS S3
+    
+    # Your apps
+    'myapp',
     'weather_monitoring',
-    'storages',
 ]
 
+# ==========================================
+# 3. MIDDLEWARE
+# ==========================================
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Handles static files
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 
 ROOT_URLCONF = 'myproject.urls'
 
-
-AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-AWS_QUERYSTRING_AUTH = False
-
-AWS_DEFAULT_ACL = None
-
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}
-
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
-
+# ==========================================
+# 4. TEMPLATES
+# ==========================================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [FRONTEND_DIR], # This now works because FRONTEND_DIR is defined above
+        'DIRS': [FRONTEND_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -175,7 +80,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'myproject.wsgi.application'
 
-# Password validation
+
+# ==========================================
+# 5. DATABASE
+# ==========================================
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+    }
+}
+
+
+# ==========================================
+# 6. PASSWORD VALIDATION
+# ==========================================
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -183,30 +106,103 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
+
+# ==========================================
+# 7. INTERNATIONALIZATION
+# ==========================================
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
-USE_L10N = True # Note: L10N is deprecated in Django 5.0
 USE_TZ = True
 
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Session settings
-SESSION_COOKIE_AGE = 3600
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_SAVE_EVERY_REQUEST = True
+# ==========================================
+# 8. STATIC FILES (CSS, JavaScript, Images)
+# ==========================================
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Cache configuration
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-    }
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+
+# ==========================================
+# 9. AWS S3 & STORAGE CONFIGURATION (FIXED)
+# ==========================================
+
+# 1. Credentials
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+
+# 2. Bucket Config
+AWS_STORAGE_BUCKET_NAME = 'ai-model-bucket-output'
+AWS_S3_REGION_NAME = 'us-east-1'
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+
+# 3. File Settings
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None 
+AWS_S3_VERIFY = True
+
+# 4. Public URL Settings
+AWS_QUERYSTRING_AUTH = False
+MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/'
+
+# 5. Storage Backend (REMOVED LEGACY CONFLICTS)
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
 }
 
-# Logging configuration
+# ==========================================
+# 10. CORS & CSRF SETTINGS
+# ==========================================
+CORS_ALLOW_CREDENTIALS = True
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "https://aiiot.it.com",
+    "https://www.aiiot.it.com",
+    "https://aiiot-2.onrender.com",
+    "https://aiiot-1.onrender.com",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "https://aiiot.it.com",
+    "https://www.aiiot.it.com",
+    "https://aiiot-2.onrender.com",
+    "https://aiiot-1.onrender.com",
+]
+
+
+# ==========================================
+# 11. REST FRAMEWORK & LOGGING
+# ==========================================
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_FILTER_BACKENDS': ['rest_framework.filters.SearchFilter'],
+}
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -220,49 +216,3 @@ LOGGING = {
         'level': 'INFO',
     },
 }
-
-# ✅ Unified CORS and CSRF configuration
-CORS_ALLOW_ALL_ORIGINS = False
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "https://aiiot.it.com",
-    "https://www.aiiot.it.com",
-    "https://aiiot-2.onrender.com",
-    
-    
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "http://localhost:3001",
-    "https://aiiot.it.com",
-    "https://www.aiiot.it.com",
-    "https://aiiot-2.onrender.com",
-]  
-
-CORS_ALLOW_CREDENTIALS = True
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
-    'DEFAULT_FILTER_BACKENDS': ['rest_framework.filters.SearchFilter'],
-}
-
-# # Media files configuration
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = BASE_DIR / 'media'
-
-
-# In settings.py
-
-# This creates clean URLs (e.g., https://bucket.s3.amazonaws.com/file.pdf)
-# instead of signed URLs with expiration tokens.
-AWS_QUERYSTRING_AUTH = False 
-
-# Optional: Set the file to be 'public-read' upon upload (for future uploads)
