@@ -176,16 +176,16 @@ function Signup() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/signup/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          phone_number: formData.phone_number,
-          email: formData.email.trim(),
-          password: formData.password
-        })
-      });
+  const response = await fetch(`${API_BASE_URL}/api/signup/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: formData.name.trim(), // CHANGE 'name' TO 'username' HERE
+      phone_number: formData.phone_number,
+      email: formData.email.trim(),
+      password: formData.password
+    })
+  });
 
       const data = await response.json();
 
