@@ -213,11 +213,23 @@ function HomePage() {
     if (loading && !homeData) return { status: 'LOADING...', icon: 'fas fa-spinner fa-spin', color: '#9ca3af' };
     if (error || !homeData?.highest_sub_index) return { status: 'NO DATA', icon: 'fas fa-exclamation-triangle', color: '#ef4444' };
     const value = parseInt(homeData.highest_sub_index, 10);
-    if (value <= 50) return { status: 'GOOD', icon: 'fas fa-smile', color: '#10b981' };
-    if (value <= 100) return { status: 'MODERATE', icon: 'fas fa-meh', color: '#f59e0b' };
-    if (value <= 200) return { status: 'SEVERE', icon: 'fas fa-exclamation-triangle', color: '#dc2626' };
-    if (value <= 300) return { status: 'VERY SEVERE', icon: 'fas fa-skull', color: '#7c2d12' };
-    return { status: 'HAZARDOUS', icon: 'fas fa-biohazard', color: '#4c1d95' };
+    if (value <= 50) 
+  return { status: 'GOOD', icon: 'fas fa-smile', color: '#10b981' };
+
+if (value <= 100) 
+  return { status: 'SATISFACTORY', icon: 'fas fa-meh', color: '#84cc16' };
+
+if (value <= 200) 
+  return { status: 'MODERATE', icon: 'fas fa-exclamation-circle', color: '#f59e0b' };
+
+if (value <= 300) 
+  return { status: 'POOR', icon: 'fas fa-cloud', color: '#f97316' };
+
+if (value <= 400) 
+  return { status: 'VERY POOR', icon: 'fas fa-skull-crossbones', color: '#dc2626' };
+
+return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
+
   }, [homeData, loading, error]);
 
   const displayAQI = loading && !homeData ? "..." : homeData?.highest_sub_index ?? "N/A";

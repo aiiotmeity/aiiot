@@ -23,22 +23,30 @@ ChartJS.register(
 
 // --- Helper Functions ---
 const getAQIColor = (aqi) => {
-    if (aqi === null || aqi === undefined) return '#6b7280';
-    if (aqi <= 50) return '#10b981';
-    if (aqi <= 100) return '#f59e0b';
-    if (aqi <= 200) return '#ef4444';
-    return '#7c2d12';
+    if (aqi === null || aqi === undefined) return '#6b7280'; // Gray - Unknown
+
+    if (aqi <= 50) return '#10b981';   // ✅ Good (Green)
+    if (aqi <= 100) return '#84cc16';  // 🙂 Satisfactory (Light Green)
+    if (aqi <= 200) return '#facc15';  // 😷 Moderate (Yellow)
+    if (aqi <= 300) return '#f97316';  // ⚠️ Poor (Orange)
+    if (aqi <= 400) return '#ef4444';  // ☠️ Very Poor (Red)
+    
+    return '#7c2d12';                  // ☣️ Severe (Dark Maroon)
 };
+
 
 const getAQIStatus = (aqi) => {
     if (aqi === null || aqi === undefined) return 'Unknown';
+
     if (aqi <= 50) return 'Good';
-    if (aqi <= 100) return 'Moderate';
-    if (aqi <= 150) return 'Unhealthy';
-    if (aqi <= 200) return 'Severe';
-    if (aqi <= 300) return 'Very Severe';
-    return 'Hazardous';
+    if (aqi <= 100) return 'Satisfactory';
+    if (aqi <= 200) return 'Moderate';
+    if (aqi <= 300) return 'Poor';
+    if (aqi <= 400) return 'Very Poor';
+    
+    return 'Severe';
 };
+
 
 // ...
 // Using shared calculateDistance & formatDistance from utils/distance.js

@@ -492,18 +492,20 @@ def process_device_items(items):
     return latest_item, safe_averages, sub_indices, highest_sub_index
 
 def get_aqi_status(aqi):
-    """Returns AQI category based on value."""
+    """Returns AQI category based on standard CPCB scale."""
     if aqi <= 50:
         return "Good"
     elif aqi <= 100:
-        return "Moderate"
-    elif aqi <= 150:
-        return "Unhealthy"
+        return "Satisfactory"
     elif aqi <= 200:
-        return "Severe"
+        return "Moderate"
     elif aqi <= 300:
-        return "Very Severe"
-    return "Hazardous"
+        return "Poor"
+    elif aqi <= 400:
+        return "Very Poor"
+    else:
+        return "Severe"
+
 
 # ====== API ENDPOINTS FOR REACT FRONTEND ======
 

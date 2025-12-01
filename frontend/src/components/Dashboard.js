@@ -829,11 +829,24 @@ function Dashboard() {
   const currentAQI = useMemo(() => currentDataInfo?.aqi || 50, [currentDataInfo]);
   const aqiStatus = useMemo(() => {
     const aqi = currentAQI;
-    if (aqi <= 50) return { status: 'GOOD', color: '#10b981', class: 'good' };
-    if (aqi <= 100) return { status: 'MODERATE', color: '#f59e0b', class: 'moderate' };
-    if (aqi <= 150) return { status: 'UNHEALTHY', color: '#ef4444', class: 'unhealthy' };
-    return { status: 'HAZARDOUS', color: '#7c2d12', class: 'hazardous' };
-  }, [currentAQI]);
+    if (aqi <= 50) 
+    return { status: 'GOOD', color: '#10b981', class: 'good' };
+
+  if (aqi <= 100) 
+    return { status: 'SATISFACTORY', color: '#84cc16', class: 'satisfactory' };
+
+  if (aqi <= 200) 
+    return { status: 'MODERATE', color: '#facc15', class: 'moderate' };
+
+  if (aqi <= 300) 
+    return { status: 'POOR', color: '#f97316', class: 'poor' };
+
+  if (aqi <= 400) 
+    return { status: 'VERY POOR', color: '#ef4444', class: 'very-poor' };
+
+  return { status: 'SEVERE', color: '#7c2d12', class: 'severe' };
+
+}, [currentAQI]);
 
   // ===== LOCATION STATUS COMPONENT =====
   const LocationStatus = useMemo(() => {

@@ -10,20 +10,30 @@ const LazyChart = React.lazy(() => import('./LazyChart'));
 // Using shared distance utilities from ../utils/distance
 
 const getAQIColor = (aqi) => {
-    if (!aqi) return '#6b7280'; // Handle null or undefined
-    if (aqi <= 50) return '#10b981';
-    if (aqi <= 100) return '#f59e0b';
-    if (aqi <= 150) return '#ef4444';
-    return '#7c2d12';
+    if (aqi === null || aqi === undefined) return '#6b7280'; // Unknown (Gray)
+
+    if (aqi <= 50) return '#10b981';   // ✅ Good (Green)
+    if (aqi <= 100) return '#84cc16';  // 🙂 Satisfactory (Light Green)
+    if (aqi <= 200) return '#facc15';  // 😷 Moderate (Yellow)
+    if (aqi <= 300) return '#f97316';  // ⚠️ Poor (Orange)
+    if (aqi <= 400) return '#ef4444';  // ☠️ Very Poor (Red)
+
+    return '#7c2d12';                  // ☣️ Severe (Dark Maroon)
 };
 
+
 const getAQIStatus = (aqi) => {
-    if (!aqi) return 'Unknown'; // Handle null or undefined
+    if (aqi === null || aqi === undefined) return 'Unknown';
+
     if (aqi <= 50) return 'Good';
-    if (aqi <= 100) return 'Moderate';
-    if (aqi <= 150) return 'Unhealthy';
-    return 'Hazardous';
+    if (aqi <= 100) return 'Satisfactory';
+    if (aqi <= 200) return 'Moderate';
+    if (aqi <= 300) return 'Poor';
+    if (aqi <= 400) return 'Very Poor';
+
+    return 'Severe';
 };
+
 
 // Function to get user-friendly station names
 const getFriendlyStationName = (stationName) => {
