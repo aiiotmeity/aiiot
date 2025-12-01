@@ -195,7 +195,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 def get_s3_forecast_data(device_type=None):
     """
     CORRECTED: Fetches and processes the 4-day forecast from S3.
-    This version uses the correct filename logic for all stations, including lora-v3.
+    This version uses the correct filename logic for qstations, including lora-v3.
     """
     if not s3_client:
         logger.warning("S3 client not available, cannot fetch forecast.")
@@ -967,8 +967,10 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
 import json
-@require_http_methods(["POST"])
-@csrf_protect
+
+
+@api_view(["POST"])
+@csrf_exempt
 def user_login_api(request):
     try:
         data = json.loads(request.body.decode('utf-8'))
