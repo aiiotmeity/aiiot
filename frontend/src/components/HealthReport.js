@@ -191,9 +191,10 @@ function HealthReport() {
     const [currentDataInfo, setCurrentDataInfo] = useState(null);
 
     const navigate = useNavigate();
-    const API_BASE_URL = process.env.NODE_ENV === 'production' 
-        ? 'https://airaware-app-gcw7.onrender.com' // Your deployed backend URL
-        : 'http://localhost:8000';                   // Your local backend URL
+    const API_BASE_URL = process.env.NODE_ENV === 'production'
+        ? 'https://aiiot-1.onrender.com'
+        : 'http://localhost:8000';
+                  // Your local backend URL
 
     // Update time every minute
     useEffect(() => {

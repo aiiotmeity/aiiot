@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # Your apps
     'myapp',
     'weather_monitoring',
+
 ]
 
 # ==========================================
@@ -216,3 +217,5 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+

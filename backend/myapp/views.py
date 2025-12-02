@@ -2695,3 +2695,10 @@ def get_brochures_by_category(request, category):
     brochures = Brochure.objects.filter(category=category, is_active=True)
     serializer = BrochureSerializer(brochures, many=True)
     return Response(serializer.data)
+
+
+
+
+
+
+
