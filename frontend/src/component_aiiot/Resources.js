@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// IMPORT CSS TO ENSURE NAV STYLES WORK
 import './Aiiot.css'; 
 
 const ResourcesPage = () => {
-  // --- Navigation State (Copied from AIIOT_INDEX) ---
+  // --- Navigation State ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [projectsDropdownOpen, setProjectsDropdownOpen] = useState(false);
   const [mobileLaunchesExpanded, setMobileLaunchesExpanded] = useState(false);
@@ -13,7 +12,7 @@ const ResourcesPage = () => {
   const [brochures, setBrochures] = useState([]);
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
-  // --- Click Outside Logic for Dropdowns ---
+  // --- Click Outside Logic ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       const navElement = document.querySelector('nav');
@@ -52,12 +51,14 @@ const ResourcesPage = () => {
   }, [API_BASE_URL]);
 
   const styles = {
-    // Increased top padding to 8rem to account for fixed header
     container: { maxWidth: '80rem', margin: '0 auto', padding: '8rem 1rem 4rem 1rem', fontFamily: 'sans-serif' },
     section: { marginBottom: '4rem' },
     heading: { fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '1.5rem', borderLeft: '5px solid #3b82f6', paddingLeft: '1rem' },
+    // Standard Grid for Brochures
     cardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' },
-    card: { background: 'white', border: '1px solid #e2e8f0', borderRadius: '0.75rem', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' },
+    // NEW STYLE: Vertical Stack for Top Section
+    verticalStack: { display: 'flex', flexDirection: 'column', gap: '2rem' },
+    card: { background: 'white', border: '1px solid #e2e8f0', borderRadius: '0.75rem', padding: '2rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', display: 'flex', flexDirection: 'column' },
     btn: { display: 'inline-block', marginTop: '1rem', padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', textDecoration: 'none', borderRadius: '0.375rem', fontWeight: 500 }
   };
 
@@ -65,7 +66,7 @@ const ResourcesPage = () => {
     <div className="aiiot-page-container">
       
       {/* ===================================================== */}
-      {/* COPIED NAVIGATION HEADER                              */}
+      {/* NAVIGATION HEADER                                     */}
       {/* ===================================================== */}
       <header style={{
         position: 'fixed',
@@ -83,7 +84,6 @@ const ResourcesPage = () => {
         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem' }}>
           <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '5rem' }}>
             
-            {/* --- LOGO (Links back to Home) --- */}
             <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '1rem', zIndex: 1001, textDecoration: 'none' }}>
               <div style={{
                 width: 'auto',
@@ -109,9 +109,7 @@ const ResourcesPage = () => {
               </div>
             </Link>
 
-            {/* --- DESKTOP NAVIGATION --- */}
             <div className="desktop-nav">
-              {/* Note: Added '/' to hrefs to ensure they go back to the home page anchors */}
               <a href="/#about" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#475569' }} 
                  onMouseEnter={(e) => e.target.style.color = '#3b82f6'} onMouseLeave={(e) => e.target.style.color = '#475569'}>
                  About
@@ -133,7 +131,6 @@ const ResourcesPage = () => {
                  Projects
               </a>
 
-              {/* Launches Dropdown */}
               <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => { setProjectsDropdownOpen(!projectsDropdownOpen); }}
@@ -161,7 +158,6 @@ const ResourcesPage = () => {
               </a>
             </div>
 
-            {/* --- MOBILE HAMBURGER BUTTON --- */}
             <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? '✕' : '☰'}
             </button>
@@ -169,7 +165,7 @@ const ResourcesPage = () => {
           </nav>
         </div>
 
-        {/* --- MOBILE MENU CONTENT --- */}
+        {/* --- MOBILE MENU --- */}
         {isMobileMenuOpen && (
           <div className="mobile-menu-wrapper">
             <a href="/#about" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9' }}>About</a>
@@ -185,7 +181,6 @@ const ResourcesPage = () => {
 
             <a href="/#projects" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9' }}>Projects</a>
 
-            {/* Mobile Launches Accordion */}
             <div style={{ borderBottom: '1px solid #f1f5f9', marginBottom:'2rem' }}>
               <button onClick={() => setMobileLaunchesExpanded(!mobileLaunchesExpanded)}
                 style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '1rem 0', background: 'none', border: 'none', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b' }}>
@@ -208,28 +203,39 @@ const ResourcesPage = () => {
 
 
       {/* ===================================================== */}
-      {/* MAIN RESOURCES CONTENT                                */}
+      {/* MAIN CONTENT                                          */}
       {/* ===================================================== */}
       <div style={styles.container}>
-        {/* 1. Header & Vision/Mission */}
+        
+        {/* 1. Facility & Objectives Section (STACKED VERTICALLY) */}
         <section style={styles.section}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1e293b', textAlign: 'center', marginBottom: '3rem' }}>
-            Resources & Opportunities
+            Center for AI-IoT Innovation
           </h1>
           
-          <div style={styles.cardGrid}>
-            <div style={{ ...styles.card, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e40af', marginBottom: '0.5rem' }}>Our Vision</h3>
-              <p style={{ color: '#1e3a8a' }}>To be a global leader in AI-IoT integration, fostering a culture of innovation that bridges the gap between theoretical hardware design and intelligent software application.</p>
-            </div>
+          {/* Using verticalStack instead of cardGrid here */}
+          <div style={styles.verticalStack}>
+            {/* Vision / Facility Description Card */}
+            
+
+            {/* Mission / Objectives Card */}
             <div style={{ ...styles.card, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#166534', marginBottom: '0.5rem' }}>Our Mission</h3>
-              <p style={{ color: '#14532d' }}>To provide state-of-the-art facilities for research, empower students through hands-on internships, and disseminate knowledge through seminars and open-source resources.</p>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#166534', marginBottom: '1rem' }}>Our Objectives</h3>
+              <p style={{ color: '#14532d', fontWeight: 600, marginBottom: '0.75rem', fontSize: '1.1rem' }}>
+                Main Objective: Development of digital networking for preventive and predictive environmental and climatic warning solutions.
+              </p>
+              <ul style={{ color: '#14532d', paddingLeft: '1.2rem', marginTop: '0.5rem', lineHeight: 1.8, fontSize: '1.05rem' }}>
+                <li style={{marginBottom:'0.5rem'}}>Develop intelligent sensor modules for pollution monitoring.</li>
+                <li style={{marginBottom:'0.5rem'}}>Validate smart water level monitoring with flood alerts.</li>
+                <li style={{marginBottom:'0.5rem'}}>Create digital systems for water level distribution.</li>
+                <li style={{marginBottom:'0.5rem'}}>Build a startup & skill development ecosystem.</li>
+                <li>Develop Explainable AI (XAI) analysis software for IoT.</li>
+              </ul>
             </div>
           </div>
         </section>
 
-        {/* 4. Documents & Brochures (Fetched from API) */}
+        {/* 2. Documents & Brochures (REMAINS GRID) */}
         <section style={styles.section}>
           <h2 style={styles.heading}>📄 Official Documents & Brochures</h2>
           {brochures.length === 0 ? (

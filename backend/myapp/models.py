@@ -375,11 +375,12 @@ class Resource(models.Model):
 
 class Brochure(models.Model):
     CATEGORY_CHOICES = [
-        ('center', 'Center Brochure'),
-        ('vision', 'Vision & Mission'),
-        ('setup', 'Setup Guide'),
-        ('report', 'Annual Report'),
-    ]
+    ('iot_internship', 'IoT Internship'),
+    ('workshop', 'Workshop'),
+    ('vision', 'Vision & Mission'),
+    ('project', 'Student Projects'),
+    ('research', 'Research & Publications'),
+]
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
