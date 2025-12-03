@@ -316,49 +316,15 @@ useEffect(() => {
               </a>
 
               {/* Resources Dropdown */}
-              <div style={{ position: 'relative' }}>
-                <button
-                  onClick={() => { setResourcesDropdownOpen(!resourcesDropdownOpen); setProjectsDropdownOpen(false); }}
-                  style={{ fontSize: '0.875rem', fontWeight: 500, color: '#475569', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'} onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
-                >
-                  Resources <span style={{ fontSize: '0.75rem' }}>▼</span>
-                </button>
-
-                {resourcesDropdownOpen && (
-                  <div style={{
-                    position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', background: 'white', borderRadius: '0.5rem',
-                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)', border: '1px solid #e2e8f0', minWidth: '18rem', zIndex: 100, maxHeight: '500px', overflowY: 'auto'
-                  }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0.75rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                      <button onClick={() => setSelectedCategory(null)}
-                        style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: selectedCategory === null ? 'white' : '#475569', background: selectedCategory === null ? '#3b82f6' : '#e2e8f0', border: 'none', borderRadius: '0.25rem', cursor: 'pointer' }}>
-                        All ({brochures.length})
-                      </button>
-                      {categories.map((cat) => (
-                        <button key={cat} onClick={() => setSelectedCategory(cat)}
-                          style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: selectedCategory === cat ? 'white' : '#475569', background: selectedCategory === cat ? '#3b82f6' : '#e2e8f0', border: 'none', borderRadius: '0.25rem', cursor: 'pointer', textTransform: 'capitalize' }}>
-                          {cat} ({brochures.filter(b => b.category === cat).length})
-                        </button>
-                      ))}
-                    </div>
-                    <div>
-                      {brochuresLoading ? <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b' }}>Loading...</div> : 
-                       filteredBrochures.length > 0 ? filteredBrochures.map((brochure, idx) => (
-                        <a key={idx} href={brochure.url} target="_blank" rel="noopener noreferrer"
-                           style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', textDecoration: 'none', borderBottom: '1px solid #f1f5f9' }}
-                           className="hover:bg-blue-50">
-                          <span style={{ fontSize: '1.25rem' }}>{brochure.icon}</span>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, color: '#1e293b', fontSize:'0.9rem' }}>{brochure.title}</div>
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{brochure.category}</div>
-                          </div>
-                        </a>
-                      )) : <div style={{ padding: '1rem', color: '#64748b' }}>No resources found</div>}
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Resources Link (Desktop) */}
+              <Link 
+                to="/resources" 
+                style={{ fontSize: '0.875rem', fontWeight: 500, color: '#475569', textDecoration: 'none' }}
+                onMouseEnter={(e) => e.target.style.color = '#3b82f6'} 
+                onMouseLeave={(e) => e.target.style.color = '#475569'}
+              >
+                Resources
+              </Link>
 
               <a href="#projects" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#475569' }}
                  onMouseEnter={(e) => e.target.style.color = '#3b82f6'} onMouseLeave={(e) => e.target.style.color = '#475569'}>
@@ -412,21 +378,22 @@ useEffect(() => {
             <a href="#team" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9' }}>Team</a>
             
             {/* Mobile Resources Accordion */}
-            <div style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <button onClick={() => setMobileResourcesExpanded(!mobileResourcesExpanded)}
-                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '1rem 0', background: 'none', border: 'none', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b' }}>
-                Resources <span>{mobileResourcesExpanded ? '−' : '+'}</span>
-              </button>
-              {mobileResourcesExpanded && (
-                <div className="mobile-submenu">
-                   {brochures.length > 0 ? brochures.map((b, i) => (
-                     <a key={i} href={b.url} target="_blank" style={{ display: 'block', padding: '0.75rem 0', color: '#475569', fontSize: '0.95rem', textDecoration:'none' }}>
-                       {b.icon} {b.title}
-                     </a>
-                   )) : <div style={{color:'#94a3b8'}}>No resources loaded</div>}
-                </div>
-              )}
-            </div>
+            {/* Mobile Resources Link (Redirects to new page) */}
+            <Link 
+              to="/resources" 
+              onClick={() => setIsMobileMenuOpen(false)} 
+              style={{ 
+                display: 'block', 
+                padding: '1rem 0', 
+                fontSize: '1.1rem', 
+                fontWeight: 600, 
+                color: '#1e293b', 
+                borderBottom: '1px solid #f1f5f9',
+                textDecoration: 'none'
+              }}
+            >
+              Resources
+            </Link>
 
             <a href="#projects" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9' }}>Projects</a>
 

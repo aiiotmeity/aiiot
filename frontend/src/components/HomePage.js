@@ -67,7 +67,7 @@ function HomePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoaded(true);
-    }, 1000);
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
   // In src/components/HomePage.js
