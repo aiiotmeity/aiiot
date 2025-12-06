@@ -10,7 +10,7 @@ from django.conf.urls.static import static
 
 router = DefaultRouter()
 router.register(r'brochures', views.BrochureViewSet, basename='brochure')
-
+router.register(r'workshops', views.WorkshopEventViewSet, basename='workshop')
 
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})

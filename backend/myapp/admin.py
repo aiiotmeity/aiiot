@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Signup, UserLogin, HealthAssessment, FamilyMembers, 
-    Support, ResourceFile, Resource, Brochure
+    Support, ResourceFile, Resource, Brochure ,WorkshopEvent
 )
 
 admin.site.site_header = "AI-IoT Admin Panel"
@@ -60,3 +60,9 @@ class ResourceFileAdmin(admin.ModelAdmin):
     list_display = ('title', 'category', 'uploaded_at')
     list_filter = ('category', 'uploaded_at')
     search_fields = ('title',)
+
+@admin.register(WorkshopEvent)
+class WorkshopEventAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'event_date_text', 'participants')
+    search_fields = ('title', 'description')
+    list_filter = ('category',)

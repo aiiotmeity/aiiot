@@ -50,13 +50,13 @@ import json
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
-from .serializers import ResourceSerializer, BrochureSerializer
+from .serializers import ResourceSerializer, BrochureSerializer, WorkshopEventSerializer
  # <-- Make sure this is imported
 
 
 
 # Import your models
-from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support, ResourceFile,Resource,Brochure
+from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support, ResourceFile,Resource,Brochure ,WorkshopEvent
 
 # Import DynamoDB functions with error handling
 try:
@@ -2697,6 +2697,9 @@ def get_brochures_by_category(request, category):
     return Response(serializer.data)
 
 
+class WorkshopEventViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = WorkshopEvent.objects.all()
+    serializer_class = WorkshopEventSerializer
 
 
 

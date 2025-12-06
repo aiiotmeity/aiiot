@@ -1,454 +1,341 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import './Aiiot.css';
+import axios from 'axios'; // Ensure you have axios installed: npm install axios
+import './ProjectDetail.css';
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
-
-  // Scroll to top on mount and when projectId changes
+  const [activeSection, setActiveSection] = useState('overview');
   
+  // State for dynamic workshops
+  const [workshops, setWorkshops] = useState([]);
+  const [loadingWorkshops, setLoadingWorkshops] = useState(false);
+
+  // Scroll to top on mount
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [projectId]);
 
-  // Project details data
-  const projectsData = {
-    'intelligent-sensor': {
-      title: 'Intelligent Sensor Module',
-      subtitle: 'Real-time Environmental Monitoring',
-      mainImage: '/sensor_modules/module2.jpg',
-      description: 'Developing a smart sensor module for real-time monitoring and management of environmental pollutants.',
-      fullDescription: `
-        The Intelligent Sensor Module is an advanced IoT device designed to continuously monitor air quality, water quality, and environmental parameters. 
-        This module integrates multiple sensors with edge computing capabilities to provide real-time data processing and analytics.
-      `,
-      features: [
-        'Multi-parameter sensing (PM2.5, PM10, NO2, SO2, O3, CO, NH3)',
-        'Real-time data transmission via LoRaWAN',
-        'Edge computing for instant alerts',
-        'Low power consumption design',
-        'Weather-resistant IP67 rating',
-        'Modular architecture for easy upgrades'
-      ],
-      specifications: [
-        { label: 'Operating Range', value: '0-500 µg/m³' },
-        { label: 'Accuracy', value: '±5%' },
-        { label: 'Update Frequency', value: '5 minutes' },
-        { label: 'Power Consumption', value: '2W average' },
-        { label: 'Battery Life', value: '6 months' }
-      ],
-      mobileApp: {
-        available: true,
-        description: 'Monitor sensor data directly from your smartphone',
-        features: ['Real-time alerts', 'Historical data', 'Data export', 'Offline mode']
-      },
-      gallery: [
-        '/sensor_modules/module2.jpg',
-        '/sensor_modules/module_detail1.jpg',
-        '/sensor_modules/module_detail2.jpg'
-      ]
-    },
-    'water-level': {
-      title: 'Smart Water Level Monitoring',
-      subtitle: 'Flood Risk Mitigation System',
-      mainImage: '/sensor_modules/water_monitor.jpg',
-      description: 'A robust solution for monitoring water levels with an integrated alert system to mitigate flood risks.',
-      fullDescription: `
-        A smart digital system for real-time monitoring and management of urban water distribution, offering flow analysis, leak detection, and optimized allocation. The integrated Smart Water Level Monitoring module tracks river and dam levels, uses AI to predict floods, and sends timely alerts—creating a unified platform for safer and more efficient water management.
-      `,
-      features: [
-        'Ultrasonic water level sensors',
-        'AI-powered flood prediction',
-        'Multi-channel alert system (SMS, App, Web)',
-        'Historical data analytics',
-        'Integration with weather forecasts',
-        'Scalable network architecture'
-      ],
-      specifications: [
-        { label: 'Measurement Range', value: '0-10 meters' },
-        { label: 'Accuracy', value: '±2 cm' },
-        { label: 'Update Interval', value: '10 seconds' },
-        { label: 'Transmission Range', value: '15+ km' },
-        { label: 'Alert Response Time', value: '< 1 minute' }
-      ],
-      mobileApp: {
-        available: true,
-        description: 'Get instant flood alerts and historical water level trends',
-        features: ['Push notifications', 'Map view', 'Data charts', 'Community alerts']
-      },
-      gallery: [
-        '/sensor_modules/water_monitor.jpg',
-        '/sensor_modules/water_detail1.jpg',
-        '/sensor_modules/water_detail2.jpg'
-      ]
-    },
-    'digital-water': {
-      title: 'Digital Water Distribution',
-      subtitle: 'Smart Water Network Management',
-      mainImage: '/sensor_modules/water_authorityy.jpeg',
-      description: 'Creating a digital twin to efficiently monitor and manage water distribution networks in urban areas.',
-      fullDescription: `
-        Digital Water Distribution involves creating a digital model of water pipelines, tanks, pumps, and valves within a specific ward, zone, or local distribution area. Instead of modeling an entire city, the system focuses on localized water networks, making monitoring and management more accurate and actionable at a smaller scale.
-      `,
-      features: [
-        'IoT-enabled pipeline monitoring',
-        'Real-time leak detection',
-        'Predictive maintenance scheduling',
-        'Digital twin visualization',
-        'Pressure and flow optimization',
-        'Consumption analytics'
-      ],
-      specifications: [
-        { label: 'Network Coverage', value: 'Up to 500 km' },
-        { label: 'Sensor Density', value: '1 sensor per 2 km' },
-        { label: 'Data Update Rate', value: 'Real-time' },
-        { label: 'Leak Detection Accuracy', value: '95%' },
-        { label: 'Water Loss Reduction', value: '20-30%' }
-      ],
-      mobileApp: {
-        available: true,
-        description: 'Monitor water supply and report leaks through the app',
-        features: ['Network status', 'Leak reporting', 'Usage statistics', 'Service requests']
-      },
-      gallery: [
-        '/sensor_modules/water_authorityy.jpeg'
-      ]
-    },
-    'startup-skill': {
-      title: 'Startup & Skill Development',
-      subtitle: 'Fostering Innovation and Entrepreneurship',
-      mainImage: '/sensor_modules/skill.jpg',
-      description: 'Fostering a vibrant startup ecosystem and providing skill development programs centered around our IoT solutions.',
-      fullDescription: `
-        Our Startup & Skill Development initiative provides aspiring entrepreneurs, students, and technology enthusiasts with comprehensive training, structured mentorship, and essential resources needed to transform ideas into impactful solutions. Participants gain access to hands-on IoT workshops, business incubation support, and state-of-the-art hardware and software tools—empowering them to innovate, prototype, and build real-world products with confidence.
-      `,
-      features: [
-        'IoT development bootcamps',
-        'Business mentorship programs',
-        'Hardware prototyping labs',
-        'Startup incubation support',
-        'Investor networking events',
-        'Certification courses'
-      ],
-      specifications: [
-        { label: 'Training Duration', value: '6-12 months' },
-        { label: 'Participants per Batch', value: '20-30' },
-        { label: 'Success Rate', value: '85%' },
-        { label: 'Startup Funding Support', value: 'Yes' },
-        { label: 'Job Placement', value: '75%' }
-      ],
-      mobileApp: {
-        available: true,
-        description: 'Access training materials and track your learning progress',
-        features: ['Course content', 'Live sessions', 'Certificates', 'Job board']
-      },
-      gallery: [
-        '/sensor_modules/skill.jpg'
-      ]
-    },
-    'xai-software': {
-      title: 'Explainable AI Software',
-      subtitle: 'Transparent Intelligence for IoT Systems',
-      mainImage: '/sensor_modules/ai.jpeg',
-      description: 'Building analysis software based on Explainable AI (XAI) to bring transparency and trust to complex IoT systems.',
-      fullDescription: `
-        Our Explainable AI Software suite provides transparent decision-making algorithms for IoT data analysis. 
-        Unlike black-box AI models, our XAI system explains every prediction, making it ideal for critical applications in healthcare, 
-        environmental monitoring, and urban management.
-      `,
-      features: [
-        'Interpretable machine learning models',
-        'Real-time decision explanations',
-        'Data visualization dashboards',
-        'Anomaly detection with reasoning',
-        'Compliance report generation',
-        'Multi-layer transparency'
-      ],
-      specifications: [
-        { label: 'Processing Speed', value: '< 100ms' },
-        { label: 'Model Accuracy', value: '92%' },
-        { label: 'Explainability Score', value: '9.2/10' },
-        { label: 'Data Sources', value: 'Multi-stream' },
-        { label: 'API Response Time', value: '50-150ms' }
-      ],
-      mobileApp: {
-        available: true,
-        description: 'Understand AI predictions and insights on the go',
-        features: ['Decision explanations', 'Confidence scores', 'Data insights', 'Export reports']
-      },
-      gallery: [
-        '/sensor_modules/ai.jpeg'
-      ]
+  // Fetch Workshops only if we are on the 'startup-skill' page
+  useEffect(() => {
+    if (projectId === 'startup-skill') {
+      setLoadingWorkshops(true);
+      // CHANGE THIS URL TO YOUR ACTUAL DJANGO URL
+      // NEW CODE (Works on both Localhost and Production)
+        const API_BASE_URL = process.env.NODE_ENV === 'production'
+          ? 'https://aiiot-1.onrender.com'
+          : 'http://localhost:8000';
+
+        axios.get(`${API_BASE_URL}/api/workshops/`)
+        .then(response => {
+          setWorkshops(response.data);
+          setLoadingWorkshops(false);
+        })
+        .catch(error => {
+          console.error("Error fetching workshops", error);
+          setLoadingWorkshops(false);
+        });
+    }
+  }, [projectId]);
+
+  // Handle Scroll Spy
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['overview', 'innovations', 'impact', 'contact'];
+      const scrollPosition = window.scrollY + 200;
+
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element && element.offsetTop <= scrollPosition && (element.offsetTop + element.offsetHeight) > scrollPosition) {
+          setActiveSection(section);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
   };
 
-  // Map project titles to IDs
-  const titleToId = {
-    'Intelligent Sensor Module': 'intelligent-sensor',
-    'Smart Water Level Monitoring': 'water-level',
-    'Digital Water Distribution': 'digital-water',
-    'Startup & Skill Development': 'startup-skill',
-    'Explainable AI Software': 'xai-software'
+  // --- STATIC DATA (Updated with your new text) ---
+  const projectsData = {
+    'intelligent-sensor': {
+      title: 'Pollution Intelligence Network',
+      subtitle: 'AI-Powered Hyperlocal Monitoring',
+      tagline: 'Sensing. Predicting. Protecting.',
+      mainImage: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?q=80&w=2069&auto=format&fit=crop',
+      description: 'A scalable LoRa-based network designed not just to monitor, but to predict air quality trends using Artificial Intelligence.',
+      fullDescription: `We have deployed a validation-ready network that goes beyond simple sensing. By utilizing LoRa technology for long-range communication and advanced AI models, we provide a 4-day AQI forecast. This allows citizens to plan their activities based on future air quality, not just current readings.`,
+      innovations: [
+        { title: 'Comprehensive Sensing', desc: 'Simultaneous detection of PM2.5, PM10, CO, NO2, O3, and NH3.', icon: '🔬' },
+        { title: '4-Day AI Forecasting', desc: 'Machine learning algorithms analyze trends to predict AQI levels 96 hours ahead.', icon: '🤖' },
+        { title: 'Personalized Health Risk', desc: 'Dynamic health assessments that warn specific at-risk groups.', icon: '❤️' },
+        { title: 'LoRa Scalability', desc: 'Long-range network architecture covers entire districts with minimal hardware.', icon: '📡' }
+      ],
+      impacts: [
+        { label: 'Pollutants', value: 'PM2.5, PM10, Gases' },
+        { label: 'Forecast', value: '4-Days Ahead' },
+        { label: 'Tech Stack', value: 'LoRa + AI' },
+        { label: 'Network', value: 'Mesh Topology' }
+      ]
+    },
+    
+    // --- UPDATED FLOOD PROJECT ---
+    'water-level': {
+      title: 'River Watch & Flood Alert',
+      subtitle: 'Deep Learning Flood Forecasting',
+      tagline: 'Predicting the flow. Protecting Kalady.',
+      mainImage: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=2070&auto=format&fit=crop',
+      description: 'A comprehensive LSTM neural network system for real-time river level forecasting at Kalady.',
+      fullDescription: `
+        This project integrates multi-source data—dam operations (water level, release rates), real-time upstream rainfall from multiple stations, and historical Neeleswaram river levels.
+        We utilize a comprehensive LSTM neural network with a 3-stacked layer architecture (128→64→32 units) to analyze temporal features (hour, day, seasonal patterns). This delivers accurate 6-hour ahead predictions, providing critical lead time for authorities.
+      `,
+      innovations: [
+        { title: 'LSTM Architecture', desc: '3 stacked layers (128→64→32 units) trained on historical data.', icon: '🧠' },
+        { title: 'Multi-Source Data', desc: 'Integrates Dam operations, local rainfall, and river metrics.', icon: '🌊' },
+        { title: '6-Hour Prediction', desc: 'Accurate forecasting allowing 6 hours of preparation time.', icon: '⏱️' },
+        { title: 'Custom AWS Hardware', desc: 'Proprietary Automatic Weather Station measuring Rainfall, Wind, Temp.', icon: '⛈️' }
+      ],
+      impacts: [
+        { label: 'Target', value: 'Kalady Region' },
+        { label: 'Model', value: 'LSTM Network' },
+        { label: 'Lead Time', value: '6 Hours' },
+        { label: 'Hardware', value: 'Custom AWS' }
+      ]
+    },
+
+    // --- UPDATED DIGITAL WATER PROJECT ---
+    'digital-water': {
+      title: 'Digital Water Distribution',
+      subtitle: 'Community-First Water Management',
+      tagline: 'Collaborative solutions for efficient distribution.',
+      mainImage: 'https://images.unsplash.com/photo-1605218457336-9276c1272bd8?q=80&w=2070&auto=format&fit=crop',
+      description: 'A digital system built on extensive ground studies to monitor and optimize local water distribution effectively.',
+      fullDescription: `
+        We conducted comprehensive ground studies by engaging with Assistant Engineers (AE) at KWA Perumbavoor Division to understand regional networks. Site visits to the KWA Main Water Pumping Station in Chembarakky allowed us to examine pumping infrastructure and automation possibilities. This stakeholder feedback informs our Explainable AI-based analysis software.
+      `,
+      innovations: [
+        { title: 'Stakeholder Collaboration', desc: 'Requirements gathered from KWA officials and Panchayat authorities.', icon: '🤝' },
+        { title: 'Ground Study', desc: 'Site visits to Chembarakky Pumping Station to assess infrastructure.', icon: '📍' },
+        { title: 'Explainable AI', desc: 'AI-based analysis software for transparent IoT solutions.', icon: '🤖' },
+        { title: 'Community Feedback', desc: 'Integrated channels for residents to report issues.', icon: '🗣️' }
+      ],
+      impacts: [
+        { label: 'Partners', value: 'KWA & Panchayat' },
+        { label: 'Focus', value: 'Pumping Infra' },
+        { label: 'Tech', value: 'Explainable AI' },
+        { label: 'Method', value: 'Field Study' }
+      ]
+    },
+
+    // --- STARTUP SKILL (Content is handled dynamically below) ---
+    'startup-skill': {
+      title: 'Startup Ecosystem & Skills',
+      subtitle: 'Empowering the Next Gen',
+      tagline: 'Hands-on mastery of IoT & Environment.',
+      mainImage: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=2070&auto=format&fit=crop',
+      description: 'Establishing multiple training programs across IoT, AI, and embedded systems through workshops, internships, and hands-on projects.',
+      fullDescription: `
+        We foster a startup ecosystem by providing students with real-world exposure. From intensive 15-day summer internships to 6-month specialized intern training, we bridge the gap between academia and industry. Our research outputs include filed patents and published papers, proving the efficacy of our innovation model.
+      `,
+      // These are static highlights, the list of workshops comes from API
+      innovations: [
+        { title: 'Research Outputs', desc: '1 Patent filed, 2 Papers published, 1 communicated.', icon: '📜' },
+        { title: 'Internship Program', desc: '15-day intensive training & 6-month long-term mentorships.', icon: '🎓' },
+        { title: 'Hands-on Workshops', desc: 'Covering PCB Design, Edge Hardware, and Robotics.', icon: '🛠️' },
+        { title: 'Idea Pitching', desc: 'Competitions to select and mentor promising startup teams.', icon: '🚀' }
+      ],
+      impacts: [
+        { label: 'Workshops', value: '260+ Students' },
+        { label: 'Interns', value: '49+ Trained' },
+        { label: 'Research', value: '1 Patent' },
+        { label: 'Teams', value: '6 Mentored' }
+      ]
+    },
   };
 
   const project = projectsData[projectId];
 
   if (!project) {
     return (
-      <div style={{ padding: '5rem 2rem', textAlign: 'center', minHeight: '100vh' }}>
-        <h1 style={{ color: '#1e293b', marginBottom: '1rem' }}>Project Not Found</h1>
-        <p style={{ color: '#475569', marginBottom: '2rem' }}>The project you're looking for doesn't exist.</p>
-        <Link to="/" style={{
-          padding: '0.75rem 1.5rem',
-          background: '#3b82f6',
-          color: 'white',
-          borderRadius: '0.5rem',
-          textDecoration: 'none'
-        }}>
-          Back to Home
-        </Link>
+      <div className="project-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+        <h2 style={{ marginBottom: '1rem' }}>Project Loading...</h2>
+        <Link to="/" className="btn-primary">Back to Home</Link>
       </div>
     );
   }
 
   return (
-    <div className="project-detail-container">
-      {/* Header */}
-      <header style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        width: '100%',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-        padding: '1rem 2rem'
-      }}>
-        <Link to="/" style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          color: '#3b82f6',
-          textDecoration: 'none',
-          fontSize: '0.875rem',
-          fontWeight: 600,
-          transition: 'color 0.3s ease'
-        }}
-        onMouseEnter={(e) => e.target.style.color = '#2563eb'}
-        onMouseLeave={(e) => e.target.style.color = '#3b82f6'}
-        >
-          ← Back to Projects
-        </Link>
-      </header>
-
-      {/* Hero Section */}
-      <section style={{ padding: '4rem 2rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <div style={{ maxWidth: '80rem', margin: '0 auto' }}>
-          <div style={{ color: 'white' }}>
-            <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', opacity: 0.9 }}>
-            AI-IoT Innovation Project
-            </p>
-            <h1 style={{ fontSize: '3rem', fontWeight: 700, marginBottom: '1rem' }}>
-              {project.title}
-            </h1>
-            <p style={{ fontSize: '1.125rem', maxWidth: '600px', opacity: 0.95 }}>
-              {project.subtitle}
-            </p>
+    <div className="project-page">
+      
+      {/* 1. HERO SECTION */}
+      <section className="hero-section">
+        <div className="container hero-grid">
+          <div className="hero-content">
+            <span className="hero-tag">Detailed Case Study</span>
+            <h1 className="hero-title">{project.title}</h1>
+            <p className="hero-desc">{project.description}</p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={() => scrollToSection('innovations')} className="btn-primary">
+                View Details
+              </button>
+              <Link to="/" className="btn-secondary">
+                Back to List
+              </Link>
+            </div>
+          </div>
+          <div className="hero-img-wrapper">
+            <img src={project.mainImage} alt={project.title} className="hero-img" />
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <main style={{ maxWidth: '80rem', margin: '0 auto', padding: '4rem 2rem' }}>
-        {/* Project Image */}
-        <div style={{ marginBottom: '4rem' }}>
-          <img
-            src={project.mainImage}
-            alt={project.title}
-            style={{
-              width: '100%',
-              height: '400px',
-              objectFit: 'cover',
-              borderRadius: '1rem',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-            }}
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.parentElement.style.background = '#eff6ff';
-              e.target.parentElement.style.display = 'flex';
-              e.target.parentElement.style.alignItems = 'center';
-              e.target.parentElement.style.justifyContent = 'center';
-              e.target.parentElement.style.minHeight = '400px';
-              e.target.parentElement.innerHTML = '<span style="font-size: 5rem;">🔧</span>';
-            }}
-          />
+      {/* 2. STICKY NAV */}
+      <div className="sticky-nav">
+        <div className="container nav-container">
+          {['Overview', 'Innovations', 'Impact', 'Contact'].map((item) => (
+            <div 
+              key={item} 
+              onClick={() => scrollToSection(item.toLowerCase())} 
+              className={`nav-item ${activeSection === item.toLowerCase() ? 'active' : ''}`}
+            >
+              {item}
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Description Section */}
-        <div style={{ marginBottom: '4rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
-            Overview
-          </h2>
-          <p style={{ fontSize: '1.125rem', color: '#475569', lineHeight: 1.8, marginBottom: '1rem' }}>
-            {project.description}
-          </p>
-          <p style={{ fontSize: '1rem', color: '#64748b', lineHeight: 1.8 }}>
-            {project.fullDescription}
-          </p>
-        </div>
+      <div className="container">
 
-        {/* Features Section */}
-        <div style={{ marginBottom: '4rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '2rem' }}>
-            Key Features
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-            {project.features.map((feature, idx) => (
-              <div key={idx} style={{
-                padding: '1.5rem',
-                background: '#f1f5f9',
-                borderLeft: '4px solid #3b82f6',
-                borderRadius: '0.5rem'
-              }}>
-                <p style={{ color: '#1e293b', fontWeight: 500 }}>
-                  ✓ {feature}
-                </p>
-              </div>
-            ))}
+        {/* 3. OVERVIEW */}
+        <section id="overview" className="section-padding">
+          <div className="overview-content">
+            <h3 style={{ color: '#0ea5e9', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              Mission Statement
+            </h3>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>
+              {project.tagline}
+            </h2>
+            <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: '#475569' }}>
+              {project.fullDescription}
+            </p>
           </div>
-        </div>
+        </section>
 
-        {/* Specifications Section */}
-        <div style={{ marginBottom: '4rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '2rem' }}>
-            Specifications
-          </h2>
-          <div style={{
-            background: 'white',
-            border: '1px solid #e2e8f0',
-            borderRadius: '0.75rem',
-            overflow: 'hidden'
-          }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <tbody>
-                {project.specifications.map((spec, idx) => (
-                  <tr key={idx} style={{
-                    borderBottom: idx < project.specifications.length - 1 ? '1px solid #e2e8f0' : 'none',
-                    background: idx % 2 === 0 ? '#f8fafc' : 'white'
-                  }}>
-                    <td style={{ padding: '1rem 1.5rem', fontWeight: 600, color: '#1e293b', width: '40%' }}>
-                      {spec.label}
-                    </td>
-                    <td style={{ padding: '1rem 1.5rem', color: '#475569' }}>
-                      {spec.value}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* 4. INNOVATIONS / DYNAMIC CONTENT */}
+        <section id="innovations" className="section-padding">
+          
+          {/* If this is the Skill Development Page, show Dynamic Workshops */}
+          {projectId === 'startup-skill' ? (
+             <div>
+                <h2 className="section-title">Training & Workshops</h2>
+                <p className="section-subtitle">Real-time data from our latest programs.</p>
 
-        {/* Mobile App Section */}
-        {project.mobileApp.available && (
-          <div style={{ marginBottom: '4rem', background: '#eff6ff', padding: '3rem', borderRadius: '1rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
-                  📱 Mobile App
-                </h2>
-                <p style={{ fontSize: '1rem', color: '#475569', marginBottom: '1.5rem', lineHeight: 1.8 }}>
-                  {project.mobileApp.description}
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {project.mobileApp.features.map((feature, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>●</span>
-                      <span style={{ color: '#475569' }}>{feature}</span>
+                {loadingWorkshops ? (
+                   <p style={{textAlign: 'center'}}>Loading latest workshops...</p>
+                ) : (
+                  <div className="innovation-grid">
+                    {workshops.length > 0 ? workshops.map((ws) => (
+                      <div key={ws.id} className="feature-card">
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'start'}}>
+                           <div className="icon-box" style={{marginBottom:'0.5rem'}}>📅</div>
+                           {ws.category === 'internship' && <span style={{background:'#dbeafe', color:'#1e40af', padding:'2px 8px', borderRadius:'4px', fontSize:'0.75rem', fontWeight:'bold'}}>Internship</span>}
+                        </div>
+                        <h3 className="card-title">{ws.title}</h3>
+                        <p style={{color:'#0284c7', fontWeight:'600', fontSize:'0.9rem', marginBottom:'0.5rem'}}>
+                           {ws.event_date_text}
+                        </p>
+                        <p style={{fontSize:'0.85rem', color:'#64748b', marginBottom:'1rem'}}>
+                           Participants: <strong>{ws.participants}</strong>
+                        </p>
+                        <p className="card-desc" style={{marginBottom:'1.5rem'}}>{ws.description}</p>
+                        
+                        {ws.brochure_file && (
+                          <a href={ws.brochure_file} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{marginTop:'auto', justifyContent:'center', fontSize:'0.85rem'}}>
+                             Download Brochure
+                          </a>
+                        )}
+                      </div>
+                    )) : (
+                      <p style={{textAlign:'center', gridColumn:'1/-1'}}>No workshops added yet. Check back soon!</p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Show the Static Research highlights below the dynamic list */}
+                <div style={{marginTop: '4rem'}}>
+                    <h2 className="section-title">Research & Impact</h2>
+                    <div className="innovation-grid" style={{marginTop: '2rem'}}>
+                       {project.innovations.map((item, idx) => (
+                        <div key={idx} className="feature-card">
+                          <div className="icon-box">{item.icon}</div>
+                          <h3 className="card-title">{item.title}</h3>
+                          <p className="card-desc">{item.desc}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
                 </div>
-                <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
-                  <a href="#" style={{
-                    padding: '0.75rem 1.5rem',
-                    background: '#3b82f6',
-                    color: 'white',
-                    borderRadius: '0.5rem',
-                    textDecoration: 'none',
-                    fontSize: '0.875rem',
-                    fontWeight: 600
-                  }}>
-                    Download on App Store
-                  </a>
-                  <a href="#" style={{
-                    padding: '0.75rem 1.5rem',
-                    background: 'white',
-                    border: '1px solid #3b82f6',
-                    color: '#3b82f6',
-                    borderRadius: '0.5rem',
-                    textDecoration: 'none',
-                    fontSize: '0.875rem',
-                    fontWeight: 600
-                  }}>
-                    Google Play
-                  </a>
-                </div>
-              </div>
-              <div style={{
-                background: 'white',
-                borderRadius: '1rem',
-                padding: '2rem',
-                textAlign: 'center',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
-              }}>
-                <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>📱</div>
-                <p style={{ color: '#64748b' }}>Available on  Android</p>
+
+             </div>
+          ) : (
+            // Standard View for other projects
+            <div>
+              <h2 className="section-title">Key Innovations</h2>
+              <p className="section-subtitle">Technological breakthroughs powering this solution.</p>
+              <div className="innovation-grid">
+                {project.innovations && project.innovations.map((item, idx) => (
+                  <div key={idx} className="feature-card">
+                    <div className="icon-box">{item.icon}</div>
+                    <h3 className="card-title">{item.title}</h3>
+                    <p className="card-desc">{item.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </section>
 
-        {/* Call to Action */}
-        <div style={{ background: '#f8fafc', padding: '3rem', borderRadius: '1rem', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
-            Interested in This Project?
+        {/* 5. IMPACT & SPECS */}
+        <section id="impact" className="section-padding">
+          <div className="impact-container">
+            <h2 className="section-title">Project Impact</h2>
+            <p className="section-subtitle">Measurable outcomes and specifics.</p>
+            
+            <div className="impact-grid">
+              {project.impacts && project.impacts.map((stat, idx) => (
+                <div key={idx} className="stat-box">
+                  <div className="stat-label">{stat.label}</div>
+                  <div className="stat-value">{stat.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 6. CONTACT */}
+        <section id="contact" className="contact-section">
+          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>
+            Collaboration
           </h2>
-          <p style={{ fontSize: '1rem', color: '#475569', marginBottom: '2rem' }}>
-            Contact us to learn more about implementation, partnerships, or research collaboration.
+          <p style={{ color: '#64748b', marginBottom: '2rem' }}>
+            Open for partnerships with government bodies and institutions.
           </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <a href="mailto:aiiot@adishankara.ac.in" style={{
-              padding: '0.75rem 1.5rem',
-              background: '#3b82f6',
-              color: 'white',
-              borderRadius: '0.5rem',
-              textDecoration: 'none',
-              fontWeight: 600
-            }}>
-              Get in Touch
-            </a>
-            <Link to="/" style={{
-              padding: '0.75rem 1.5rem',
-              background: 'white',
-              border: '1px solid #e2e8f0',
-              color: '#1e293b',
-              borderRadius: '0.5rem',
-              textDecoration: 'none',
-              fontWeight: 600
-            }}>
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </main>
+          <a href="mailto:contact@aiiot.edu" className="btn-primary" style={{ textDecoration: 'none', borderRadius: '2rem' }}>
+            Get in Touch
+          </a>
+        </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 2rem', marginTop: '4rem' }}>
-        <div style={{ maxWidth: '80rem', margin: '0 auto', textAlign: 'center' }}>
-          <p>&copy; 2025 Center for AI-IoT Innovations. All rights reserved.</p>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 };

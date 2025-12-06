@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Resource, Brochure
+from .models import Resource, Brochure , WorkshopEvent
 
 
 class BrochureSerializer(serializers.ModelSerializer):
@@ -12,3 +12,8 @@ class ResourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resource
         fields = ['id', 'title', 'description', 'file', 'created_at']
+        
+class WorkshopEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkshopEvent
+        fields = '__all__'

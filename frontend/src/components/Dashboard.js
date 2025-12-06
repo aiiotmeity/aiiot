@@ -491,7 +491,7 @@ function Dashboard() {
         id: nearestStationId,
         name: nearestStation.station_info.name,
         distance: nearestDistance,
-        aqi: nearestStation.highest_sub_index || 50
+        aqi: nearestStation.highest_sub_index || 0
       });
       const isWithinSensorRange = Object.values(stationDistances).some(s => s.distance <= 2.0);
         if (isWithinSensorRange || nearestDistance <= 1.0) {
@@ -512,7 +512,7 @@ function Dashboard() {
           method: 'nearest_station',
           source: 'nearest_station',
           values: nearestStation.averages || {},
-          aqi: nearestStation.highest_sub_index || 50,
+          aqi: nearestStation.highest_sub_index || 0,
           station_name: nearestStation.station_info.name,
           is_interpolated: false,
           show_distance_message: true,
@@ -527,7 +527,7 @@ function Dashboard() {
         source: '',
         explanation: '',
         values: defaultStation.averages || {},
-        aqi: defaultStation.highest_sub_index || 50,
+        aqi: defaultStation.highest_sub_index || 0,
         station_name: defaultStation.station_info?.name || 'ASIET Campus Station',
         is_interpolated: false,
         show_distance_message: false,

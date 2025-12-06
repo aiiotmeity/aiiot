@@ -122,7 +122,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
         <div className="nav-container">
           <ul className="nav-menu">
             <li className="nav-item">
-              <a href="#home" className="nav-link active">Home</a>
+              <a href="/" className="nav-link active">Home</a>
             </li>
             
             <li className="nav-item">
@@ -135,9 +135,9 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
             <li className="nav-item">
               <a href="#contact" className="nav-link">Contact</a>
             </li>
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <a href="/" className="nav-link">Aiiot</a>
-            </li>
+            </li> */}
           </ul>
         </div>
       </nav>

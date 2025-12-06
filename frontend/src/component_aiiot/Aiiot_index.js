@@ -17,14 +17,16 @@ const AIIOT_INDEX = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileResourcesExpanded, setMobileResourcesExpanded] = useState(false);
   const [mobileLaunchesExpanded, setMobileLaunchesExpanded] = useState(false);
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+  const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://aiiot-1.onrender.com'
+  : 'http://localhost:8000';
   // Map project titles to IDs
   const projectIdMap = {
-    'Intelligent Sensor Module': 'intelligent-sensor',
+    'Air Quality Monitoring': 'intelligent-sensor',
     'Smart Water Level Monitoring': 'water-level',
     'Digital Water Distribution': 'digital-water',
     'Startup & Skill Development': 'startup-skill',
-    'Explainable AI Software': 'xai-software'
+    
   };
 
   // Map project titles to IDs
@@ -229,7 +231,7 @@ useEffect(() => {
 
   const projects = [
     {
-      title: "Intelligent Sensor Module",
+      title: "Air Quality Monitoring",
       description: "Developed a smart sensor module capable of real-time monitoring and management of environmental pollutants. The module integrates multiple gas and environmental sensors to continuously measure air quality parameters such as PM2.5, PM10, CO₂, CO, NH₃, temperature, and humidity.",
       image: "/sensor_modules/module2.jpg"
     },
@@ -247,11 +249,6 @@ useEffect(() => {
       title: "Startup & Skill Development",
       description: "Building a vibrant startup ecosystem while offering hands-on skill development programs centered around our IoT solutions. These initiatives empower innovators, students, and professionals to adopt emerging technologies and bring their ideas to market.",
       image: "/sensor_modules/skill.jpg"
-    },
-    {
-      title: "Explainable AI Software",
-      description: "Building analysis software based on Explainable AI (XAI) to bring transparency and trust to complex IoT systems.",
-      image: "/sensor_modules/ai.jpeg"
     }
   ];
 
@@ -326,9 +323,9 @@ useEffect(() => {
                 Resources
               </Link>
 
-              <a href="#projects" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#475569' }}
+              <a href="#project" style={{ fontSize: '0.875rem', fontWeight: 500, color: '#475569' }}
                  onMouseEnter={(e) => e.target.style.color = '#3b82f6'} onMouseLeave={(e) => e.target.style.color = '#475569'}>
-                 Projects
+                 Solutions
               </a>
 
               {/* Launches Dropdown */}
@@ -664,7 +661,7 @@ useEffect(() => {
         </section>
 
         {/* Projects Section */}
-      <section id="projects" className="reveal-on-scroll" style={{ padding: '5rem 0' }}>
+      <section id="project" className="reveal-on-scroll" style={{ padding: '5rem 0' }}>
       <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
           <h2 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
@@ -814,7 +811,7 @@ useEffect(() => {
       <div>
         <h5 style={{ fontWeight: 700, color: 'white', marginBottom: '1rem' }}>Quick Links</h5>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {['About', 'Team', 'Projects', 'Contact'].map((link, idx) => (
+          {['About', 'Team', 'Solutions', 'Contact'].map((link, idx) => (
             <li key={idx} style={{ marginBottom: '0.5rem' }}>
               <a 
                 href={`#${link.toLowerCase()}`} 

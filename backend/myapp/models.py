@@ -398,3 +398,30 @@ class Brochure(models.Model):
 
     def __str__(self):
         return self.title
+
+
+# In models.py
+
+class WorkshopEvent(models.Model):
+    CATEGORY_CHOICES = [
+        ('workshop', 'Workshop'),
+        ('internship', 'Internship'),
+        ('research', 'Research & Output'),
+    ]
+
+    title = models.CharField(max_length=255) # e.g., "IoT Impression - Arduino & Raspberry Pi"
+    event_date_text = models.CharField(max_length=100) # e.g., "Mar 19, 2025" or "Jun 25-27, 2025"
+    participants = models.CharField(max_length=50, blank=True) # e.g., "40 participants"
+    description = models.TextField() # The detailed bullet points
+    
+    # This handles the Brochure download
+    brochure_file = models.FileField(upload_to='workshops/brochures/', blank=True, null=True)
+    
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='workshop')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at'] # Newest first
+
+    def __str__(self):
+        return self.title

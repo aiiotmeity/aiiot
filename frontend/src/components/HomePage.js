@@ -250,11 +250,11 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
             <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
           </div>
           <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-            <li><Link to="/homepage" className="nav-link" onClick={() => setIsMenuOpen(false)}>Home</Link></li>
+            <li><Link to="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>Home</Link></li>
             <li><a href="#cities" className="nav-link" onClick={() => setIsMenuOpen(false)}>Cities</a></li>
             <li><a href="#services" className="nav-link" onClick={() => setIsMenuOpen(false)}>Services</a></li>
             <li><a href="#contact" className="nav-link" onClick={() => setIsMenuOpen(false)}>Contact</a></li>
-            <li><a href="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>AI-IOT</a></li>
+            {/* <li><a href="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>AI-IOT</a></li> */}
            
             {user ? (
               <>
