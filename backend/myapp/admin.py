@@ -1,12 +1,15 @@
 from django.contrib import admin
 from .models import (
     Signup, UserLogin, HealthAssessment, FamilyMembers, 
-    Support, ResourceFile, Resource, Brochure ,WorkshopEvent
+    Support, ResourceFile, Resource, Brochure, WorkshopEvent,
+    Product, ProductFeature, ProductSpecification  # Added new models here
 )
 
 admin.site.site_header = "AI-IoT Admin Panel"
 admin.site.site_title = "Admin"
 admin.site.index_title = "Welcome to Admin Dashboard"
+
+# --- EXISTING ADMINS ---
 
 @admin.register(Brochure)
 class BrochureAdmin(admin.ModelAdmin):
@@ -66,3 +69,23 @@ class WorkshopEventAdmin(admin.ModelAdmin):
     list_display = ('title', 'category', 'event_date_text', 'participants')
     search_fields = ('title', 'description')
     list_filter = ('category',)
+
+# --- NEW PRODUCT ADMINS (WITH INLINES) ---
+
+class ProductFeatureInline(admin.TabularInline):
+    """Allows adding features directly inside the Product page"""
+    model = ProductFeature
+    extra = 1  # Shows 1 empty row for a new feature by default
+
+class ProductSpecificationInline(admin.TabularInline):
+    """Allows adding specs directly inside the Product page"""
+    model = ProductSpecification
+    extra = 1  # Shows 1 empty row for a new spec by default
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category', 'slug')
+    list_filter = ('category',)
+    search_fields = ('name', 'description')
+    prepopulated_fields = {'slug': ('name',)} # Automatically fills slug when typing name
+    inlines = [ProductFeatureInline, ProductSpecificationInline] # Adds the sub-forms

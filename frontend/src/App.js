@@ -19,6 +19,7 @@ import WeatherHomepage from './weather_component/WeatherHomepage';
 import MapComponent from './weather_component/MapComponent';
 import RiverDashboard from './weather_component/RiverDashboard';
 import ResourcesPage from './component_aiiot/Resources';
+import ProductOverview from './component_aiiot/ProductOverview';
 
 // Session Manager
 const SessionManager = {
@@ -240,6 +241,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<AiIotInnovationCenter/>} />
           <Route path="/project/:projectId" element={<ProjectDetail />} />
+          <Route path="/product-details/:productId" element={<ProductOverview />} />
           <Route path="/homepage" element={<HomePage />} />
           <Route path="/weather-home" element={<WeatherHomepage/>} />
           

@@ -17,39 +17,41 @@ const AIIOT_INDEX = () => {
   : 'http://localhost:8000';
 
   // --- MEGA MENU DATA (ADDED) ---
+  // --- MEGA MENU DATA (Updated Links) ---
   const productMenuData = {
     'Air Quality': {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        { name: 'Indoor Monitor', image: '/sensor_modules/aqicrop.jpeg', link: '/project/intelligent-sensor' },
-        { name: 'Outdoor Station', image: '/sensor_modules/aqi1.jpeg', link: '/project/intelligent-sensor' },
-        { name: 'Gas Sensors', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400', link: '/project/intelligent-sensor' }
+        // LINK FORMAT: /product-details/unique-id
+        { name: 'Indoor Monitor', image: '/sensor_modules/aqicrop.jpeg', link: '/product-details/indoor-monitor' },
+        { name: 'Outdoor Station', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
+        { name: 'Gas Sensors', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400', link: '/product-details/gas-sensors' }
       ]
     },
     'Water Solutions': {
       title: 'Water Management',
       description: 'Flood alerts and distribution logic.',
       items: [
-        { name: 'Flood Alert System', image: '/sensor_modules/river1.jpg', link: '/project/water-level' },
-        { name: 'Level Sensors', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400', link: '/project/water-level' },
-        { name: 'Distribution Net', image: '/sensor_modules/distribution.jpeg', link: '/project/digital-water' }
+        { name: 'Flood Alert System', image: '/sensor_modules/river1.jpg', link: '/product-details/flood-alert' },
+        { name: 'Level Sensors', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400', link: '/product-details/level-sensors' },
+        { name: 'Distribution Net', image: '/sensor_modules/distribution.jpeg', link: '/product-details/distribution-net' }
       ]
     },
     'Weather': {
       title: 'Weather Stations',
       description: 'Hyper-local weather data collection.',
       items: [
-        { name: 'Auto Weather Station', image: '/sensor_modules/weather.jpg', link: '/project/water-level' },
-        { name: 'Rain Gauges', image: 'https://images.unsplash.com/photo-1590055531860-6902633df018?w=400', link: '/project/water-level' }
+        { name: 'Auto Weather Station', image: '/sensor_modules/weather.jpg', link: '/product-details/weather-station' },
+        { name: 'Rain Gauges', image: 'https://images.unsplash.com/photo-1590055531860-6902633df018?w=400', link: '/product-details/rain-gauge' }
       ]
     },
     'Training': {
       title: 'Skill Development',
       description: 'Kits and workshops for students.',
       items: [
-        { name: 'IoT Starter Kits', image: '/sensor_modules/skill.jpg', link: '/project/startup-skill' },
-        { name: 'PCB Workshops', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=400', link: '/project/startup-skill' }
+        { name: 'IoT Starter Kits', image: '/sensor_modules/skill.jpg', link: '/product-details/iot-starter-kit' },
+        { name: 'PCB Workshops', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=400', link: '/product-details/pcb-workshop' }
       ]
     }
   };
@@ -148,9 +150,10 @@ const AIIOT_INDEX = () => {
             {/* DESKTOP NAV */}
             <div className="desktop-nav">
               <a href="#about" className="nav-link">About</a>
-              <a href="#team" className="nav-link">Team</a>
-              <Link to="/resources" className="nav-link">Resources</Link>
+              <a href="#projects" className="nav-link">Solutions</a>
 
+              <Link to="/resources" className="nav-link">Resources</Link>
+              <a href="#team" className="nav-link">Team</a>
               {/* === MEGA MENU IMPLEMENTATION === */}
               <div 
                 className="mega-menu-wrapper"
@@ -290,28 +293,7 @@ const AIIOT_INDEX = () => {
         </section>
 
         {/* Team Section */}
-        <section id="team" className="reveal-on-scroll" style={{ padding: '5rem 0', background: '#f8fafc' }}>
-          <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
-            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-              <h2 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>Meet Our Expert Faculty</h2>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-              {teamMembers.map((member, index) => (
-                <div key={index} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '0.75rem', padding: '1.5rem', transition: 'all 0.3s ease', cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '6rem', height: '6rem', borderRadius: '9999px', overflow: 'hidden', border: '3px solid #ffffffff' }}>
-                      <img src={member.image} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.style.background = '#dbeafe'; e.target.parentElement.innerHTML = '<span style="font-size: 2rem; color: #3b82f6;">👤</span>'; }} />
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <h4 style={{ fontWeight: 700, color: '#1e293b' }}>{member.name}</h4>
-                      <p style={{ fontSize: '0.875rem', color: '#3b82f6' }}>{member.role}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        
 
         {/* Projects Section */}
         <section id="projects" className="reveal-on-scroll" style={{ padding: '5rem 0' }}>
@@ -335,6 +317,28 @@ const AIIOT_INDEX = () => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </section>
+        <section id="team" className="reveal-on-scroll" style={{ padding: '5rem 0', background: '#f8fafc' }}>
+          <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+              <h2 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>Meet Our Expert Faculty</h2>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+              {teamMembers.map((member, index) => (
+                <div key={index} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '0.75rem', padding: '1.5rem', transition: 'all 0.3s ease', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ width: '6rem', height: '6rem', borderRadius: '9999px', overflow: 'hidden', border: '3px solid #ffffffff' }}>
+                      <img src={member.image} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.style.background = '#dbeafe'; e.target.parentElement.innerHTML = '<span style="font-size: 2rem; color: #3b82f6;">👤</span>'; }} />
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <h4 style={{ fontWeight: 700, color: '#1e293b' }}>{member.name}</h4>
+                      <p style={{ fontSize: '0.875rem', color: '#3b82f6' }}>{member.role}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>

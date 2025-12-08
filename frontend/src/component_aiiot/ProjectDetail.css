@@ -15,29 +15,27 @@
   padding: 0 1.5rem;
 }
 
-/* --- 1. UNIVERSAL FULL-SCREEN HERO (For ALL Projects) --- */
+/* --- 1. UNIVERSAL FULL-SCREEN HERO --- */
 .project-hero-fullscreen {
   position: relative;
   width: 100%;
-  min-height: 90vh; /* Takes up full screen height */
+  min-height: 90vh;
   background-size: cover;
   background-position: center;
-  background-attachment: fixed; /* Professional Parallax Effect */
+  background-attachment: fixed;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding-top: 5rem; 
-  padding-bottom: 5rem;
+  padding-bottom: 8rem; /* Increased padding for better overlap space */
   color: white;
 }
 
-/* Dark Overlay - Ensures text is readable on ANY background */
 .project-hero-fullscreen::before {
   content: '';
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  /* Dark fade from top to bottom */
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.4) 40%, rgba(15, 23, 42, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.4) 40%, rgba(15, 23, 42, 0.95) 100%);
   z-index: 1;
 }
 
@@ -78,7 +76,7 @@
   max-width: 80%; margin-left: auto; margin-right: auto;
 }
 
-/* --- 2. FLOATING BUBBLES (Specific for Air Quality) --- */
+/* --- 2. FLOATING BUBBLES --- */
 .hero-bubbles-wrapper {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: 5;
@@ -96,7 +94,6 @@
   animation: floatBubble 6s infinite ease-in-out;
 }
 
-/* Bubble Positions */
 .b1 { top: 15%; left: 10%; animation-delay: 0s; }
 .b2 { top: 60%; left: 15%; animation-delay: 1.5s; }
 .b3 { top: 25%; right: 10%; animation-delay: 3s; }
@@ -109,11 +106,11 @@
   50% { transform: translateY(-20px); }
 }
 
-/* --- 3. BEAUTIFUL OVERVIEW CARD (Overlaps the Hero) --- */
+/* --- 3. OVERVIEW SECTION (The Fixes) --- */
 .overview-section-wrapper {
   position: relative;
   z-index: 20; 
-  margin-top: -6rem; /* Pulls it UP to overlap the image */
+  margin-top: -8rem; /* Pulls overlapping card UP */
   padding-bottom: 4rem;
 }
 
@@ -122,13 +119,36 @@
   border-radius: 1.5rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* Make image side slightly larger (55%) to show full image */
+  grid-template-columns: 45% 55%; 
   overflow: hidden;
+  /* FIX: Ensure minimum height so image isn't cut off */
+  min-height: 500px; 
 }
 
-.overview-text-side { padding: 4rem; display: flex; flex-direction: column; justify-content: center; }
-.overview-visual-side { background: #f8fafc; display: flex; align-items: center; justify-content: center; position: relative; }
-.overview-visual-side::before { content: '"'; position: absolute; font-size: 20rem; color: rgba(0,0,0,0.03); top: -3rem; left: 1rem; font-family: serif; }
+.overview-text-side { 
+  padding: 4rem; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+}
+
+.overview-visual-side { 
+  background-color: #f8fafc; 
+  background-size: cover;
+  background-position: center;
+  position: relative; 
+  min-height: 100%; /* Force full height */
+}
+
+/* Gradient Overlay on the small image to make text readable */
+.visual-overlay-gradient {
+  position: absolute;
+  bottom: 0; left: 0; width: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  padding: 2.5rem;
+  color: white;
+}
 
 .mission-headline { font-size: 2rem; font-weight: 800; color: #1e293b; margin-bottom: 1.5rem; }
 .mission-body { font-size: 1.1rem; color: #64748b; line-height: 1.7; }
@@ -138,18 +158,55 @@
   padding: 1rem 2.5rem; background: white; color: #0f172a;
   border-radius: 2rem; font-weight: 700; border: none; cursor: pointer;
   transition: all 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-  text-decoration: none; font-size: 1rem;
+  text-decoration: none; font-size: 1rem; display: inline-block;
 }
 .btn-white:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
 
-/* --- RESPONSIVE --- */
-@media (max-width: 900px) {
-  .overview-glass-card { grid-template-columns: 1fr; }
-  .overview-visual-side { display: none; }
-  .overview-text-side { padding: 2rem; }
+.btn-primary {
+  padding: 1rem 2.5rem; background: #0f172a; color: white; 
+  border-radius: 2rem; font-weight: 600; text-decoration: none;
+  display: inline-block;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: #334155; }
+
+/* --- RESPONSIVE FIXES (CRITICAL) --- */
+@media (max-width: 1024px) {
+  
+  /* 1. Stack the Overview Card Vertically */
+  .overview-glass-card {
+    grid-template-columns: 1fr; /* Single column */
+    display: flex;
+    flex-direction: column-reverse; /* Image on top, Text on bottom (or remove -reverse for Text top) */
+  }
+
+  /* 2. Make the Visual Side visible and set height */
+  .overview-visual-side {
+    display: block; /* Ensure it is VISIBLE */
+    width: 100%;
+    height: 350px; /* Fixed height for mobile image */
+    min-height: 350px;
+  }
+
+  .overview-text-side {
+    padding: 2.5rem 1.5rem;
+  }
+
+  /* 3. Adjust Hero */
+  .project-hero-fullscreen {
+    min-height: 70vh;
+    padding-top: 6rem;
+  }
+  
   .hero-main-title { font-size: 2.5rem; }
-  .project-hero-fullscreen { min-height: 70vh; }
+  
+  /* 4. Bubbles - make smaller or hide on very small screens */
   .p-bubble { padding: 0.5rem 1rem; font-size: 0.8rem; }
+  
+  /* 5. Adjust Overlap */
+  .overview-section-wrapper {
+    margin-top: -4rem; 
+  }
 }
 
 /* --- OTHER SECTIONS --- */
@@ -162,6 +219,59 @@
 .stat-value-dark { font-size: 2.5rem; font-weight: 800; color: #38bdf8; }
 .stat-label-dark { color: #94a3b8; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
 .contact-section { text-align: center; padding: 4rem 0; }
-.btn-primary { padding: 1rem 2.5rem; background: #0f172a; color: white; border-radius: 2rem; font-weight: 600; text-decoration: none; }
-/* Mega Menu/Nav Styles (Keep from previous) */
 .aiiot-header-local { position: fixed; top: 0; left: 0; right: 0; height: 5rem; z-index: 1000; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid #e2e8f0; }
+
+
+/* --- NEW: APPLICATIONS GRID STYLES --- */
+.applications-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem;
+}
+
+.application-card {
+  background: white;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.application-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px -5px rgba(0,0,0,0.1);
+}
+
+.app-img-wrapper {
+  height: 200px;
+  overflow: hidden;
+}
+
+.app-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.application-card:hover .app-img-wrapper img {
+  transform: scale(1.05);
+}
+
+.app-content {
+  padding: 1.5rem;
+}
+
+.app-content h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.app-content p {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}

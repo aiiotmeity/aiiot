@@ -425,3 +425,50 @@ class WorkshopEvent(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+class Product(models.Model):
+    # This slug matches the URL part (e.g., 'indoor-monitor')
+    slug = models.SlugField(unique=True, max_length=100, help_text="URL identifier like 'indoor-monitor'")
+    
+    name = models.CharField(max_length=255)  # "Indoor Air Quality Monitor"
+    tagline = models.CharField(max_length=255, blank=True)
+    description = models.TextField()
+    
+    # Category matches your Mega Menu tabs
+    CATEGORY_CHOICES = [
+        ('Air Quality', 'Air Quality'),
+        ('Water Solutions', 'Water Solutions'),
+        ('Weather', 'Weather'),
+        ('Training', 'Training'),
+    ]
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='Air Quality')
+    
+    image = models.ImageField(upload_to='products/')
+    
+    # Store features as a simple JSON list if you want simplicity, or use a separate model
+    # For now, let's use a JSONField for simplicity (requires PostgreSQL usually, or Text for SQLite)
+    features = models.JSONField(default=list, help_text="List of features ['Feature 1', 'Feature 2']")
+    specs = models.JSONField(default=dict, help_text="Dictionary of specs {'Range': '10km', 'Power': '5V'}")
+
+    def __str__(self):
+        return self.name
+    
+    # Add these at the end of models.py
+
+class ProductFeature(models.Model):
+    product = models.ForeignKey(Product, related_name='product_features', on_delete=models.CASCADE)
+    title = models.CharField(max_length=100) # e.g. "PM2.5 Sensor"
+    description = models.TextField(blank=True)
+    icon = models.CharField(max_length=50, default='⚡', help_text="Emoji or Icon Class")
+
+    def __str__(self):
+        return f"{self.product.name} - {self.title}"
+
+class ProductSpecification(models.Model):
+    product = models.ForeignKey(Product, related_name='specifications', on_delete=models.CASCADE)
+    spec_key = models.CharField(max_length=100) # e.g. "Range"
+    spec_value = models.CharField(max_length=100) # e.g. "0-1000 ug/m3"
+
+    def __str__(self):
+        return f"{self.product.name} - {self.spec_key}"
