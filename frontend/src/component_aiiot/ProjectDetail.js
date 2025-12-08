@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import './ProjectDetail.css';
 
+
 const ProjectDetail = () => {
   const { projectId } = useParams();
   const [workshops, setWorkshops] = useState([]);

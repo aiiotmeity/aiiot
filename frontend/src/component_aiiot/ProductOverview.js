@@ -3,9 +3,61 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios'; // Keep if you use backend later
 import './ProjectDetail.css'; 
 
+
+
 const ProductOverview = () => {
   const { productId } = useParams(); // Gets 'indoor-monitor', 'flood-alert', etc.
+
+
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [heroImages, setHeroImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   
+  // --- MEGA MENU STATES (ADDED) ---
+  const [activeCategory, setActiveCategory] = useState('Air Quality');
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+
+  const productMenuData = {
+    'Air Quality': {
+      title: 'Air Quality Monitoring',
+      description: 'Precision sensors for indoor and outdoor environments.',
+      items: [
+        // LINK FORMAT: /product-details/unique-id
+        { name: 'Indoor Monitor', image: '/sensor_modules/aqicrop.jpeg', link: '/product-details/indoor-monitor' },
+        { name: 'Outdoor Station', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
+        { name: 'Gas Sensors', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400', link: '/product-details/gas-sensors' }
+      ]
+    },
+    'Water Solutions': {
+      title: 'Water Management',
+      description: 'Flood alerts and distribution logic.',
+      items: [
+        { name: 'Flood Alert System', image: '/sensor_modules/river1.jpg', link: '/product-details/flood-alert' },
+        { name: 'Level Sensors', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400', link: '/product-details/level-sensors' },
+        { name: 'Distribution Net', image: '/sensor_modules/distribution.jpeg', link: '/product-details/distribution-net' }
+      ]
+    },
+    'Weather': {
+      title: 'Weather Stations',
+      description: 'Hyper-local weather data collection.',
+      items: [
+        { name: 'Auto Weather Station', image: '/sensor_modules/weather.jpg', link: '/product-details/weather-station' },
+        { name: 'Rain Gauges', image: 'https://images.unsplash.com/photo-1590055531860-6902633df018?w=400', link: '/product-details/rain-gauge' }
+      ]
+    },
+    'Training': {
+      title: 'Skill Development',
+      description: 'Kits and workshops for students.',
+      items: [
+        { name: 'IoT Starter Kits', image: '/sensor_modules/skill.jpg', link: '/product-details/iot-starter-kit' },
+        { name: 'PCB Workshops', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=400', link: '/product-details/pcb-workshop' }
+      ]
+    }
+  };
+
   // --- MOCK DATABASE (Matches the links in Aiiot_index.js) ---
   const productsDB = {
     // 1. AIR QUALITY
@@ -115,10 +167,81 @@ const ProductOverview = () => {
     <div className="project-page">
       {/* Header */}
       <header className="aiiot-header-local">
-         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center', height:'5rem' }}>
-            <Link to="/" style={{textDecoration:'none', color:'#1e293b', fontWeight:'800', fontSize:'1.2rem'}}>AI-IoT Innovations</Link>
-            <Link to="/" style={{textDecoration:'none', color:'#3b82f6', fontWeight:'600'}}>← Back to All</Link>
-         </div>
+         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem', position: 'relative' }}>
+                   <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '5rem' }}>
+                     
+                     {/* LOGO */}
+                     <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', zIndex: 1001 }}>
+                       <div className="logo-box">
+                         <img src="/logo/logo.png" alt="Adi Shankara Institute" style={{ height: '100%', width: 'auto' }} />
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column' }}>
+                         <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>AI-IoT Innovations</span>
+                         <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>Adi Shankara Engineering Institute</span>
+                       </div>
+                     </Link>
+         
+                     {/* DESKTOP NAV */}
+                     <div className="desktop-nav">
+                       <a href="https://aiiot.it.com/project/intelligent-sensor" className="nav-link">Solutions</a>
+         
+                       <Link to="/resources" className="nav-link">Resources</Link>
+                       
+                       {/* === MEGA MENU IMPLEMENTATION === */}
+                       <div 
+                         className="mega-menu-wrapper"
+                         onMouseEnter={() => setIsMegaMenuOpen(true)}
+                         onMouseLeave={() => setIsMegaMenuOpen(false)}
+                       >
+                         <Link to="/products" className="nav-link product-trigger">
+                           Products <span>▾</span>
+                         </Link>
+         
+                         <div className={`mega-menu-container ${isMegaMenuOpen ? 'visible' : ''}`}>
+                           {/* LEFT SIDEBAR (Categories) */}
+                           <div className="mega-menu-sidebar">
+                             {Object.keys(productMenuData).map((key) => (
+                               <div 
+                                 key={key} 
+                                 className={`mega-sidebar-item ${activeCategory === key ? 'active' : ''}`}
+                                 onMouseEnter={() => setActiveCategory(key)}
+                               >
+                                 {key} <span>›</span>
+                               </div>
+                             ))}
+                           </div>
+         
+                           {/* RIGHT CONTENT (Grid) */}
+                           <div className="mega-menu-content">
+                             <div className="mega-content-header">
+                               <h4>{productMenuData[activeCategory].title}</h4>
+                               <p>{productMenuData[activeCategory].description}</p>
+                             </div>
+                             <div className="mega-grid">
+                               {productMenuData[activeCategory].items.map((item, idx) => (
+                                 <Link to={item.link} key={idx} className="mega-product-card">
+                                    <div className="mega-img-box">
+                                      <img src={item.image} alt={item.name} />
+                                    </div>
+                                    <span>{item.name}</span>
+                                 </Link>
+                               ))}
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+                       {/* === END MEGA MENU === */}
+         
+                       
+                       <a href="#contact" className="nav-btn-primary">Get in Touch</a>
+                     </div>
+         
+                     {/* MOBILE HAMBURGER BUTTON */}
+                     <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                       {isMobileMenuOpen ? '✕' : '☰'}
+                     </button>
+                   </nav>
+                 </div>
       </header>
 
       <div className="container" style={{paddingTop: '8rem', paddingBottom: '5rem'}}>
