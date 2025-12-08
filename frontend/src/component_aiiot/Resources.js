@@ -15,12 +15,13 @@ const ResourcesPage = () => {
     // --- MEGA MENU STATES (ADDED) ---
     const [activeCategory, setActiveCategory] = useState('Air Quality');
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
-    const productMenuData = {
+    // --- MEGA MENU DATA (Updated with correct links) ---
+  const productMenuData = {
     'Air Quality': {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        // LINK FORMAT: /product-details/unique-id
+        // The link MUST match the 'slug' you put in Django Admin
         { name: 'Indoor Monitor', image: '/sensor_modules/aqicrop.jpeg', link: '/product-details/indoor-monitor' },
         { name: 'Outdoor Station', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
         { name: 'Gas Sensors', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400', link: '/product-details/gas-sensors' }

@@ -72,20 +72,18 @@ class WorkshopEventAdmin(admin.ModelAdmin):
 
 # --- NEW PRODUCT ADMINS (WITH INLINES) ---
 
-class ProductFeatureInline(admin.TabularInline):
-    """Allows adding features directly inside the Product page"""
+class FeatureInline(admin.TabularInline):
     model = ProductFeature
-    extra = 1  # Shows 1 empty row for a new feature by default
+    extra = 1
 
-class ProductSpecificationInline(admin.TabularInline):
-    """Allows adding specs directly inside the Product page"""
+class SpecInline(admin.TabularInline):
     model = ProductSpecification
-    extra = 1  # Shows 1 empty row for a new spec by default
+    extra = 1
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'category', 'slug')
     list_filter = ('category',)
     search_fields = ('name', 'description')
-    prepopulated_fields = {'slug': ('name',)} # Automatically fills slug when typing name
-    inlines = [ProductFeatureInline, ProductSpecificationInline] # Adds the sub-forms
+    prepopulated_fields = {'slug': ('name',)} # Auto-fills slug as you type name
+    inlines = [FeatureInline, SpecInline]

@@ -427,11 +427,12 @@ class WorkshopEvent(models.Model):
         return self.title
     
 
+# In models.py
+
 class Product(models.Model):
-    # This slug matches the URL part (e.g., 'indoor-monitor')
-    slug = models.SlugField(unique=True, max_length=100, help_text="URL identifier like 'indoor-monitor'")
-    
-    name = models.CharField(max_length=255)  # "Indoor Air Quality Monitor"
+    # This slug is the URL link (e.g. 'indoor-monitor')
+    slug = models.SlugField(unique=True, max_length=100, help_text="Unique URL ID (e.g. 'indoor-monitor')")
+    name = models.CharField(max_length=255)  # e.g. "Indoor Air Quality Monitor"
     tagline = models.CharField(max_length=255, blank=True)
     description = models.TextField()
     
@@ -444,26 +445,30 @@ class Product(models.Model):
     ]
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='Air Quality')
     
-    image = models.ImageField(upload_to='products/')
-    
-    # Store features as a simple JSON list if you want simplicity, or use a separate model
-    # For now, let's use a JSONField for simplicity (requires PostgreSQL usually, or Text for SQLite)
-    features = models.JSONField(default=list, help_text="List of features ['Feature 1', 'Feature 2']")
-    specs = models.JSONField(default=dict, help_text="Dictionary of specs {'Range': '10km', 'Power': '5V'}")
+    image = models.ImageField(upload_to='products/hero/')
+    sub_image = models.ImageField(upload_to='products/sub/', blank=True, null=True)
+    brochure = models.FileField(upload_to='products/brochures/', blank=True, null=True)
 
     def __str__(self):
         return self.name
-    
-    # Add these at the end of models.py
 
+# --- NEW MODELS FOR FEATURES & SPECS (Better than JSON) ---
 class ProductFeature(models.Model):
-    product = models.ForeignKey(Product, related_name='product_features', on_delete=models.CASCADE)
-    title = models.CharField(max_length=100) # e.g. "PM2.5 Sensor"
+    product = models.ForeignKey(Product, related_name='features', on_delete=models.CASCADE)
+    title = models.CharField(max_length=100) # e.g. "Laser Sensor"
     description = models.TextField(blank=True)
-    icon = models.CharField(max_length=50, default='⚡', help_text="Emoji or Icon Class")
+    icon = models.CharField(max_length=50, default='⚡', help_text="Paste an Emoji here")
 
     def __str__(self):
-        return f"{self.product.name} - {self.title}"
+        return self.title
+
+class ProductSpecification(models.Model):
+    product = models.ForeignKey(Product, related_name='specifications', on_delete=models.CASCADE)
+    spec_key = models.CharField(max_length=100) # e.g. "Range"
+    spec_value = models.CharField(max_length=100) # e.g. "10 KM"
+
+    def __str__(self):
+        return f"{self.spec_key}: {self.spec_value}"
 
 class ProductSpecification(models.Model):
     product = models.ForeignKey(Product, related_name='specifications', on_delete=models.CASCADE)
