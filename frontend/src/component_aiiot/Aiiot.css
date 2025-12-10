@@ -851,3 +851,56 @@ a {
 .mega-product-card:hover span {
   color: #3b82f6;
 }
+/* ========================================= */
+/* MOBILE RESPONSIVENESS FIXES               */
+/* ========================================= */
+
+@media (max-width: 1024px) {
+    /* 1. Hide the Desktop Navigation completely */
+    .desktop-nav {
+        display: none !important;
+    }
+
+    /* 2. Show the Hamburger Button */
+    .mobile-nav-toggle {
+        display: block !important;
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        cursor: pointer;
+        color: #1e293b;
+        z-index: 10002;
+    }
+
+    /* 3. Fix the Mobile Menu Overlay */
+    .mobile-menu-wrapper {
+        position: fixed;
+        top: 5rem; /* Pushes it below the header */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: white;
+        z-index: 10001; /* High Z-Index to sit on top of everything */
+        overflow-y: auto; /* Allows scrolling if menu is long */
+        padding: 1.5rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    /* 4. Fix Fonts and Widths for Mobile */
+    h1 { font-size: 2rem !important; line-height: 1.2; }
+    h2 { font-size: 1.75rem !important; }
+    
+    .hero-grid, .about-grid, .project-card {
+        flex-direction: column !important;
+        gap: 2rem !important;
+    }
+
+    .project-image-wrapper, .project-content-wrapper {
+        width: 100% !important;
+    }
+    
+    /* 5. Ensure Mega Menu doesn't float on mobile */
+    .mega-menu-container {
+        display: none !important;
+    }
+}

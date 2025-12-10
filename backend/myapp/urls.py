@@ -70,6 +70,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('brochures-by-category/<str:category>/', views.get_brochures_by_category, name='brochures_by_category'),
     path('brochures/', views.get_brochures, name='get_brochures'),
+    path('api/product/<str:slug>/', views.get_product_detail, name='product-detail'),
 ]
 
 if settings.DEBUG:

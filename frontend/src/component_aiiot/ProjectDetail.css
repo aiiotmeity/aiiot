@@ -1,11 +1,16 @@
-/* ProjectDetail.css */
+/* ProjectDetail.css - Fully Responsive Fix */
 
 /* --- GLOBAL SETTINGS --- */
+:root {
+  --primary-color: #3b82f6;
+  --text-color: #334155;
+}
+
 .project-page {
   background: #f8fafc;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
-  color: #334155;
+  color: var(--text-color);
   overflow-x: hidden;
 }
 
@@ -15,7 +20,128 @@
   padding: 0 1.5rem;
 }
 
-/* --- 1. UNIVERSAL FULL-SCREEN HERO --- */
+/* ========================================= */
+/* 1. HEADER & NAVIGATION (RESPONSIVE)       */
+/* ========================================= */
+.aiiot-header-local {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 5rem;
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.project-header-inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.project-logo {
+  text-decoration: none;
+  color: #1e293b;
+  font-weight: 800;
+  font-size: 1.25rem;
+  z-index: 10001;
+}
+
+/* Desktop Nav Items */
+.project-desktop-nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.project-nav-link {
+  text-decoration: none;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.project-nav-link:hover { color: #3b82f6; }
+
+.btn-primary-small {
+  background: #3b82f6;
+  color: white;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.btn-primary-small:hover { background: #2563eb; }
+
+/* Mobile Hamburger (Hidden on Desktop) */
+.mobile-nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  color: #1e293b;
+  cursor: pointer;
+  z-index: 10002;
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-wrapper {
+  position: fixed;
+  top: 5rem;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 10000;
+  padding: 1.5rem;
+  overflow-y: auto;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+.mobile-link {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-decoration: none;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* MEGA MENU (Same as Index Page) */
+.mega-menu-wrapper { position: relative; height: 5rem; display: flex; align-items: center; }
+.product-trigger { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.mega-menu-container {
+    position: absolute; top: 5rem; left: 50%; transform: translateX(-50%) translateY(10px);
+    width: 800px; background: white; border-radius: 0 0 12px 12px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1); display: flex; opacity: 0;
+    visibility: hidden; transition: all 0.2s; border: 1px solid #e2e8f0;
+}
+.mega-menu-container.visible { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+.mega-menu-sidebar { width: 25%; background: #f8fafc; padding: 1rem 0; border-right: 1px solid #e2e8f0; }
+.mega-sidebar-item { padding: 0.75rem 1.5rem; cursor: pointer; font-weight: 600; color: #64748b; display: flex; justify-content: space-between; }
+.mega-sidebar-item.active { background: white; color: var(--primary-color); border-left: 3px solid var(--primary-color); }
+.mega-menu-content { width: 75%; padding: 1.5rem; }
+.mega-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.mega-product-card { text-decoration: none; display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 0.9rem; color: #334155; }
+.mega-img-box { width: 100%; height: 100px; overflow: hidden; border-radius: 6px; margin-bottom: 0.5rem; }
+.mega-img-box img { width: 100%; height: 100%; object-fit: cover; }
+
+
+/* --- 2. UNIVERSAL FULL-SCREEN HERO --- */
 .project-hero-fullscreen {
   position: relative;
   width: 100%;
@@ -28,7 +154,7 @@
   justify-content: center;
   text-align: center;
   padding-top: 5rem; 
-  padding-bottom: 8rem; /* Increased padding for better overlap space */
+  padding-bottom: 8rem;
   color: white;
 }
 
@@ -76,41 +202,11 @@
   max-width: 80%; margin-left: auto; margin-right: auto;
 }
 
-/* --- 2. FLOATING BUBBLES --- */
-.hero-bubbles-wrapper {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none; z-index: 5;
-}
-
-.p-bubble {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  padding: 0.8rem 1.8rem;
-  border-radius: 2rem;
-  border: 1px solid rgba(255,255,255,0.3);
-  font-weight: 700; color: white;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-  animation: floatBubble 6s infinite ease-in-out;
-}
-
-.b1 { top: 15%; left: 10%; animation-delay: 0s; }
-.b2 { top: 60%; left: 15%; animation-delay: 1.5s; }
-.b3 { top: 25%; right: 10%; animation-delay: 3s; }
-.b4 { top: 70%; right: 20%; animation-delay: 0.5s; }
-.b5 { top: 80%; left: 45%; animation-delay: 2s; }
-.b6 { top: 10%; left: 50%; animation-delay: 1s; }
-
-@keyframes floatBubble {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-}
-
-/* --- 3. OVERVIEW SECTION (The Fixes) --- */
+/* --- 3. OVERVIEW SECTION --- */
 .overview-section-wrapper {
   position: relative;
   z-index: 20; 
-  margin-top: -8rem; /* Pulls overlapping card UP */
+  margin-top: -8rem;
   padding-bottom: 4rem;
 }
 
@@ -119,10 +215,8 @@
   border-radius: 1.5rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: grid;
-  /* Make image side slightly larger (55%) to show full image */
   grid-template-columns: 45% 55%; 
   overflow: hidden;
-  /* FIX: Ensure minimum height so image isn't cut off */
   min-height: 500px; 
 }
 
@@ -138,22 +232,20 @@
   background-size: cover;
   background-position: center;
   position: relative; 
-  min-height: 100%; /* Force full height */
+  min-height: 100%; 
 }
 
-/* Gradient Overlay on the small image to make text readable */
 .visual-overlay-gradient {
   position: absolute;
   bottom: 0; left: 0; width: 100%;
   background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
   padding: 2.5rem;
-  color: white;
 }
 
 .mission-headline { font-size: 2rem; font-weight: 800; color: #1e293b; margin-bottom: 1.5rem; }
 .mission-body { font-size: 1.1rem; color: #64748b; line-height: 1.7; }
 
-/* --- BUTTONS --- */
+/* Buttons */
 .btn-white {
   padding: 1rem 2.5rem; background: white; color: #0f172a;
   border-radius: 2rem; font-weight: 700; border: none; cursor: pointer;
@@ -165,113 +257,122 @@
 .btn-primary {
   padding: 1rem 2.5rem; background: #0f172a; color: white; 
   border-radius: 2rem; font-weight: 600; text-decoration: none;
-  display: inline-block;
-  transition: background 0.2s;
+  display: inline-block; transition: background 0.2s;
 }
 .btn-primary:hover { background: #334155; }
-
-/* --- RESPONSIVE FIXES (CRITICAL) --- */
-@media (max-width: 1024px) {
-  
-  /* 1. Stack the Overview Card Vertically */
-  .overview-glass-card {
-    grid-template-columns: 1fr; /* Single column */
-    display: flex;
-    flex-direction: column-reverse; /* Image on top, Text on bottom (or remove -reverse for Text top) */
-  }
-
-  /* 2. Make the Visual Side visible and set height */
-  .overview-visual-side {
-    display: block; /* Ensure it is VISIBLE */
-    width: 100%;
-    height: 350px; /* Fixed height for mobile image */
-    min-height: 350px;
-  }
-
-  .overview-text-side {
-    padding: 2.5rem 1.5rem;
-  }
-
-  /* 3. Adjust Hero */
-  .project-hero-fullscreen {
-    min-height: 70vh;
-    padding-top: 6rem;
-  }
-  
-  .hero-main-title { font-size: 2.5rem; }
-  
-  /* 4. Bubbles - make smaller or hide on very small screens */
-  .p-bubble { padding: 0.5rem 1rem; font-size: 0.8rem; }
-  
-  /* 5. Adjust Overlap */
-  .overview-section-wrapper {
-    margin-top: -4rem; 
-  }
-}
 
 /* --- OTHER SECTIONS --- */
 .innovation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
 .feature-card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+.applications-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2.5rem; }
+.application-card { background: white; border-radius: 1rem; overflow: hidden; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+.app-img-wrapper { height: 200px; overflow: hidden; }
+.app-img-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+.app-content { padding: 1.5rem; }
+.app-content h3 { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; }
+.app-content p { color: #64748b; font-size: 0.95rem; line-height: 1.5; }
+
 .impact-parallax-section { padding: 6rem 0; background-attachment: fixed; background-size: cover; text-align: center; margin: 4rem 0; }
 .impact-overlay { background: rgba(15, 23, 42, 0.9); padding: 6rem 0; }
 .impact-grid-dark { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; }
 .stat-box-dark { border: 1px solid rgba(255,255,255,0.1); padding: 2rem; border-radius: 1rem; background: rgba(255,255,255,0.05); }
 .stat-value-dark { font-size: 2.5rem; font-weight: 800; color: #38bdf8; }
 .stat-label-dark { color: #94a3b8; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
-.contact-section { text-align: center; padding: 4rem 0; }
-.aiiot-header-local { position: fixed; top: 0; left: 0; right: 0; height: 5rem; z-index: 1000; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid #e2e8f0; }
 
+/* Floating Bubbles */
+.hero-bubbles-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+.p-bubble { position: absolute; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px); padding: 0.8rem 1.8rem; border-radius: 2rem; border: 1px solid rgba(255,255,255,0.3); font-weight: 700; color: white; animation: floatBubble 6s infinite ease-in-out; }
+.b1 { top: 15%; left: 10%; } .b2 { top: 60%; left: 15%; animation-delay: 1.5s; } .b3 { top: 25%; right: 10%; animation-delay: 3s; }
+.b4 { top: 70%; right: 20%; animation-delay: 0.5s; } .b5 { top: 80%; left: 45%; animation-delay: 2s; } .b6 { top: 10%; left: 50%; animation-delay: 1s; }
+@keyframes floatBubble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
-/* --- NEW: APPLICATIONS GRID STYLES --- */
-.applications-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2.5rem;
+/* ========================================= */
+/* CRITICAL RESPONSIVE MEDIA QUERIES         */
+/* ========================================= */
+@media (max-width: 1024px) {
+  /* 1. Header Changes */
+  .project-desktop-nav { display: none; }
+  .mobile-nav-toggle { display: block; }
+
+  /* 2. Overview Card Stack */
+  .overview-glass-card {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column-reverse; /* Image Top (if flex-col-reverse) or Bottom */
+  }
+  .overview-visual-side {
+    display: block;
+    width: 100%;
+    height: 300px;
+    min-height: 300px;
+  }
+  .overview-text-side { padding: 2rem 1.5rem; }
+  .mission-headline { font-size: 1.75rem; }
+  
+  /* 3. Layout Fixes */
+  .project-hero-fullscreen { min-height: 70vh; padding-top: 6rem; padding-bottom: 5rem; }
+  .hero-main-title { font-size: 2.25rem; }
+  .overview-section-wrapper { margin-top: -3rem; }
+  
+  /* 4. Disable Parallax on mobile (performance) */
+  .project-hero-fullscreen, .impact-parallax-section { background-attachment: scroll; }
+  
+  /* 5. Bubbles */
+  .p-bubble { padding: 0.5rem 1rem; font-size: 0.8rem; }
+  .b1, .b3, .b6 { display: none; } /* Hide some bubbles on small screens */
 }
 
-.application-card {
+/* --- SOLUTIONS DROPDOWN STYLES --- */
+.dropdown-wrapper {
+  position: relative;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+}
+
+.simple-dropdown {
+  position: absolute;
+  top: 4rem; /* Just below the nav bar */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
   background: white;
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05);
-  transition: transform 0.3s ease;
+  min-width: 260px;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
   border: 1px solid #e2e8f0;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease-in-out;
 }
 
-.application-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px -5px rgba(0,0,0,0.1);
+.simple-dropdown.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
-.app-img-wrapper {
-  height: 200px;
-  overflow: hidden;
-}
-
-.app-img-wrapper img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.application-card:hover .app-img-wrapper img {
-  transform: scale(1.05);
-}
-
-.app-content {
-  padding: 1.5rem;
-}
-
-.app-content h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-}
-
-.app-content p {
-  color: #64748b;
+.simple-dropdown-item {
+  padding: 0.75rem 1rem;
+  color: #475569;
+  text-decoration: none;
   font-size: 0.95rem;
-  line-height: 1.5;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
 }
+
+.simple-dropdown-item:hover {
+  background: #f1f5f9;
+  color: #3b82f6;
+  padding-left: 1.25rem; /* Slight shift effect */
+}
+
+/* Ensure mobile stacking order is correct */
+.mobile-menu-wrapper {
+  z-index: 20000;
+}
+

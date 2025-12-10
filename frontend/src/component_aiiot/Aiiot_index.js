@@ -6,6 +6,7 @@ const AIIOT_INDEX = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [heroImages, setHeroImages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobileProductExpanded, setMobileProductExpanded] = useState(false);
   
   // --- MEGA MENU STATES (ADDED) ---
   const [activeCategory, setActiveCategory] = useState('Air Quality');
@@ -218,7 +219,48 @@ const AIIOT_INDEX = () => {
             <a href="#about" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration:'none' }}>About</a>
             <a href="#team" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration:'none' }}>Team</a>
             <Link to="/resources" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>Resources</Link>
-            <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>Products</Link>
+            <a href="#projects" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>Solutions</a>
+            {/* REPLACING the simple Products Link with this Dropdown Logic */}
+            <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+              <div 
+                onClick={() => setMobileProductExpanded(!mobileProductExpanded)}
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '1rem 0', 
+                  fontSize: '1.1rem', 
+                  fontWeight: 600, 
+                  color: '#1e293b', 
+                  cursor: 'pointer' 
+                }}
+              >
+                Products <span>{mobileProductExpanded ? '▴' : '▾'}</span>
+              </div>
+
+              {/* The Dropdown Content */}
+              {mobileProductExpanded && (
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                  {Object.keys(productMenuData).map((categoryKey) => (
+                    <div key={categoryKey} style={{ marginBottom: '1rem' }}>
+                      <h5 style={{ fontSize: '0.85rem', color: '#3b82f6', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                        {categoryKey}
+                      </h5>
+                      {productMenuData[categoryKey].items.map((item, i) => (
+                        <Link 
+                          key={i} 
+                          to={item.link} 
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          style={{ display: 'block', padding: '0.25rem 0', fontSize: '0.95rem', color: '#475569', textDecoration: 'none' }}
+                        >
+                          • {item.name}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <Link to="/homepage" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>AirAware</Link>
             <a href="/weather-home" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>AWS</a>
           </div>

@@ -1,32 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios'; // Keep if you use backend later
-import './ProjectDetail.css'; 
-
-
+import './ProductOverview.css'; 
 
 const ProductOverview = () => {
-  const { productId } = useParams(); // Gets 'indoor-monitor', 'flood-alert', etc.
+  const { productId } = useParams();
 
-
-
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [heroImages, setHeroImages] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // --- MEGA MENU STATES (ADDED) ---
+  // --- MENU STATES ---
   const [activeCategory, setActiveCategory] = useState('Air Quality');
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSolutionsMenuOpen, setIsSolutionsMenuOpen] = useState(false);
   
+  // --- MOBILE STATES ---
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileProductExpanded, setMobileProductExpanded] = useState(false);
+  const [mobileSolutionsExpanded, setMobileSolutionsExpanded] = useState(false);
 
-  // --- MEGA MENU DATA (Updated with correct links) ---
+  // --- DATA ---
+  const solutionsList = [
+    { name: 'Air Quality Monitoring', link: '/project/intelligent-sensor' },
+    { name: 'Flood Alert System', link: '/project/water-level' },
+    { name: 'Digital Water Distribution', link: '/project/digital-water' },
+    { name: 'Startup & Skill Development', link: '/project/startup-skill' }
+  ];
+
   const productMenuData = {
     'Air Quality': {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        // The link MUST match the 'slug' you put in Django Admin
         { name: 'Indoor Monitor', image: '/sensor_modules/aqicrop.jpeg', link: '/product-details/indoor-monitor' },
         { name: 'Outdoor Station', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
         { name: 'Gas Sensors', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400', link: '/product-details/gas-sensors' }
@@ -59,9 +60,7 @@ const ProductOverview = () => {
     }
   };
 
-  // --- MOCK DATABASE (Matches the links in Aiiot_index.js) ---
   const productsDB = {
-    // 1. AIR QUALITY
     'indoor-monitor': {
       name: "Indoor Air Quality Monitor",
       tagline: "Breathe healthy at home & office.",
@@ -74,7 +73,7 @@ const ProductOverview = () => {
       name: "Outdoor Environmental Station",
       tagline: "City-wide pollution tracking.",
       image: "/sensor_modules/aqi1.jpeg",
-      desc: " rugged outdoor station capable of withstanding harsh weather (IP67) while providing accurate environmental data for smart cities.",
+      desc: "rugged outdoor station capable of withstanding harsh weather (IP67) while providing accurate environmental data for smart cities.",
       features: ["Solar Powered", "Weatherproof IP67", "Multi-Gas Sensors (NO2, SO2, O3)", "Long Range LoRa"],
       specs: { "Range": "15km LoRa", "Power": "Solar + Battery", "Connectivity": "LoRaWAN", "Protection": "IP67" }
     },
@@ -86,8 +85,6 @@ const ProductOverview = () => {
       features: ["High Sensitivity", "Fast Response Time", "Calibrated Factory", "Industrial Grade"],
       specs: { "Target Gas": "CO, NH3, H2S", "Output": "Analog/Digital", "Lifespan": "2 Years" }
     },
-
-    // 2. WATER SOLUTIONS
     'flood-alert': {
       name: "Smart Flood Alert System",
       tagline: "Early warning saves lives.",
@@ -112,10 +109,8 @@ const ProductOverview = () => {
       features: ["Leak Detection", "Flow Rate Analysis", "Pressure Monitoring", "Remote Valve Control"],
       specs: { "Pipe Size": "DN15 - DN50", "Pressure": "PN16", "Battery": "5 Year Life" }
     },
-
-    // 3. WEATHER
     'weather-station': {
-      name: "Automatic Weather Station (AWS)",
+      name: "Automatic Weather Station",
       tagline: "Hyper-local climate data.",
       image: "/sensor_modules/weather.jpg",
       desc: "A complete weather monitoring suite measuring wind speed, direction, rainfall, temperature, and humidity.",
@@ -130,8 +125,6 @@ const ProductOverview = () => {
       features: ["Self-Emptying", "Insect Screen", "Digital Counter", "Rugged Plastic"],
       specs: { "Resolution": "0.2mm", "Type": "Tipping Bucket", "Mount": "Pole/Flat" }
     },
-
-    // 4. TRAINING
     'iot-starter-kit': {
       name: "IoT Education Kit",
       tagline: "Learn by doing.",
@@ -148,8 +141,6 @@ const ProductOverview = () => {
       features: ["KiCad Software", "Etching Process", "Soldering Training", "Take-home Board"],
       specs: { "Duration": "2 Days", "Certification": "Yes", "Material": "Included" }
     },
-
-    // FALLBACK
     'default': {
       name: "Product Not Found",
       tagline: "Please select a product from the menu.",
@@ -162,139 +153,205 @@ const ProductOverview = () => {
 
   const product = productsDB[productId] || productsDB['default'];
 
-  useEffect(() => { window.scrollTo(0, 0); }, [productId]);
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    window.scrollTo(0, 0);
+  }, [isMobileMenuOpen, productId]);
 
   return (
     <div className="project-page">
-      {/* Header */}
+      {/* 1. HEADER */}
       <header className="aiiot-header-local">
-         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem', position: 'relative' }}>
-                   <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '5rem' }}>
-                     
-                     {/* LOGO */}
-                     <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', zIndex: 1001 }}>
-                       <div className="logo-box">
-                         <img src="/logo/logo.png" alt="Adi Shankara Institute" style={{ height: '100%', width: 'auto' }} />
-                       </div>
-                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                         <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>AI-IoT Innovations</span>
-                         <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>Adi Shankara Engineering Institute</span>
-                       </div>
-                     </Link>
-         
-                     {/* DESKTOP NAV */}
-                     <div className="desktop-nav">
-                       <a href="https://aiiot.it.com/project/intelligent-sensor" className="nav-link">Solutions</a>
-         
-                       <Link to="/resources" className="nav-link">Resources</Link>
-                       
-                       {/* === MEGA MENU IMPLEMENTATION === */}
+         <div className="project-header-inner">
+             <Link to="/" className="logo-link">
+               <div className="logo-box">
+                 <img src="/logo/logo.png" alt="Adi Shankara Institute" style={{ height: '100%', width: 'auto' }} />
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                 <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>AI-IoT Innovations</span>
+               </div>
+             </Link>
+ 
+             {/* DESKTOP NAV */}
+             <div className="project-desktop-nav">
+               <Link to="/" className="project-nav-link">Home</Link>
+               
+               <div 
+                   className="dropdown-wrapper"
+                   onMouseEnter={() => setIsSolutionsMenuOpen(true)}
+                   onMouseLeave={() => setIsSolutionsMenuOpen(false)}
+               >
+                   <div className="project-nav-link product-trigger" style={{ cursor: 'pointer' }}>
+                     Solutions <span>▾</span>
+                   </div>
+                   <div className={`simple-dropdown ${isSolutionsMenuOpen ? 'visible' : ''}`}>
+                     {solutionsList.map((sol, index) => (
+                       <Link key={index} to={sol.link} className="simple-dropdown-item">
+                         {sol.name}
+                       </Link>
+                     ))}
+                   </div>
+               </div>
+
+               <div 
+                 className="mega-menu-wrapper"
+                 onMouseEnter={() => setIsMegaMenuOpen(true)}
+                 onMouseLeave={() => setIsMegaMenuOpen(false)}
+               >
+                 <Link to="/products" className="project-nav-link product-trigger">
+                   Products <span>▾</span>
+                 </Link>
+                 <div className={`mega-menu-container ${isMegaMenuOpen ? 'visible' : ''}`}>
+                   <div className="mega-menu-sidebar">
+                     {Object.keys(productMenuData).map((key) => (
                        <div 
-                         className="mega-menu-wrapper"
-                         onMouseEnter={() => setIsMegaMenuOpen(true)}
-                         onMouseLeave={() => setIsMegaMenuOpen(false)}
+                         key={key} 
+                         className={`mega-sidebar-item ${activeCategory === key ? 'active' : ''}`}
+                         onMouseEnter={() => setActiveCategory(key)}
                        >
-                         <Link to="/products" className="nav-link product-trigger">
-                           Products <span>▾</span>
-                         </Link>
-         
-                         <div className={`mega-menu-container ${isMegaMenuOpen ? 'visible' : ''}`}>
-                           {/* LEFT SIDEBAR (Categories) */}
-                           <div className="mega-menu-sidebar">
-                             {Object.keys(productMenuData).map((key) => (
-                               <div 
-                                 key={key} 
-                                 className={`mega-sidebar-item ${activeCategory === key ? 'active' : ''}`}
-                                 onMouseEnter={() => setActiveCategory(key)}
-                               >
-                                 {key} <span>›</span>
-                               </div>
-                             ))}
-                           </div>
-         
-                           {/* RIGHT CONTENT (Grid) */}
-                           <div className="mega-menu-content">
-                             <div className="mega-content-header">
-                               <h4>{productMenuData[activeCategory].title}</h4>
-                               <p>{productMenuData[activeCategory].description}</p>
-                             </div>
-                             <div className="mega-grid">
-                               {productMenuData[activeCategory].items.map((item, idx) => (
-                                 <Link to={item.link} key={idx} className="mega-product-card">
-                                    <div className="mega-img-box">
-                                      <img src={item.image} alt={item.name} />
-                                    </div>
-                                    <span>{item.name}</span>
-                                 </Link>
-                               ))}
-                             </div>
-                           </div>
-                         </div>
+                         {key} <span>›</span>
                        </div>
-                       {/* === END MEGA MENU === */}
-         
-                       
-                       <a href="#contact" className="nav-btn-primary">Get in Touch</a>
+                     ))}
+                   </div>
+                   <div className="mega-menu-content">
+                     <div className="mega-content-header">
+                       <h4>{productMenuData[activeCategory].title}</h4>
+                       <p>{productMenuData[activeCategory].description}</p>
                      </div>
-         
-                     {/* MOBILE HAMBURGER BUTTON */}
-                     <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-                       {isMobileMenuOpen ? '✕' : '☰'}
-                     </button>
-                   </nav>
+                     <div className="mega-grid">
+                       {productMenuData[activeCategory].items.map((item, idx) => (
+                         <Link to={item.link} key={idx} className="mega-product-card">
+                            <div className="mega-img-box">
+                              <img src={item.image} alt={item.name} />
+                            </div>
+                            <span>{item.name}</span>
+                         </Link>
+                       ))}
+                     </div>
+                   </div>
                  </div>
+               </div>
+               
+               <Link to="/resources" className="project-nav-link">Resources</Link>
+               <a href="#contact" className="btn-primary-small">Get in Touch</a>
+             </div>
+ 
+             {/* MOBILE HAMBURGER */}
+             <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+               {isMobileMenuOpen ? '✕' : '☰'}
+             </button>
+         </div>
+
+         {/* MOBILE MENU */}
+         {isMobileMenuOpen && (
+            <div className="mobile-menu-wrapper">
+                <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="mobile-link">Home</Link>
+                
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                    <div 
+                        onClick={() => setMobileSolutionsExpanded(!mobileSolutionsExpanded)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems:'center', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', cursor: 'pointer' }}
+                    >
+                        Solutions <span>{mobileSolutionsExpanded ? '▴' : '▾'}</span>
+                    </div>
+                    {mobileSolutionsExpanded && (
+                        <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                            {solutionsList.map((sol, i) => (
+                                <Link 
+                                    key={i} 
+                                    to={sol.link} 
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    style={{ display: 'block', padding: '0.5rem 0', fontSize: '0.95rem', color: '#475569', textDecoration: 'none', borderBottom: i !== solutionsList.length -1 ? '1px solid #e2e8f0' : 'none' }}
+                                >
+                                    • {sol.name}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                    <div 
+                        onClick={() => setMobileProductExpanded(!mobileProductExpanded)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems:'center', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', cursor: 'pointer' }}
+                    >
+                        Products <span>{mobileProductExpanded ? '▴' : '▾'}</span>
+                    </div>
+                    {mobileProductExpanded && (
+                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                            {Object.keys(productMenuData).map((categoryKey) => (
+                                <div key={categoryKey} style={{ marginBottom: '1rem' }}>
+                                    <div style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', marginBottom:'0.5rem' }}>{categoryKey}</div>
+                                    {productMenuData[categoryKey].items.map((item, i) => (
+                                        <Link 
+                                            key={i} 
+                                            to={item.link} 
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            style={{ display: 'block', padding: '0.25rem 0', fontSize: '0.95rem', color: '#475569', textDecoration: 'none' }}
+                                        >
+                                            • {item.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <Link to="/resources" onClick={() => setIsMobileMenuOpen(false)} className="mobile-link">Resources</Link>
+                <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary" style={{ textAlign: 'center', marginTop: '1rem', display:'block' }}>Get in Touch</a>
+            </div>
+         )}
       </header>
 
+      {/* 2. MAIN CONTENT - USING CSS CLASSES FOR RESPONSIVENESS */}
       <div className="container" style={{paddingTop: '8rem', paddingBottom: '5rem'}}>
         
-        {/* Hero Area */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center', marginBottom:'5rem' }}>
-          <div>
-            <span style={{background:'#dbeafe', color:'#1e40af', padding:'0.4rem 1rem', borderRadius:'2rem', fontSize:'0.8rem', fontWeight:'bold', textTransform:'uppercase'}}>
-              Product Details
-            </span>
-            <h1 style={{fontSize:'3.5rem', fontWeight:'800', color:'#1e293b', marginTop:'1rem', marginBottom:'1rem', lineHeight: 1.1}}>
-              {product.name}
-            </h1>
-            <p style={{fontSize:'1.5rem', color:'#64748b', marginBottom:'1.5rem', fontWeight:'300'}}>
-              {product.tagline}
-            </p>
-            <p style={{fontSize:'1rem', color:'#475569', lineHeight:'1.7', marginBottom:'2rem'}}>
-              {product.desc}
-            </p>
+        {/* HERO SECTION */}
+        <div className="product-hero-section">
+          <div className="product-text-side">
+            <span className="product-badge">Product Details</span>
+            <h1 className="product-title">{product.name}</h1>
+            <p className="product-tagline">{product.tagline}</p>
+            <p className="product-desc">{product.desc}</p>
             
             <div style={{marginTop:'2rem'}}>
                <button className="btn-primary">Request Quote / Info</button>
             </div>
           </div>
 
-          <div style={{background:'white', padding:'2rem', borderRadius:'2rem', boxShadow:'0 20px 40px rgba(0,0,0,0.08)', border: '1px solid #f1f5f9'}}>
-             <img src={product.image} alt={product.name} style={{width:'100%', borderRadius:'1rem'}} />
+          <div className="product-image-side">
+             <img src={product.image} alt={product.name} />
           </div>
         </div>
 
-        {/* Features & Specs */}
-        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem'}}>
+        {/* DETAILS GRID */}
+        <div className="product-details-grid">
            {/* Features */}
-           <div>
-              <h3 style={{fontSize:'1.5rem', fontWeight:'700', marginBottom:'1.5rem'}}>Key Features</h3>
-              <ul style={{listStyle:'none', padding:0}}>
+           <div className="features-container">
+              <h3>Key Features</h3>
+              <div style={{marginTop:'1.5rem'}}>
                 {product.features && product.features.map((f, i) => (
-                  <li key={i} style={{display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'1rem', fontSize:'1.1rem', color:'#334155'}}>
-                    <span style={{color:'#3b82f6', fontWeight:'bold'}}>✓</span> {f}
-                  </li>
+                  <div key={i} className="feature-list-item">
+                    <div className="check-icon">✓</div>
+                    <span>{f}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
            </div>
 
            {/* Specifications */}
-           <div>
-              <h3 style={{fontSize:'1.5rem', fontWeight:'700', marginBottom:'1.5rem'}}>Technical Specs</h3>
-              <div style={{border:'1px solid #e2e8f0', borderRadius:'1rem', overflow:'hidden'}}>
+           <div className="specs-container">
+              <h3>Technical Specs</h3>
+              <div className="specs-box">
                 {product.specs && Object.entries(product.specs).map(([key, val], idx) => (
-                   <div key={key} style={{display:'flex', justifyContent:'space-between', padding:'1rem 1.5rem', background: idx%2===0 ? '#f8fafc' : 'white', borderBottom:'1px solid #f1f5f9'}}>
-                      <span style={{fontWeight:'600', color:'#64748b'}}>{key}</span>
-                      <span style={{color:'#1e293b', fontWeight:'700'}}>{val}</span>
+                   <div key={key} className="spec-row">
+                      <span className="spec-key">{key}</span>
+                      <span className="spec-val">{val}</span>
                    </div>
                 ))}
               </div>

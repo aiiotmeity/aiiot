@@ -3,20 +3,33 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import './ProjectDetail.css';
 
-
 const ProjectDetail = () => {
   const { projectId } = useParams();
   const [workshops, setWorkshops] = useState([]);
   
+  // --- MENU STATES ---
   const [activeCategory, setActiveCategory] = useState('Air Quality');
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
-  // --- MEGA MENU DATA (Updated with correct links) ---
+  
+  // --- MOBILE STATES (NEW) ---
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileProductExpanded, setMobileProductExpanded] = useState(false);
+  const [isSolutionsMenuOpen, setIsSolutionsMenuOpen] = useState(false); // Desktop hover state
+  const [mobileSolutionsExpanded, setMobileSolutionsExpanded] = useState(false); // Mobile accordion state
+
+  
+  const solutionsList = [
+    { name: 'Air Quality Monitoring', link: '/project/intelligent-sensor' },
+    { name: 'Flood Alert System', link: '/project/water-level' },
+    { name: 'Digital Water Distribution', link: '/project/digital-water' },
+    { name: 'Startup & Skill Development', link: '/project/startup-skill' }
+  ];
+  // --- MENU DATA ---
   const productMenuData = {
     'Air Quality': {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        // The link MUST match the 'slug' you put in Django Admin
         { name: 'Indoor Monitor', image: '/sensor_modules/aqicrop.jpeg', link: '/product-details/indoor-monitor' },
         { name: 'Outdoor Station', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
         { name: 'Gas Sensors', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400', link: '/product-details/gas-sensors' }
@@ -48,7 +61,6 @@ const ProjectDetail = () => {
       ]
     }
   };
-
 
   const projectsData = {
     'intelligent-sensor': {
@@ -156,6 +168,15 @@ const ProjectDetail = () => {
     }
   }, [projectId]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+  }, [isMobileMenuOpen]);
+
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if(el) { window.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' }); }
@@ -166,57 +187,153 @@ const ProjectDetail = () => {
   return (
     <div className="project-page">
       
-      {/* 1. HEADER */}
+      {/* 1. HEADER (Fixed Responsive) */}
       <header className="aiiot-header-local">
-         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center', height:'5rem' }}>
-            <Link to="/" style={{textDecoration:'none', color:'#1e293b', fontWeight:'800', fontSize:'1.2rem'}}>AI-IoT Innovations</Link>
-            <div style={{display:'flex', gap:'2rem', alignItems:'center'}}>
-               <Link to="/" style={{textDecoration:'none', color:'#64748b', fontWeight:'600'}}>Home</Link>
-                <div 
-                               className="mega-menu-wrapper"
-                               onMouseEnter={() => setIsMegaMenuOpen(true)}
-                               onMouseLeave={() => setIsMegaMenuOpen(false)}
-                             >
-                               <Link to="/products" className="nav-link product-trigger">
-                                 Products <span>▾</span>
-                               </Link>
+         <div className="project-header-inner">
+            {/* Logo */}
+            <Link to="/" className="project-logo">
+                AI-IoT Innovations
+            </Link>
+
+            {/* Desktop Navigation (Hidden on Mobile) */}
+            <div className="project-desktop-nav">
+               <Link to="/" className="project-nav-link">Home</Link>
+               {/* === SOLUTIONS DROPDOWN (DESKTOP) === */}
+               <div 
+                   className="dropdown-wrapper"
+                   onMouseEnter={() => setIsSolutionsMenuOpen(true)}
+                   onMouseLeave={() => setIsSolutionsMenuOpen(false)}
+               >
+                   <div className="project-nav-link product-trigger" style={{ cursor: 'pointer' }}>
+                     Solutions <span>▾</span>
+                   </div>
+   
+                   <div className={`simple-dropdown ${isSolutionsMenuOpen ? 'visible' : ''}`}>
+                     {solutionsList.map((sol, index) => (
+                       <Link key={index} to={sol.link} className="simple-dropdown-item">
+                         {sol.name}
+                       </Link>
+                     ))}
+                   </div>
+               </div>
+               {/* ==================================== */}
                
-                               <div className={`mega-menu-container ${isMegaMenuOpen ? 'visible' : ''}`}>
-                                 {/* LEFT SIDEBAR (Categories) */}
-                                 <div className="mega-menu-sidebar">
-                                   {Object.keys(productMenuData).map((key) => (
-                                     <div 
-                                       key={key} 
-                                       className={`mega-sidebar-item ${activeCategory === key ? 'active' : ''}`}
-                                       onMouseEnter={() => setActiveCategory(key)}
-                                     >
-                                       {key} <span>›</span>
-                                     </div>
-                                   ))}
-                                 </div>
-               
-                                 {/* RIGHT CONTENT (Grid) */}
-                                 <div className="mega-menu-content">
-                                   <div className="mega-content-header">
-                                     <h4>{productMenuData[activeCategory].title}</h4>
-                                     <p>{productMenuData[activeCategory].description}</p>
-                                   </div>
-                                   <div className="mega-grid">
-                                     {productMenuData[activeCategory].items.map((item, idx) => (
-                                       <Link to={item.link} key={idx} className="mega-product-card">
-                                          <div className="mega-img-box">
-                                            <img src={item.image} alt={item.name} />
-                                          </div>
-                                          <span>{item.name}</span>
-                                       </Link>
-                                     ))}
-                                   </div>
-                                 </div>
-                               </div>
-                             </div>
-               <a href="#contact" className="btn-primary" style={{padding:'0.5rem 1.2rem', fontSize:'0.9rem'}}>Get in Touch</a>
+               {/* Mega Menu */}
+               <div 
+                   className="mega-menu-wrapper"
+                   onMouseEnter={() => setIsMegaMenuOpen(true)}
+                   onMouseLeave={() => setIsMegaMenuOpen(false)}
+                 >
+                   <Link to="/products" className="project-nav-link product-trigger">
+                     Products <span>▾</span>
+                   </Link>
+   
+                   <div className={`mega-menu-container ${isMegaMenuOpen ? 'visible' : ''}`}>
+                     {/* LEFT SIDEBAR (Categories) */}
+                     <div className="mega-menu-sidebar">
+                       {Object.keys(productMenuData).map((key) => (
+                         <div 
+                           key={key} 
+                           className={`mega-sidebar-item ${activeCategory === key ? 'active' : ''}`}
+                           onMouseEnter={() => setActiveCategory(key)}
+                         >
+                           {key} <span>›</span>
+                         </div>
+                       ))}
+                     </div>
+   
+                     {/* RIGHT CONTENT (Grid) */}
+                     <div className="mega-menu-content">
+                       <div className="mega-content-header">
+                         <h4>{productMenuData[activeCategory].title}</h4>
+                         <p>{productMenuData[activeCategory].description}</p>
+                       </div>
+                       <div className="mega-grid">
+                         {productMenuData[activeCategory].items.map((item, idx) => (
+                           <Link to={item.link} key={idx} className="mega-product-card">
+                              <div className="mega-img-box">
+                                <img src={item.image} alt={item.name} />
+                              </div>
+                              <span>{item.name}</span>
+                           </Link>
+                         ))}
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+
+               <a href="#contact" className="btn-primary-small">Get in Touch</a>
             </div>
+
+            {/* Mobile Hamburger (Visible on Mobile) */}
+            <button 
+                className="mobile-nav-toggle"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+                {isMobileMenuOpen ? '✕' : '☰'}
+            </button>
          </div>
+
+         {/* Mobile Menu Overlay */}
+         {isMobileMenuOpen && (
+            <div className="mobile-menu-wrapper">
+                <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="mobile-link">Home</Link>
+                {/* === SOLUTIONS ACCORDION (MOBILE) === */}
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                    <div 
+                        onClick={() => setMobileSolutionsExpanded(!mobileSolutionsExpanded)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems:'center', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', cursor: 'pointer' }}
+                    >
+                        Solutions <span>{mobileSolutionsExpanded ? '▴' : '▾'}</span>
+                    </div>
+                    {mobileSolutionsExpanded && (
+                        <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                            {solutionsList.map((sol, i) => (
+                                <Link 
+                                    key={i} 
+                                    to={sol.link} 
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    style={{ display: 'block', padding: '0.5rem 0', fontSize: '0.95rem', color: '#475569', textDecoration: 'none', borderBottom: i !== solutionsList.length -1 ? '1px solid #e2e8f0' : 'none' }}
+                                >
+                                    • {sol.name}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                {/* ==================================== */}
+                {/* Mobile Accordion */}
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                    <div 
+                        onClick={() => setMobileProductExpanded(!mobileProductExpanded)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems:'center', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', cursor: 'pointer' }}
+                    >
+                        Products <span>{mobileProductExpanded ? '▴' : '▾'}</span>
+                    </div>
+                    {mobileProductExpanded && (
+                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                            {Object.keys(productMenuData).map((categoryKey) => (
+                                <div key={categoryKey} style={{ marginBottom: '1rem' }}>
+                                    <div style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', marginBottom:'0.5rem' }}>{categoryKey}</div>
+                                    {productMenuData[categoryKey].items.map((item, i) => (
+                                        <Link 
+                                            key={i} 
+                                            to={item.link} 
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            style={{ display: 'block', padding: '0.25rem 0', fontSize: '0.95rem', color: '#475569', textDecoration: 'none' }}
+                                        >
+                                            • {item.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary" style={{ textAlign: 'center', marginTop: '1rem' }}>Get in Touch</a>
+            </div>
+         )}
       </header>
 
       {/* 2. UNIVERSAL FULL-SCREEN HERO */}
@@ -243,11 +360,10 @@ const ProjectDetail = () => {
         )}
       </section>
 
-      {/* 3. UPDATED OVERVIEW CARD (Right side now has Image + Text) */}
+      {/* 3. UPDATED OVERVIEW CARD */}
       <div className="container overview-section-wrapper" id="overview">
          <div className="overview-glass-card">
             
-            {/* Left Side: Mission Text */}
             {/* Left Side: Mission Text */}
             <div className="overview-text-side">
               <div style={{color:'#3b82f6', fontWeight:'700', textTransform:'uppercase', fontSize:'0.85rem', marginBottom:'1rem'}}>
@@ -257,7 +373,6 @@ const ProjectDetail = () => {
               <p className="mission-body">{project.fullDescription}</p>
               
               <div style={{marginTop:'2rem'}}>
-                {/* Link is better than button for page navigation */}
                 <button 
                     onClick={() => scrollToSection('innovations')} 
                     className="btn-primary" 
@@ -268,20 +383,17 @@ const ProjectDetail = () => {
               </div>
             </div>
             
-            {/* Right Side: Visual Image + Short Desc Overlay */}
+            {/* Right Side: Visual Image */}
             <div className="overview-visual-side" style={{ backgroundImage: `url(${project.subimage})` }}>
-               <div className="visual-overlay-gradient">
-                  {/* <h3 className="mini-card-title">{project.title}</h3>
-                  <p className="mini-card-desc">{project.description}</p> */}
-               </div>
+               <div className="visual-overlay-gradient"></div>
             </div>
 
          </div>
       </div>
 
       {/* 4. INNOVATIONS GRID */}
-      <div className="container section-padding" id="innovations">
-         <h2 className="section-title">Key Technologies</h2>
+      <div className="container section-padding" id="innovations" style={{ paddingBottom: '4rem' }}>
+         <h2 className="section-title" style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '2rem', textAlign: 'center' }}>Key Technologies</h2>
          {projectId === 'startup-skill' && workshops.length > 0 ? (
             <div className="innovation-grid">
                {workshops.map((ws) => (
@@ -296,18 +408,19 @@ const ProjectDetail = () => {
            <div className="innovation-grid">
              {project.innovations.map((item, idx) => (
                <div key={idx} className="feature-card">
-                 <div className="icon-box">{item.icon}</div>
-                 <h3 className="card-title">{item.title}</h3>
-                 <p className="card-desc">{item.desc}</p>
+                 <div className="icon-box" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{item.icon}</div>
+                 <h3 className="card-title" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>{item.title}</h3>
+                 <p className="card-desc" style={{ color: '#64748b' }}>{item.desc}</p>
                </div>
              ))}
            </div>
          )}
       </div>
-         {/* 5. NEW: APPLICATIONS SECTION (Added Here) */}
+
+      {/* 5. APPLICATIONS SECTION */}
       <section id="applications" style={{ background: '#eff6ff', padding: '5rem 0' }}>
         <div className="container">
-          <h2 className="section-title">Where We Deploy</h2>
+          <h2 className="section-title" style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '3rem', textAlign: 'center' }}>Where We Deploy</h2>
           <div className="applications-grid">
             {project.applications && project.applications.map((app, idx) => (
               <div key={idx} className="application-card">
@@ -323,7 +436,8 @@ const ProjectDetail = () => {
           </div>
         </div>
       </section>
-      {/* 5. IMPACT SECTION */}
+
+      {/* 6. IMPACT SECTION */}
       <section id="impact" className="impact-parallax-section" style={{ backgroundImage: `url(${project.heroImage})` }}>
          <div className="impact-overlay">
             <div className="container">
@@ -340,11 +454,9 @@ const ProjectDetail = () => {
          </div>
       </section>
 
-      
-      
       {/* Footer */}
       <footer style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 0' }}>
-        <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
+        <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
             <div>
               <h5 style={{ fontWeight: 700, color: 'white', marginBottom: '1rem' }}>AI-IoT Innovations</h5>
@@ -355,9 +467,7 @@ const ProjectDetail = () => {
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {['About', 'Team', 'Solutions', 'Contact'].map((link, idx) => (
                   <li key={idx} style={{ marginBottom: '0.5rem' }}>
-                    <a href={`#${link.toLowerCase()}`} style={{ fontSize: '0.875rem', color: 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)', position: 'relative', paddingBottom: '0.25rem' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.transform = 'translateX(8px)'; e.currentTarget.style.fontWeight = '600'; }} onMouseLeave={(e) => { e.currentTarget.style.color = 'white'; e.currentTarget.style.transform = 'translateX(0)'; e.currentTarget.style.fontWeight = '400'; }}>
-                      <span style={{ display: 'inline-block', width: '0.25rem', height: '0.25rem', background: '#3b82f6', borderRadius: '50%', opacity: 0, transition: 'opacity 0.3s ease' }} onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }} onMouseLeave={(e) => { e.currentTarget.style.opacity = '0'; }}></span>{link}
-                    </a>
+                    <Link to={`/#${link.toLowerCase()}`} style={{ fontSize: '0.875rem', color: 'white', textDecoration: 'none' }}>{link}</Link>
                   </li>
                 ))}
               </ul>
@@ -373,7 +483,6 @@ const ProjectDetail = () => {
           </div>
         </div>
       </footer>
-
     </div>
   );
 };

@@ -50,14 +50,13 @@ import json
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
-from .serializers import ResourceSerializer, BrochureSerializer, WorkshopEventSerializer
+from .serializers import ResourceSerializer, BrochureSerializer, WorkshopEventSerializer ,ProductSerializer
  # <-- Make sure this is imported
 
 
 
 # Import your models
-from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support, ResourceFile,Resource,Brochure ,WorkshopEvent
-
+from .models import Signup, HealthAssessment,UserLogin, AdminUserlogin, FamilyMembers, Support, ResourceFile,Resource,Brochure ,WorkshopEvent, Product
 # Import DynamoDB functions with error handling
 try:
     from .dynamodb import (
@@ -2700,6 +2699,19 @@ def get_brochures_by_category(request, category):
 class WorkshopEventViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = WorkshopEvent.objects.all()
     serializer_class = WorkshopEventSerializer
+
+@api_view(['GET'])
+@csrf_exempt
+def get_product_detail(request, slug):
+    """
+    Fetch product details by slug for the frontend product page.
+    """
+    try:
+        product = Product.objects.get(slug=slug)
+        serializer = ProductSerializer(product)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 
