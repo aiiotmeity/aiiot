@@ -2713,6 +2713,49 @@ def get_product_detail(request, slug):
     except Product.DoesNotExist:
         return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
 
+@api_view(['GET'])
+@csrf_exempt
+def get_products_menu(request):
+    """
+    Returns data for the Frontend Mega Menu, grouped by Category.
+    """
+    # Define your static category descriptions here
+    categories_info = {
+        'Air Quality': {'title': 'Air Quality Monitoring', 'desc': 'Precision sensors for indoor and outdoor environments.'},
+        'Water Solutions': {'title': 'Water Management', 'desc': 'Flood alerts and distribution logic.'},
+        'Weather': {'title': 'Weather Stations', 'desc': 'Hyper-local weather data collection.'},
+        'Training': {'title': 'Skill Development', 'desc': 'Kits and workshops for students.'}
+    }
+    
+    menu_data = {}
+    
+    # Loop through defined categories to maintain order
+    for cat_name, info in categories_info.items():
+        # Fetch products for this category
+        products = Product.objects.filter(category=cat_name)
+        
+        if products.exists():
+            items = []
+            for p in products:
+                # Handle Image URL
+                img_url = p.image.url if p.image else ''
+                # Ensure absolute URL if needed (optional)
+                # if img_url and not img_url.startswith('http'):
+                #     img_url = request.build_absolute_uri(img_url)
+
+                items.append({
+                    'name': p.name,
+                    'image': img_url,
+                    'link': f'/product-details/{p.slug}' # This matches your React Router
+                })
+            
+            menu_data[cat_name] = {
+                'title': info['title'],
+                'description': info['desc'],
+                'items': items
+            }
+    
+    return Response(menu_data, status=status.HTTP_200_OK)
 
 
 

@@ -360,6 +360,8 @@ const ProjectDetail = () => {
         )}
       </section>
 
+      <br></br>
+
       {/* 3. UPDATED OVERVIEW CARD */}
       <div className="container overview-section-wrapper" id="overview">
          <div className="overview-glass-card">
