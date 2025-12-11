@@ -1,0 +1,210 @@
+/* Resources.css - Modern Clean Design */
+
+/* --- Page Layout --- */
+.resources-page-container {
+    background-color: #f8fafc; /* Light gray background */
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    padding-top: 5rem; /* Space for fixed header */
+    color: #1e293b;
+}
+
+.resources-content-wrapper {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 4rem 1.5rem;
+}
+
+/* --- Section 1: Objectives (Featured Card) --- */
+.resources-hero-section {
+    margin-bottom: 5rem;
+    text-align: center;
+}
+
+.page-title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 3rem;
+    letter-spacing: -0.02em;
+}
+
+.objectives-card {
+    background: #ffffff;
+    border-radius: 1.5rem;
+    padding: 3rem;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Green accent for objectives */
+.objectives-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 6px; height: 100%;
+    background: #10b981; /* Green accent */
+}
+
+.objectives-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.main-objective-text {
+    font-size: 1.15rem;
+    color: #065f46;
+    background: #ecfdf5;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    border: 1px solid #a7f3d0;
+}
+
+.objectives-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.objectives-list li {
+    position: relative;
+    padding-left: 2rem;
+    margin-bottom: 1rem;
+    color: #475569;
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.objectives-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #10b981;
+    font-weight: 800;
+}
+
+/* --- Section 2: Brochures Grid --- */
+.resources-section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 2.5rem;
+    padding-left: 1rem;
+    border-left: 5px solid #3b82f6;
+}
+
+.brochure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+}
+
+.brochure-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.brochure-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+    border-color: #bfdbfe;
+}
+
+.card-category-badge {
+    display: inline-block;
+    background: #eff6ff;
+    color: #3b82f6;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 2rem;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    align-self: flex-start;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+}
+
+.card-desc {
+    color: #64748b;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    flex-grow: 1;
+}
+
+.download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.85rem;
+    background: #3b82f6;
+    color: white;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.download-btn:hover {
+    background: #2563eb;
+}
+
+.back-link-wrapper {
+    text-align: center;
+    margin-top: 4rem;
+}
+
+.back-link {
+    color: #64748b;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: #3b82f6;
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2.25rem;
+    }
+    
+    .objectives-card {
+        padding: 1.5rem;
+    }
+    
+    .brochure-grid {
+        grid-template-columns: 1fr;
+    }
+}

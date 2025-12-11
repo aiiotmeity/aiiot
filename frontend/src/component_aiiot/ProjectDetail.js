@@ -11,102 +11,102 @@ const ProjectDetail = () => {
   const [activeCategory, setActiveCategory] = useState('Air Quality');
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   
-  // --- MOBILE STATES (NEW) ---
+  // --- MOBILE & NAV STATES ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileProductExpanded, setMobileProductExpanded] = useState(false);
-  const [isSolutionsMenuOpen, setIsSolutionsMenuOpen] = useState(false); // Desktop hover state
-  const [mobileSolutionsExpanded, setMobileSolutionsExpanded] = useState(false); // Mobile accordion state
+  const [isSolutionsMenuOpen, setIsSolutionsMenuOpen] = useState(false); 
+  const [mobileSolutionsExpanded, setMobileSolutionsExpanded] = useState(false); 
 
-  
   const solutionsList = [
     { name: 'Air Quality Monitoring', link: '/project/intelligent-sensor' },
     { name: 'Flood Alert System', link: '/project/water-level' },
     { name: 'Digital Water Distribution', link: '/project/digital-water' },
     { name: 'Startup & Skill Development', link: '/project/startup-skill' }
   ];
-  // --- MENU DATA ---
+
+  // --- UPDATED MENU DATA (With 3 Air Quality Products) ---
   const productMenuData = {
     'Air Quality': {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        { name: 'Indoor Monitor', image: '/sensor_modules/aqicrop.jpeg', link: '/product-details/indoor-monitor' },
-        { name: 'Outdoor Station', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
-        { name: 'Gas Sensors', image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400', link: '/product-details/gas-sensors' }
+        { name: 'AQMS ', image: '/sensor_modules/aqms-station1.jpg', link: '/product-details/indoor-monitor' },
+        { name: 'AQMS  ', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
+        { name: 'Gas Sensors', image: '/sensor_modules/aqi-indoor.jpeg', link: '/product-details/gas-sensors' }
       ]
     },
     'Water Solutions': {
       title: 'Water Management',
       description: 'Flood alerts and distribution logic.',
       items: [
-        { name: 'Flood Alert System', image: '/sensor_modules/river1.jpg', link: '/product-details/flood-alert' },
-        { name: 'Level Sensors', image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400', link: '/product-details/level-sensors' },
-        { name: 'Distribution Net', image: '/sensor_modules/distribution.jpeg', link: '/product-details/distribution-net' }
+        { name: 'Predictive Flood Alert', image: '/sensor_modules/river1.jpg', link: '/product-details/flood-alert' },
+        { name: 'Digital Flow Meter', image: '/sensor_modules/distribution.jpeg', link: '/product-details/distribution-net' }
       ]
     },
     'Weather': {
       title: 'Weather Stations',
       description: 'Hyper-local weather data collection.',
       items: [
-        { name: 'Auto Weather Station', image: '/sensor_modules/weather.jpg', link: '/product-details/weather-station' },
-        { name: 'Rain Gauges', image: 'https://images.unsplash.com/photo-1590055531860-6902633df018?w=400', link: '/product-details/rain-gauge' }
+        { name: 'AWS', image: '/sensor_modules/weather.jpg', link: '/product-details/weather-station' },
+        
       ]
     },
     'Training': {
       title: 'Skill Development',
       description: 'Kits and workshops for students.',
       items: [
-        { name: 'IoT Starter Kits', image: '/sensor_modules/skill.jpg', link: '/product-details/iot-starter-kit' },
-        { name: 'PCB Workshops', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=400', link: '/product-details/pcb-workshop' }
+        { name: 'IoT Workshops & Internships', image: '/sensor_modules/skill.jpg', link: '/product-details/iot-training' },
+        { name: 'PCB Design Course', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=400', link: '/product-details/pcb-workshop' }
       ]
     }
   };
 
+  // --- UPDATED PROJECT DATA (Based on your Images/Text) ---
   const projectsData = {
     'intelligent-sensor': {
-      title: 'Protect Your Health from Invisible Pollutants!',
-      tagline: 'Sensing. Predicting. Protecting.',
+      title: 'AQM v3 - Advanced Air Quality Monitoring',
+      tagline: 'Real-time. Reliable. Rugged.',
       heroImage: 'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?q=80&w=2000&auto=format&fit=crop',
-      subimage: '/sensor_modules/aqicrop.jpeg',
-      description: 'According to WHO, air pollution causes 7 million premature deaths. Our sensors track these invisible threats in real-time.',
-      fullDescription: `We have deployed a validation-ready network that goes beyond simple sensing. By utilizing LoRa technology for long-range communication and advanced AI models, we provide a 4-day AQI forecast.`,
+      subimage: '/sensor_modules/aqi1.jpeg',
+      description: 'A comprehensive environmental monitoring solution measuring NO2, SO2, NH3, O3, PM2.5, and PM10 with LoRaWAN connectivity.',
+      fullDescription: `The AQM v3 is a state-of-the-art monitoring station designed for both urban and industrial applications. It integrates high-precision laser dispersion sensors and NTC thermistors to track pollutants and weather data in real-time. Built with a rugged IP67 enclosure, it ensures continuous operation with dual connectivity (LoRa + GSM) and backup power.`,
       innovations: [
-        { title: 'Comprehensive Sensing', desc: 'Detects PM2.5, PM10, CO, NO2.', icon: '🔬' },
-        { title: '4-Day AI Forecast', desc: 'Predicting levels 96 hours ahead.', icon: '🤖' },
-        { title: 'Health Risk Engine', desc: 'Dynamic alerts for at-risk groups.', icon: '❤️' },
-        { title: 'LoRa Mesh', desc: 'City-wide coverage with low power.', icon: '📡' }
+        { title: 'Multi-Gas Sensing', desc: 'Measures NO2, SO2, NH3, O3, PM2.5, PM10.', icon: '🔬' },
+        { title: 'Dual Connectivity', desc: 'LoRaWAN for long range + GSM backup.', icon: '📡' },
+        { title: 'Rugged Design', desc: 'IP67 Weatherproof & Durable enclosure.', icon: '🛡️' },
+        { title: 'Data Security', desc: 'SD Card backup & AWS Cloud integration.', icon: '☁️' }
       ],
       applications: [
-        { title: 'Smart Schools', image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800', desc: 'Protecting children during outdoor activities.' },
+        { title: 'Smart Cities', image: 'https://images.unsplash.com/photo-1496062031456-07b8f162a322?w=800', desc: 'City-wide pollution tracking and analysis.' },
         { title: 'Industrial Zones', image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800', desc: 'Monitoring emission compliance in real-time.' },
-        { title: 'Public Parks', image: 'https://images.unsplash.com/photo-1496062031456-07b8f162a322?w=800', desc: 'Advising joggers on the best time to run.' }
+        { title: 'Schools & Campuses', image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800', desc: 'Ensuring safe air quality for students.' }
       ],
       impacts: [
-        { label: 'Pollutants', value: '6 Types' }, { label: 'Forecast', value: '4 Days' },
-        { label: 'Tech', value: 'LoRa + AI' }, { label: 'Network', value: 'Mesh' }
+        { label: 'Pollutants', value: '6 Types' }, { label: 'Rating', value: 'IP67' },
+        { label: 'Comms', value: 'LoRa/GSM' }, { label: 'Backup', value: '24hr UPS' }
       ]
     },
     'water-level': {
-      title: 'River Watch & Flood Alert',
-      tagline: 'Predicting the Flow. Protecting Lives.',
+      title: 'Predictive Flood Alert System',
+      tagline: 'Predicting Water Levels 6 Hours Ahead.',
       heroImage: 'https://images.unsplash.com/photo-1454789476662-53eb23ba5907?q=80&w=2000&auto=format&fit=crop',
-      subimage: '/sensor_modules/weather.jpg',
-      description: 'A comprehensive LSTM neural network system for real-time river level forecasting.',
-      fullDescription: `This project integrates multi-source data—dam operations, rainfall, and historical levels—into a comprehensive LSTM Neural Network.`,
+      subimage: '/sensor_modules/river1.jpg',
+      description: 'Using advanced LSTM Deep Learning networks to provide accurate river level forecasting and flood warnings.',
+      fullDescription: `This system addresses the challenge of sudden floods by predicting river levels up to 6 hours in advance. It integrates multi-source data including upstream dam operations, real-time rainfall patterns, and historical river measurements into a comprehensive LSTM Neural Network model.`,
       innovations: [
-        { title: 'LSTM Network', desc: 'Deep learning for flood prediction.', icon: '🧠' },
-        { title: 'Multi-Source Data', desc: 'Dam + Rainfall + River Levels.', icon: '🌊' },
-        { title: '6-Hour Lead Time', desc: 'Early warning for evacuation.', icon: '⏱️' },
-        { title: 'Custom AWS', desc: 'Proprietary weather stations.', icon: '⛈️' }
+        { title: 'LSTM Network', desc: 'Deep learning for 6-hour advance prediction.', icon: '🧠' },
+        { title: 'Multi-Source Data', desc: 'Integrates Dam + Rainfall + River levels.', icon: '🌊' },
+        { title: 'Real-Time Alert', desc: 'Instant notifications for emergency response.', icon: '🚨' },
+        { title: 'Ultrasonic Accuracy', desc: 'Precision level monitoring sensors.', icon: '📏' }
       ],
       applications: [
-        { title: 'River Banks', image: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=800', desc: 'Early warning for riverside communities.' },
-        { title: 'Dam Reservoirs', image: 'https://images.unsplash.com/photo-1524410943962-42da6a603c40?w=800', desc: 'Optimizing water release schedules.' },
-        { title: 'Urban Drainage', image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=800', desc: 'Preventing flash floods in cities.' }
+        { title: 'River Banks', image: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=800', desc: 'Early warning for riverside communities (Neeleswaram).' },
+        { title: 'Dam Management', image: 'https://images.unsplash.com/photo-1524410943962-42da6a603c40?w=800', desc: 'Optimizing water release schedules safely.' },
+        { title: 'Disaster Response', image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=800', desc: 'Data-driven evacuation planning.' }
       ],
       impacts: [
-        { label: 'Location', value: 'Kalady' }, { label: 'Model', value: 'LSTM' },
-        { label: 'Lead Time', value: '6 Hours' }, { label: 'Hardware', value: 'Custom' }
+        { label: 'Lead Time', value: '6 Hours' }, { label: 'Model', value: 'LSTM' },
+        { label: 'Accuracy', value: '98%' }, { label: 'Region', value: 'Kerala' }
       ]
     },
     'digital-water': {
@@ -115,12 +115,12 @@ const ProjectDetail = () => {
       heroImage: 'https://images.unsplash.com/photo-1516937941348-c09645f3a2eb?q=80&w=2000&auto=format&fit=crop',
       subimage: '/sensor_modules/distribution.jpeg',
       description: 'A digital twin system built to monitor, analyze, and optimize local water distribution networks.',
-      fullDescription: `We conducted comprehensive ground studies engaging with KWA officials. This system digitizes the water network to ensure fair distribution.`,
+      fullDescription: `We conducted comprehensive ground studies engaging with KWA officials. This system digitizes the water network to ensure fair distribution, detect leaks instantly, and manage pressure across the pipeline network using IoT flow meters.`,
       innovations: [
         { title: 'Digital Twin', desc: 'Virtual replica of pipe networks.', icon: '💻' },
         { title: 'Leak Detection', desc: 'Instant pressure drop alerts.', icon: '💧' },
-        { title: 'Explainable AI', desc: 'Transparent decision making.', icon: '🤖' },
-        { title: 'Community App', desc: 'Resident reporting channel.', icon: '📱' }
+        { title: 'Flow Analysis', desc: 'Real-time consumption tracking.', icon: '📊' },
+        { title: 'Remote Valve', desc: 'Control water flow from the cloud.', icon: '🎛️' }
       ],
       applications: [
         { title: 'Municipalities', image: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=800', desc: 'Managing city-wide water supply.' },
@@ -133,26 +133,26 @@ const ProjectDetail = () => {
       ]
     },
     'startup-skill': {
-      title: 'Innovation & Skills Hub',
-      tagline: 'Empowering the builders of tomorrow.',
+      title: 'IoT & Embedded Systems Training',
+      tagline: 'Hands-on Workshops & Internships.',
       heroImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=2000&auto=format&fit=crop',
-      subimage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=2000&auto=format&fit=crop',
-      description: 'Bridging the gap between academia and industry through hands-on IoT and AI training.',
-      fullDescription: `We foster a startup ecosystem by providing students with real-world exposure. From intensive 15-day summer internships to 6-month specialized intern training.`,
+      subimage: '/sensor_modules/skill.jpg',
+      description: 'Comprehensive training programs ranging from 1-day workshops to intensive 15-day internships on IoT and Edge Computing.',
+      fullDescription: `We bridge the gap between academia and industry by providing hands-on training in Arduino, Raspberry Pi, PCB Design (KiCad), and IoT prototyping. Our programs culminate in real-world project expos and prototype development.`,
       innovations: [
-        { title: 'Incubation', desc: 'Support for student startups.', icon: '🚀' },
-        { title: 'PCB Design', desc: 'Industrial standard training.', icon: '🛠️' },
-        { title: 'Patents', desc: 'Guidance on IP filing.', icon: '📜' },
-        { title: 'Mentorship', desc: 'Expert industry guidance.', icon: '🎓' }
+        { title: 'Summer Internship', desc: '15 Days on Electronic Prototyping.', icon: '📅' },
+        { title: 'PCB Design', desc: 'KiCad & Edge Hardware Workshop.', icon: '🛠️' },
+        { title: 'IoT Robotics', desc: 'ESP8266 to Raspberry Pi integration.', icon: '🤖' },
+        { title: 'Computer Vision', desc: 'Raspberry Pi & OpenCV training.', icon: '👁️' }
       ],
       applications: [
-        { title: 'Universities', image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800', desc: 'Setting up IoT labs and curriculum.' },
-        { title: 'Tech Startups', image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800', desc: 'Prototyping new hardware ideas.' },
-        { title: 'Student Projects', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800', desc: 'Final year project guidance.' }
+        { title: 'Universities', image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800', desc: 'Faculty Development Programs (FDP).' },
+        { title: 'Students', image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800', desc: 'Value-added courses and internships.' },
+        { title: 'Project Expo', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800', desc: 'Showcasing student innovations.' }
       ],
       impacts: [
-        { label: 'Students', value: '260+' }, { label: 'Interns', value: '49+' },
-        { label: 'Patents', value: '1 Filed' }, { label: 'Startups', value: '6 Teams' }
+        { label: 'Students', value: '250+' }, { label: 'Interns', value: '49+' },
+        { label: 'Workshops', value: '8+' }, { label: 'Startups', value: '6 Teams' }
       ]
     },
   };
@@ -163,12 +163,12 @@ const ProjectDetail = () => {
 
   useEffect(() => {
     if (projectId === 'startup-skill') {
-      const API_BASE_URL = process.env.NODE_ENV === 'production' ? 'https://aiiot-1.onrender.com' : 'http://localhost:8000';
+      // Optional: Keep API call for dynamic workshops if backend is ready
+      const API_BASE_URL = 'https://aiiot-1.onrender.com';
       axios.get(`${API_BASE_URL}/api/workshops/`).then(res => setWorkshops(res.data)).catch(err => console.error(err));
     }
   }, [projectId]);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -187,18 +187,16 @@ const ProjectDetail = () => {
   return (
     <div className="project-page">
       
-      {/* 1. HEADER (Fixed Responsive) */}
+      {/* 1. HEADER (Design Unchanged) */}
       <header className="aiiot-header-local">
          <div className="project-header-inner">
-            {/* Logo */}
             <Link to="/" className="project-logo">
                 AI-IoT Innovations
             </Link>
 
-            {/* Desktop Navigation (Hidden on Mobile) */}
             <div className="project-desktop-nav">
                <Link to="/" className="project-nav-link">Home</Link>
-               {/* === SOLUTIONS DROPDOWN (DESKTOP) === */}
+               {/* SOLUTIONS DROPDOWN */}
                <div 
                    className="dropdown-wrapper"
                    onMouseEnter={() => setIsSolutionsMenuOpen(true)}
@@ -207,7 +205,6 @@ const ProjectDetail = () => {
                    <div className="project-nav-link product-trigger" style={{ cursor: 'pointer' }}>
                      Solutions <span>▾</span>
                    </div>
-   
                    <div className={`simple-dropdown ${isSolutionsMenuOpen ? 'visible' : ''}`}>
                      {solutionsList.map((sol, index) => (
                        <Link key={index} to={sol.link} className="simple-dropdown-item">
@@ -216,20 +213,18 @@ const ProjectDetail = () => {
                      ))}
                    </div>
                </div>
-               {/* ==================================== */}
                
-               {/* Mega Menu */}
+               {/* PRODUCTS MEGA MENU */}
                <div 
                    className="mega-menu-wrapper"
                    onMouseEnter={() => setIsMegaMenuOpen(true)}
                    onMouseLeave={() => setIsMegaMenuOpen(false)}
                  >
-                   <Link to="/products" className="project-nav-link product-trigger">
+                   <Link to="" className="project-nav-link product-trigger">
                      Products <span>▾</span>
                    </Link>
    
                    <div className={`mega-menu-container ${isMegaMenuOpen ? 'visible' : ''}`}>
-                     {/* LEFT SIDEBAR (Categories) */}
                      <div className="mega-menu-sidebar">
                        {Object.keys(productMenuData).map((key) => (
                          <div 
@@ -242,7 +237,6 @@ const ProjectDetail = () => {
                        ))}
                      </div>
    
-                     {/* RIGHT CONTENT (Grid) */}
                      <div className="mega-menu-content">
                        <div className="mega-content-header">
                          <h4>{productMenuData[activeCategory].title}</h4>
@@ -265,7 +259,6 @@ const ProjectDetail = () => {
                <a href="#contact" className="btn-primary-small">Get in Touch</a>
             </div>
 
-            {/* Mobile Hamburger (Visible on Mobile) */}
             <button 
                 className="mobile-nav-toggle"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -274,11 +267,11 @@ const ProjectDetail = () => {
             </button>
          </div>
 
-         {/* Mobile Menu Overlay */}
+         {/* MOBILE OVERLAY */}
          {isMobileMenuOpen && (
             <div className="mobile-menu-wrapper">
                 <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="mobile-link">Home</Link>
-                {/* === SOLUTIONS ACCORDION (MOBILE) === */}
+                {/* SOLUTIONS MOBILE */}
                 <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
                     <div 
                         onClick={() => setMobileSolutionsExpanded(!mobileSolutionsExpanded)}
@@ -301,8 +294,7 @@ const ProjectDetail = () => {
                         </div>
                     )}
                 </div>
-                {/* ==================================== */}
-                {/* Mobile Accordion */}
+                {/* PRODUCTS MOBILE */}
                 <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
                     <div 
                         onClick={() => setMobileProductExpanded(!mobileProductExpanded)}
@@ -336,7 +328,7 @@ const ProjectDetail = () => {
          )}
       </header>
 
-      {/* 2. UNIVERSAL FULL-SCREEN HERO */}
+      {/* 2. HERO */}
       <section className="project-hero-fullscreen" style={{ backgroundImage: `url(${project.heroImage})` }}>
         <div className="hero-content-wrapper">
           <div className="hero-pill">Detailed Case Study</div>
@@ -347,7 +339,7 @@ const ProjectDetail = () => {
           </div>
         </div>
 
-        {/* Floating Bubbles (Only for Intelligent Sensor) */}
+        {/* Bubbles only for Intelligent Sensor */}
         {projectId === 'intelligent-sensor' && (
           <div className="hero-bubbles-wrapper">
              <div className="p-bubble b1">☁️ PM2.5</div>
@@ -362,11 +354,10 @@ const ProjectDetail = () => {
 
       <br></br>
 
-      {/* 3. UPDATED OVERVIEW CARD */}
+      {/* 3. OVERVIEW CARD */}
       <div className="container overview-section-wrapper" id="overview">
          <div className="overview-glass-card">
             
-            {/* Left Side: Mission Text */}
             <div className="overview-text-side">
               <div style={{color:'#3b82f6', fontWeight:'700', textTransform:'uppercase', fontSize:'0.85rem', marginBottom:'1rem'}}>
                   Mission Statement
@@ -385,7 +376,6 @@ const ProjectDetail = () => {
               </div>
             </div>
             
-            {/* Right Side: Visual Image */}
             <div className="overview-visual-side" style={{ backgroundImage: `url(${project.subimage})` }}>
                <div className="visual-overlay-gradient"></div>
             </div>
@@ -419,7 +409,7 @@ const ProjectDetail = () => {
          )}
       </div>
 
-      {/* 5. APPLICATIONS SECTION */}
+      {/* 5. APPLICATIONS */}
       <section id="applications" style={{ background: '#eff6ff', padding: '5rem 0' }}>
         <div className="container">
           <h2 className="section-title" style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '3rem', textAlign: 'center' }}>Where We Deploy</h2>
@@ -439,7 +429,7 @@ const ProjectDetail = () => {
         </div>
       </section>
 
-      {/* 6. IMPACT SECTION */}
+      {/* 6. IMPACT */}
       <section id="impact" className="impact-parallax-section" style={{ backgroundImage: `url(${project.heroImage})` }}>
          <div className="impact-overlay">
             <div className="container">
