@@ -152,7 +152,7 @@ const AIIOT_INDEX = () => {
               <a href="#about" className="nav-link">About</a>
               <a href="#projects" className="nav-link">Solutions</a>
 
-              <Link to="/resources" className="nav-link">Resources</Link>
+              <Link to="/resources" className="nav-link"> R&D Mission</Link>
               <a href="#team" className="nav-link">Team</a>
               {/* === MEGA MENU IMPLEMENTATION === */}
               <div 
