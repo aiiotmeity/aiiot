@@ -1,113 +1,153 @@
-/* Resources.css - Modern Clean Design */
+/* Resources.css - COMPLETE FILE */
 
 /* --- Page Layout --- */
 .resources-page-container {
-    background-color: #f8fafc; /* Light gray background */
+    background-color: #f8fafc;
     min-height: 100vh;
     font-family: 'Inter', sans-serif;
-    padding-top: 5rem; /* Space for fixed header */
     color: #1e293b;
+}
+
+/* --- R&D Header --- */
+.rd-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white;
+    padding: 6rem 1.5rem 4rem;
+    text-align: center;
+}
+
+.rd-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.rd-header p {
+    color: #94a3b8;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+.back-link {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 600;
 }
 
 .resources-content-wrapper {
     max-width: 80rem;
-    margin: 0 auto;
-    padding: 4rem 1.5rem;
-}
-
-/* --- Section 1: Objectives (Featured Card) --- */
-.resources-hero-section {
-    margin-bottom: 5rem;
-    text-align: center;
-}
-
-.page-title {
-    font-size: 3rem;
-    font-weight: 800;
-    color: #1e293b;
-    margin-bottom: 3rem;
-    letter-spacing: -0.02em;
-}
-
-.objectives-card {
-    background: #ffffff;
-    border-radius: 1.5rem;
-    padding: 3rem;
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e2e8f0;
-    max-width: 900px;
-    margin: 0 auto;
-    text-align: left;
+    margin: -3rem auto 0; /* Overlap header */
+    padding: 0 1.5rem 4rem;
     position: relative;
-    overflow: hidden;
+    z-index: 10;
 }
 
-/* Green accent for objectives */
-.objectives-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 6px; height: 100%;
-    background: #10b981; /* Green accent */
+/* --- Objectives Card --- */
+.objectives-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 3rem;
+    border-left: 5px solid #10b981;
 }
 
 .objectives-title {
-    font-size: 1.8rem;
-    font-weight: 700;
+    font-size: 1.5rem;
     color: #1e293b;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    margin-bottom: 1rem;
 }
 
 .main-objective-text {
-    font-size: 1.15rem;
-    color: #065f46;
-    background: #ecfdf5;
-    padding: 1rem 1.5rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    margin-bottom: 2rem;
-    border: 1px solid #a7f3d0;
-}
-
-.objectives-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.objectives-list li {
-    position: relative;
-    padding-left: 2rem;
-    margin-bottom: 1rem;
     color: #475569;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     line-height: 1.6;
 }
 
-.objectives-list li::before {
-    content: '✓';
-    position: absolute;
-    left: 0;
-    top: 0;
-    color: #10b981;
-    font-weight: 800;
+/* --- Tabs --- */
+.rd-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e2e8f0;
 }
 
-/* --- Section 2: Brochures Grid --- */
-.resources-section-title {
-    font-size: 2rem;
+.rd-tab-btn {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.rd-tab-btn:hover {
+    color: #3b82f6;
+}
+
+.rd-tab-btn.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+}
+
+/* --- Table Styles --- */
+.table-responsive {
+    overflow-x: auto;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.rd-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px; /* Force scroll on mobile */
+}
+
+.rd-table th {
+    background: #f1f5f9;
+    padding: 1.25rem 1rem;
+    text-align: left;
     font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 2.5rem;
-    padding-left: 1rem;
-    border-left: 5px solid #3b82f6;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    border-bottom: 2px solid #e2e8f0;
 }
 
+.rd-table td {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    font-size: 0.95rem;
+}
+
+.rd-table tr:hover {
+    background-color: #f8fafc;
+}
+
+.badge-type {
+    background: #eff6ff;
+    color: #2563eb;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.fw-bold {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* --- Brochure Grid --- */
 .brochure-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
 }
 
@@ -115,96 +155,140 @@
     background: white;
     border-radius: 1rem;
     padding: 2rem;
-    border: 1px solid #f1f5f9;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
 }
 
 .brochure-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
-    border-color: #bfdbfe;
+    box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1);
 }
 
-.card-category-badge {
-    display: inline-block;
-    background: #eff6ff;
-    color: #3b82f6;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 0.35rem 0.75rem;
-    border-radius: 2rem;
-    text-transform: uppercase;
+.brochure-icon {
+    font-size: 2rem;
     margin-bottom: 1rem;
-    align-self: flex-start;
 }
 
 .card-title {
-    font-size: 1.25rem;
     font-weight: 700;
+    margin: 0.5rem 0;
     color: #1e293b;
-    margin-bottom: 0.75rem;
-    line-height: 1.3;
+}
+
+.card-category-badge {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
 }
 
 .card-desc {
     color: #64748b;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin-bottom: 2rem;
-    flex-grow: 1;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
 }
 
 .download-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.85rem;
-    background: #3b82f6;
-    color: white;
-    font-weight: 600;
-    border-radius: 0.75rem;
+    margin-top: auto;
+    display: block;
+    text-align: center;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
     text-decoration: none;
+    font-weight: 600;
     transition: background 0.2s;
 }
 
 .download-btn:hover {
-    background: #2563eb;
+    background: #e2e8f0;
+    color: #1e293b;
 }
 
-.back-link-wrapper {
-    text-align: center;
-    margin-top: 4rem;
+/* --- New Research & Patent Styles --- */
+.research-highlights-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 3rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 
-.back-link {
+.section-title {
+    font-size: 1.25rem;
+    color: #1e293b;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-title-small {
+    font-size: 1.1rem;
     color: #64748b;
     font-weight: 600;
-    text-decoration: none;
-    transition: color 0.2s;
+    margin: 2rem 0 1rem;
 }
 
-.back-link:hover {
-    color: #3b82f6;
+.research-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-/* --- Mobile Responsiveness --- */
-@media (max-width: 768px) {
-    .page-title {
-        font-size: 2.25rem;
-    }
-    
-    .objectives-card {
-        padding: 1.5rem;
-    }
-    
-    .brochure-grid {
-        grid-template-columns: 1fr;
-    }
+.research-list li {
+    margin-bottom: 1.5rem;
+    padding-left: 1rem;
+    border-left: 3px solid #cbd5e1;
+}
+
+.research-list li:last-child {
+    margin-bottom: 0;
+}
+
+.text-muted {
+    color: #64748b;
+    font-size: 0.9rem;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.research-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 2rem 0;
+}
+
+/* Status Badges for Papers */
+.badge-status {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+.badge-status.published {
+    background-color: #dcfce7;
+    color: #166534; /* Green */
+}
+
+.badge-status.accepted {
+    background-color: #dbeafe;
+    color: #1e40af; /* Blue */
+}
+
+.badge-status.communicated {
+    background-color: #fef9c3;
+    color: #854d0e; /* Yellow */
 }

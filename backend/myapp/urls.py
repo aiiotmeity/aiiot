@@ -12,6 +12,10 @@ router = DefaultRouter()
 router.register(r'brochures', views.BrochureViewSet, basename='brochure')
 router.register(r'workshops', views.WorkshopEventViewSet, basename='workshop')
 
+# router = DefaultRouter()
+# router.register(r'brochures', BrochureViewSet)
+# router.register(r'workshops', WorkshopEventViewSet)
+
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
@@ -62,8 +66,6 @@ urlpatterns = [
     path('admin/export/', views.admin_export_data_api, name='admin_export_data_api'),
 
     # Resources Endpoints
-    path('resources/', views.list_resources, name='list_resources'),
-    path('resources/upload/', views.upload_resource, name='upload_resource'),
 
     # CSRF Token
     path('csrf/', get_csrf_token, name='csrf'),

@@ -14,11 +14,8 @@ admin.site.index_title = "Welcome to Admin Dashboard"
 @admin.register(Brochure)
 class BrochureAdmin(admin.ModelAdmin):
     list_display = ('title', 'category', 'is_active', 'created_at')
-    list_filter = ('category', 'is_active', 'created_at')
-    search_fields = ('title', 'description')
-    fields = ('title', 'description', 'category', 'icon', 'file', 'is_active')
-    readonly_fields = ('created_at', 'updated_at')
-
+    list_filter = ('category', 'is_active')
+    
 @admin.register(Resource)
 class ResourceAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_at')
@@ -66,8 +63,8 @@ class ResourceFileAdmin(admin.ModelAdmin):
 
 @admin.register(WorkshopEvent)
 class WorkshopEventAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'event_date_text', 'participants')
-    search_fields = ('title', 'description')
+    list_display = ('title', 'category', 'duration', 'event_date_text', 'participants')
+    search_fields = ('title', 'category')
     list_filter = ('category',)
 
 # --- NEW PRODUCT ADMINS (WITH INLINES) ---

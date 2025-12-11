@@ -351,28 +351,6 @@ class Support(models.Model):
 
 # 4. RESOURCES (S3 ENABLED)
 
-class Resource(models.Model):
-    # This replaces your old Resource AND ResourceFile models
-    CATEGORY_CHOICES = [
-        ('brochure', 'Brochure'),
-        ('poster', 'Poster'),
-        ('slide', 'Slide'),
-        ('image', 'Image'),
-        ('other', 'Other'),
-    ]
-    title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    # SAVES TO: resources/2025/11/29/filename.pdf
-    file = models.FileField(upload_to="resources/%Y/%m/%d/") 
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return self.title
-
 class Brochure(models.Model):
     CATEGORY_CHOICES = [
     ('iot_internship', 'Internship'),
@@ -401,32 +379,39 @@ class Brochure(models.Model):
 
 
 # In models.py
+# myapp/models.py
+
+# myapp/models.py (Update the WorkshopEvent class)
 
 class WorkshopEvent(models.Model):
     CATEGORY_CHOICES = [
-        ('workshop', 'Workshop'),
-        ('internship', 'Internship'),
-        ('research', 'Research & Output'),
+        ('Hands-on-Workshop', 'Hands-on Workshop'),
+        ('Summer Internship', 'Summer Internship'),
+        ('Value Added Course', 'Value Added Course'),
+        ('Workshop', 'Workshop'),
+        ('Research', 'Research'),
     ]
 
-    title = models.CharField(max_length=255) # e.g., "IoT Impression - Arduino & Raspberry Pi"
-    event_date_text = models.CharField(max_length=100) # e.g., "Mar 19, 2025" or "Jun 25-27, 2025"
-    participants = models.CharField(max_length=50, blank=True) # e.g., "40 participants"
-    description = models.TextField() # The detailed bullet points
+    title = models.CharField(max_length=255) 
+    # This matches "Type" in your table image
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='Workshop') 
     
-    # This handles the Brochure download
+    # --- NEW FIELD FOR TABLE ---
+    duration = models.CharField(max_length=50, blank=True, help_text="e.g. '1 Day', '15 Days'")
+    
+    event_date_text = models.CharField(max_length=100, help_text="e.g. 'March 19, 2025'")
+    participants = models.CharField(max_length=50, blank=True, help_text="e.g. '40 Participants'")
+    
+    description = models.TextField(blank=True)
     brochure_file = models.FileField(upload_to='workshops/brochures/', blank=True, null=True)
     
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='workshop')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at'] # Newest first
+        ordering = ['-created_at'] 
 
     def __str__(self):
         return self.title
-    
-
 # In models.py
 
 class Product(models.Model):

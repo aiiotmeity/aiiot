@@ -50,7 +50,7 @@ import json
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
-from .serializers import ResourceSerializer, BrochureSerializer, WorkshopEventSerializer ,ProductSerializer
+from .serializers import  BrochureSerializer, WorkshopEventSerializer 
  # <-- Make sure this is imported
 
 
@@ -2646,31 +2646,6 @@ def idw_interpolate_all(user_lat, user_lon, sensors, power=2):
     except Exception as e:
         logger.error(f"Error in idw_interpolate_all: {e}", exc_info=True)
         return {}, None
-  
-@api_view(['GET'])
-def list_resources(request):
-    """Get all resources"""
-    resources = Resource.objects.all()
-    serializer = ResourceSerializer(resources, many=True)
-    return Response(serializer.data)
-
-@api_view(['POST'])
-def upload_resource(request):
-    """Upload a new resource"""
-    serializer = ResourceSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# Add this class
-class ResourceViewSet(viewsets.ModelViewSet):
-    queryset = Resource.objects.all()
-    serializer_class = ResourceSerializer
-    parser_classes = (MultiPartParser, FormParser)
-
-    def perform_create(self, serializer):
-        serializer.save()
 
 
 class BrochureViewSet(viewsets.ModelViewSet):
