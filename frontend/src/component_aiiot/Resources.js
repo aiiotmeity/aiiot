@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Resources.css';
+import './ProjectDetail.css'; // Import this to ensure Nav styles work
 
 const ResourcesPage = () => {
-  const [activeTab, setActiveTab] = useState('training'); // 'training' or 'publications'
+  // --- NAV STATES (COPIED FROM PROJECT DETAIL) ---
+  const [activeCategory, setActiveCategory] = useState('Air Quality');
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileProductExpanded, setMobileProductExpanded] = useState(false);
+  const [isSolutionsMenuOpen, setIsSolutionsMenuOpen] = useState(false); 
+  const [mobileSolutionsExpanded, setMobileSolutionsExpanded] = useState(false); 
+
+  // --- PAGE STATES ---
+  const [activeTab, setActiveTab] = useState('publications'); // Default tab
   const [workshops, setWorkshops] = useState([]);
   const [brochures, setBrochures] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,15 +22,56 @@ const ResourcesPage = () => {
   ? 'https://aiiot-1.onrender.com'
   : 'http://localhost:8000';
 
+  // --- NAV DATA ---
+  const solutionsList = [
+    { name: 'Air Quality Monitoring', link: '/project/intelligent-sensor' },
+    { name: 'Flood Alert System', link: '/project/water-level' },
+    { name: 'Digital Water Distribution', link: '/project/digital-water' },
+    { name: 'Startup & Skill Development', link: '/project/startup-skill' }
+  ];
+
+  const productMenuData = {
+    'Air Quality': {
+      title: 'Air Quality Monitoring',
+      description: 'Precision sensors for indoor and outdoor environments.',
+      items: [
+        { name: 'AQMS ', image: '/sensor_modules/aqms-station1.jpg', link: '/product-details/indoor-monitor' },
+        { name: 'AQMS  ', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
+        { name: 'Gas Sensors', image: '/sensor_modules/aqi-indoor.jpeg', link: '/product-details/gas-sensors' }
+      ]
+    },
+    'Water Solutions': {
+      title: 'Water Management',
+      description: 'Flood alerts and distribution logic.',
+      items: [
+        { name: 'Predictive Flood Alert', image: '/sensor_modules/river1.jpg', link: '/product-details/flood-alert' },
+        { name: 'Digital Flow Meter', image: '/sensor_modules/distribution.jpeg', link: '/product-details/distribution-net' }
+      ]
+    },
+    'Weather': {
+      title: 'Weather Stations',
+      description: 'Hyper-local weather data collection.',
+      items: [
+        { name: 'AWS', image: '/sensor_modules/weather.jpg', link: '/product-details/weather-station' },
+      ]
+    },
+    'Training': {
+      title: 'Skill Development',
+      description: 'Kits and workshops for students.',
+      items: [
+        { name: 'IoT Workshops & Internships', image: '/sensor_modules/skill.jpg', link: '/product-details/iot-training' },
+        { name: 'PCB Design Course', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=400', link: '/product-details/pcb-workshop' }
+      ]
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch Workshops (The Table Data)
         const wsRes = await fetch(`${API_BASE_URL}/api/workshops/`);
         const wsData = await wsRes.json();
         setWorkshops(wsData.results || wsData);
 
-        // 2. Fetch Brochures (The Downloads)
         const broRes = await fetch(`${API_BASE_URL}/api/brochures/`);
         const broData = await broRes.json();
         setBrochures(broData.results || broData);
@@ -34,41 +85,198 @@ const ResourcesPage = () => {
     fetchData();
   }, [API_BASE_URL]);
 
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+  }, [isMobileMenuOpen]);
+
   return (
     <div className="resources-page-container">
       
-      {/* --- Header Section --- */}
-      <header className="rd-header">
+      {/* ================= HEADER SECTION (COPIED FROM PROJECTDETAIL) ================= */}
+      <header className="aiiot-header-local" style={{position: 'fixed', top: 0, width: '100%', zIndex: 1000, background: 'white', boxShadow: '0 2px 10px rgba(0,0,0,0.1)'}}>
+         <div className="project-header-inner">
+            <Link to="/" className="project-logo">
+                AI-IoT Innovations
+            </Link>
+
+            <div className="project-desktop-nav">
+               <Link to="/" className="project-nav-link">Home</Link>
+               
+               {/* SOLUTIONS DROPDOWN */}
+               <div 
+                   className="dropdown-wrapper"
+                   onMouseEnter={() => setIsSolutionsMenuOpen(true)}
+                   onMouseLeave={() => setIsSolutionsMenuOpen(false)}
+               >
+                   <div className="project-nav-link product-trigger" style={{ cursor: 'pointer' }}>
+                     Solutions <span>▾</span>
+                   </div>
+                   <div className={`simple-dropdown ${isSolutionsMenuOpen ? 'visible' : ''}`}>
+                     {solutionsList.map((sol, index) => (
+                       <Link key={index} to={sol.link} className="simple-dropdown-item">
+                         {sol.name}
+                       </Link>
+                     ))}
+                   </div>
+               </div>
+               
+               {/* PRODUCTS MEGA MENU */}
+               <div 
+                   className="mega-menu-wrapper"
+                   onMouseEnter={() => setIsMegaMenuOpen(true)}
+                   onMouseLeave={() => setIsMegaMenuOpen(false)}
+                 >
+                   <Link to="" className="project-nav-link product-trigger">
+                     Products <span>▾</span>
+                   </Link>
+   
+                   <div className={`mega-menu-container ${isMegaMenuOpen ? 'visible' : ''}`}>
+                     <div className="mega-menu-sidebar">
+                       {Object.keys(productMenuData).map((key) => (
+                         <div 
+                           key={key} 
+                           className={`mega-sidebar-item ${activeCategory === key ? 'active' : ''}`}
+                           onMouseEnter={() => setActiveCategory(key)}
+                         >
+                           {key} <span>›</span>
+                         </div>
+                       ))}
+                     </div>
+   
+                     <div className="mega-menu-content">
+                       <div className="mega-content-header">
+                         <h4>{productMenuData[activeCategory].title}</h4>
+                         <p>{productMenuData[activeCategory].description}</p>
+                       </div>
+                       <div className="mega-grid">
+                         {productMenuData[activeCategory].items.map((item, idx) => (
+                           <Link to={item.link} key={idx} className="mega-product-card">
+                              <div className="mega-img-box">
+                                <img src={item.image} alt={item.name} />
+                              </div>
+                              <span>{item.name}</span>
+                           </Link>
+                         ))}
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+
+               <a href="/#contact" className="btn-primary-small">Get in Touch</a>
+            </div>
+
+            <button 
+                className="mobile-nav-toggle"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+                {isMobileMenuOpen ? '✕' : '☰'}
+            </button>
+         </div>
+
+         {/* MOBILE OVERLAY */}
+         {isMobileMenuOpen && (
+            <div className="mobile-menu-wrapper">
+                <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="mobile-link">Home</Link>
+                {/* SOLUTIONS MOBILE */}
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                    <div 
+                        onClick={() => setMobileSolutionsExpanded(!mobileSolutionsExpanded)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems:'center', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', cursor: 'pointer' }}
+                    >
+                        Solutions <span>{mobileSolutionsExpanded ? '▴' : '▾'}</span>
+                    </div>
+                    {mobileSolutionsExpanded && (
+                        <div style={{ background: '#f8fafc', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                            {solutionsList.map((sol, i) => (
+                                <Link 
+                                    key={i} 
+                                    to={sol.link} 
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    style={{ display: 'block', padding: '0.5rem 0', fontSize: '0.95rem', color: '#475569', textDecoration: 'none', borderBottom: i !== solutionsList.length -1 ? '1px solid #e2e8f0' : 'none' }}
+                                >
+                                    • {sol.name}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                {/* PRODUCTS MOBILE */}
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                    <div 
+                        onClick={() => setMobileProductExpanded(!mobileProductExpanded)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems:'center', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', cursor: 'pointer' }}
+                    >
+                        Products <span>{mobileProductExpanded ? '▴' : '▾'}</span>
+                    </div>
+                    {mobileProductExpanded && (
+                        <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                            {Object.keys(productMenuData).map((categoryKey) => (
+                                <div key={categoryKey} style={{ marginBottom: '1rem' }}>
+                                    <div style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', marginBottom:'0.5rem' }}>{categoryKey}</div>
+                                    {productMenuData[categoryKey].items.map((item, i) => (
+                                        <Link 
+                                            key={i} 
+                                            to={item.link} 
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            style={{ display: 'block', padding: '0.25rem 0', fontSize: '0.95rem', color: '#475569', textDecoration: 'none' }}
+                                        >
+                                            • {item.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <a href="/#contact" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary" style={{ textAlign: 'center', marginTop: '1rem' }}>Get in Touch</a>
+            </div>
+         )}
+      </header>
+      
+      {/* Space to push content down from fixed header */}
+      <div style={{height: '80px'}}></div>
+
+      {/* --- R&D HEADER --- */}
+      <div className="rd-header">
          <div className="rd-header-content">
              <h1>Research & Development Center</h1>
              <p>Driving innovation through IoT, AI, and Environmental Intelligence.</p>
-             <Link to="/" className="back-link">← Back to Home</Link>
          </div>
-      </header>
+      </div>
 
       <div className="resources-content-wrapper">
         
-        {/* --- Objectives Card --- */}
+        {/* --- OBJECTIVES CARD (UPDATED) --- */}
         <div className="objectives-card">
-            <h3 className="objectives-title">🎯 R&D Mission</h3>
-            <p className="main-objective-text">
-              To develop digital networking solutions for preventive and predictive environmental monitoring while fostering a startup ecosystem.
-            </p>
+            <h3 className="objectives-title">🎯 R&D Mission & Objectives</h3>
+            {/* NEW BULLETED LIST ADDED HERE */}
+            <ul className="objectives-list" style={{ paddingLeft: '1.5rem', color: '#475569', lineHeight: '1.8' }}>
+              <li>Develop intelligent sensor modules for pollution monitoring.</li>
+              <li>Validate smart water level monitoring with flood alerts.</li>
+              <li>Create digital systems for water level distribution.</li>
+              <li>Build a startup & skill development ecosystem.</li>
+              
+            </ul>
         </div>
 
         {/* --- TABS NAVIGATION --- */}
         <div className="rd-tabs">
             <button 
-                className={`rd-tab-btn ${activeTab === 'training' ? 'active' : ''}`}
-                onClick={() => setActiveTab('training')}
-            >
-                Training & Workshops
-            </button>
-            <button 
                 className={`rd-tab-btn ${activeTab === 'publications' ? 'active' : ''}`}
                 onClick={() => setActiveTab('publications')}
             >
                 Publications, Patents & Research
+            </button>
+            <button 
+                className={`rd-tab-btn ${activeTab === 'training' ? 'active' : ''}`}
+                onClick={() => setActiveTab('training')}
+            >
+                Training & Workshops
             </button>
         </div>
 
@@ -115,7 +323,7 @@ const ResourcesPage = () => {
             {!loading && activeTab === 'publications' && (
                 <div className="publications-wrapper">
                     
-                    {/* --- NEW SECTION: Static Research Data --- */}
+                    {/* --- RESEARCH SECTION --- */}
                     <div className="research-highlights-card">
                         <div className="research-section">
                             <h3 className="section-title">📜 Intellectual Property (Patents)</h3>
@@ -155,7 +363,7 @@ const ResourcesPage = () => {
                         </div>
                     </div>
 
-                    {/* --- EXISTING SECTION: Downloadable Brochures --- */}
+                    {/* --- DOWNLOADS SECTION --- */}
                     <h3 className="mt-8 mb-4 section-title-small">📥 Downloads & Resources</h3>
                     {brochures.length > 0 ? (
                         <div className="brochure-grid">
