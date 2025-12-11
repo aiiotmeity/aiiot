@@ -4,34 +4,40 @@ import axios from 'axios';
 import './ProductOverview.css'; 
 
 const ProductOverview = () => {
-  const { productId } = useParams(); // 'slug' from URL
+  const { productId } = useParams(); // Gets the 'slug' from the URL (e.g., 'indoor-monitor')
   
-  // --- DATA STATES ---
+  // --- STATE MANAGEMENT ---
   const [product, setProduct] = useState(null);
-  const [menuData, setMenuData] = useState({}); // Dynamic Menu Data
+  const [menuData, setMenuData] = useState({}); // Stores the Dynamic Menu from Django
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // --- UI STATES ---
-  const [activeCategory, setActiveCategory] = useState('Air Quality');
+  // --- MENU UI STATES ---
+  const [activeCategory, setActiveCategory] = useState('');
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isSolutionsMenuOpen, setIsSolutionsMenuOpen] = useState(false);
+  
+  // --- MOBILE UI STATES ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileProductExpanded, setMobileProductExpanded] = useState(false);
   const [mobileSolutionsExpanded, setMobileSolutionsExpanded] = useState(false);
 
-  const API_BASE_URL = 'http://127.0.0.1:8000'; // Change if deployed
+  // 👇 YOUR LIVE BACKEND URL
+  const API_BASE_URL = 'https://aiiot-1.onrender.com';
 
-  // --- 1. FETCH PRODUCT DETAILS ---
+  // =========================================================
+  // 1. FETCH PRODUCT DETAILS (For the main page content)
+  // =========================================================
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
         setError(false);
+        // Fetches specific product data based on URL
         const response = await axios.get(`${API_BASE_URL}/api/product/${productId}/`);
         setProduct(response.data);
       } catch (err) {
-        console.error("Error fetching product:", err);
+        console.error("Error fetching product details:", err);
         setError(true);
       } finally {
         setLoading(false);
@@ -41,28 +47,32 @@ const ProductOverview = () => {
     if (productId) {
       fetchProduct();
     }
+    // Scroll to top when product changes
     window.scrollTo(0, 0);
   }, [productId]);
 
-  // --- 2. FETCH DYNAMIC MENU ---
+  // =========================================================
+  // 2. FETCH DYNAMIC MENU (For the Navbar)
+  // =========================================================
   useEffect(() => {
     const fetchMenu = async () => {
       try {
+        // Fetches the list of all products grouped by category
         const response = await axios.get(`${API_BASE_URL}/api/products-menu/`);
         setMenuData(response.data);
         
-        // Set default active category to the first one available
+        // Set the first category as active by default for the mega menu
         const keys = Object.keys(response.data);
         if (keys.length > 0) setActiveCategory(keys[0]);
         
       } catch (err) {
-        console.error("Error fetching menu:", err);
+        console.error("Error fetching menu structure:", err);
       }
     };
     fetchMenu();
   }, []);
 
-  // --- STATIC SOLUTIONS LIST (Keep as is) ---
+  // --- STATIC SOLUTIONS LIST (The "Solutions" Dropdown) ---
   const solutionsList = [
     { name: 'Air Quality Monitoring', link: '/project/intelligent-sensor' },
     { name: 'Flood Alert System', link: '/project/water-level' },
@@ -70,19 +80,20 @@ const ProductOverview = () => {
     { name: 'Startup & Skill Development', link: '/project/startup-skill' }
   ];
 
-  // --- HELPERS ---
+  // --- HELPER: Handle Image URLs ---
   const getImageUrl = (path) => {
     if (!path) return 'https://via.placeholder.com/600x400?text=No+Image';
     return path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
   };
 
-  // --- RENDER ---
+  // --- RENDER LOADING STATE ---
   if (loading) return (
     <div style={{height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f8fafc'}}>
-        <div style={{fontSize: '1.5rem', fontWeight: '600', color: '#3b82f6'}}>Loading...</div>
+        <div style={{fontSize: '1.5rem', fontWeight: '600', color: '#3b82f6'}}>Loading Product...</div>
     </div>
   );
 
+  // --- RENDER ERROR STATE ---
   if (error || !product) return (
     <div className="project-page">
         <header className="aiiot-header-local">
@@ -94,6 +105,7 @@ const ProductOverview = () => {
         </header>
         <div className="container" style={{paddingTop: '8rem', textAlign:'center'}}>
             <h2 style={{fontSize:'2rem', marginBottom:'1rem'}}>Product Not Found</h2>
+            <p>Could not find product with ID: <strong>{productId}</strong></p>
             <Link to="/" className="btn-primary" style={{marginTop:'2rem', display:'inline-block'}}>Back to Home</Link>
         </div>
     </div>
@@ -102,9 +114,11 @@ const ProductOverview = () => {
   return (
     <div className="project-page">
       
-      {/* HEADER */}
+      {/* ================= HEADER SECTION ================= */}
       <header className="aiiot-header-local">
          <div className="project-header-inner">
+             
+             {/* 1. LOGO */}
              <Link to="/" className="logo-link">
                <div className="logo-box">
                  <img src="/logo/logo.png" alt="Adi Shankara Institute" style={{ height: '100%', width: 'auto' }} />
@@ -114,11 +128,13 @@ const ProductOverview = () => {
                </div>
              </Link>
  
-             {/* DESKTOP NAV */}
+             {/* 2. DESKTOP NAVIGATION BAR */}
              <div className="project-desktop-nav">
+               
+               {/* HOME BAR */}
                <Link to="/" className="project-nav-link">Home</Link>
                
-               {/* Solutions Dropdown */}
+               {/* SOLUTIONS NAV BAR (Dropdown) */}
                <div 
                    className="dropdown-wrapper"
                    onMouseEnter={() => setIsSolutionsMenuOpen(true)}
@@ -136,7 +152,7 @@ const ProductOverview = () => {
                    </div>
                </div>
 
-               {/* DYNAMIC PRODUCTS MEGA MENU */}
+               {/* PRODUCTS NAV BAR (Dynamic Mega Menu) */}
                <div 
                  className="mega-menu-wrapper"
                  onMouseEnter={() => setIsMegaMenuOpen(true)}
@@ -146,7 +162,7 @@ const ProductOverview = () => {
                    Products <span>▾</span>
                  </Link>
                  <div className={`mega-menu-container ${isMegaMenuOpen ? 'visible' : ''}`}>
-                   {/* Left Sidebar */}
+                   {/* Left Sidebar (Categories) */}
                    <div className="mega-menu-sidebar">
                      {Object.keys(menuData).map((key) => (
                        <div 
@@ -159,7 +175,7 @@ const ProductOverview = () => {
                      ))}
                    </div>
                    
-                   {/* Right Content */}
+                   {/* Right Content (Product Grid) */}
                    <div className="mega-menu-content">
                      {activeCategory && menuData[activeCategory] ? (
                        <>
@@ -179,7 +195,7 @@ const ProductOverview = () => {
                          </div>
                        </>
                      ) : (
-                       <div style={{padding:'2rem', color:'#64748b'}}>No products in this category.</div>
+                       <div style={{padding:'2rem', color:'#64748b'}}>Loading menu items...</div>
                      )}
                    </div>
                  </div>
@@ -189,18 +205,18 @@ const ProductOverview = () => {
                <a href="#contact" className="btn-primary-small">Get in Touch</a>
              </div>
  
-             {/* MOBILE HAMBURGER */}
+             {/* 3. MOBILE HAMBURGER BUTTON */}
              <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                {isMobileMenuOpen ? '✕' : '☰'}
              </button>
          </div>
 
-         {/* MOBILE MENU OVERLAY */}
+         {/* 4. MOBILE MENU OVERLAY */}
          {isMobileMenuOpen && (
             <div className="mobile-menu-wrapper">
                 <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="mobile-link">Home</Link>
                 
-                {/* Solutions Accordion */}
+                {/* Mobile Solutions Accordion */}
                 <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
                     <div 
                         onClick={() => setMobileSolutionsExpanded(!mobileSolutionsExpanded)}
@@ -224,7 +240,7 @@ const ProductOverview = () => {
                     )}
                 </div>
 
-                {/* DYNAMIC PRODUCTS ACCORDION (Mobile) */}
+                {/* Mobile Products Accordion */}
                 <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
                     <div 
                         onClick={() => setMobileProductExpanded(!mobileProductExpanded)}
@@ -263,7 +279,7 @@ const ProductOverview = () => {
          )}
       </header>
 
-      {/* MAIN CONTENT */}
+      {/* ================= MAIN PRODUCT CONTENT ================= */}
       <div className="container" style={{paddingTop: '8rem', paddingBottom: '5rem'}}>
         
         {/* HERO SECTION */}
@@ -286,7 +302,8 @@ const ProductOverview = () => {
 
         {/* DETAILS GRID */}
         <div className="product-details-grid">
-           {/* Features */}
+           
+           {/* Key Features Section */}
            <div className="features-container">
               <h3>Key Features</h3>
               <div style={{marginTop:'1.5rem'}}>
@@ -303,7 +320,7 @@ const ProductOverview = () => {
               </div>
            </div>
 
-           {/* Specifications */}
+           {/* Technical Specs Section */}
            <div className="specs-container">
               <h3>Technical Specs</h3>
               <div className="specs-box">
@@ -317,7 +334,7 @@ const ProductOverview = () => {
                 ) : (
                     <div className="spec-row">
                         <span className="spec-key">Details</span>
-                        <span className="spec-val">Contact us for full specifications</span>
+                        <span className="spec-val">Contact us for details</span>
                     </div>
                 )}
               </div>
