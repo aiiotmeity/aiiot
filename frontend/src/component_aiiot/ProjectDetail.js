@@ -64,22 +64,23 @@ const ProjectDetail = () => {
   // --- UPDATED PROJECT DATA (Based on your Images/Text) ---
   const projectsData = {
     'intelligent-sensor': {
-      title: 'AQM v3 - Advanced Air Quality Monitoring',
+      title: 'AQMS- Advanced Air Quality Monitoring',
       tagline: 'Real-time. Reliable. Rugged.',
       heroImage: 'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?q=80&w=2000&auto=format&fit=crop',
       subimage: '/sensor_modules/aqi1.jpeg',
       description: 'A comprehensive environmental monitoring solution measuring NO2, SO2, NH3, O3, PM2.5, and PM10 with LoRaWAN connectivity.',
-      fullDescription: `The AQM v3 is a state-of-the-art monitoring station designed for both urban and industrial applications. It integrates high-precision laser dispersion sensors and NTC thermistors to track pollutants and weather data in real-time. Built with a rugged IP67 enclosure, it ensures continuous operation with dual connectivity (LoRa + GSM) and backup power.`,
+      fullDescription: `The AQMS is a state-of-the-art monitoring station designed for both urban and industrial applications. It integrates high-precision laser dispersion sensors and NTC thermistors to track pollutants and weather data in real-time. Built with a rugged IP67 enclosure, it ensures continuous operation with dual connectivity (LoRa + GSM) and backup power.`,
       innovations: [
         { title: 'Multi-Gas Sensing', desc: 'Measures NO2, SO2, NH3, O3, PM2.5, PM10.', icon: '🔬' },
         { title: 'Dual Connectivity', desc: 'LoRaWAN for long range + GSM backup.', icon: '📡' },
-        { title: 'Rugged Design', desc: 'IP67 Weatherproof & Durable enclosure.', icon: '🛡️' },
+        { title: 'Design', desc: 'IP67 Weatherproof & Durable enclosure.', icon: '🛡️' },
         { title: 'Data Security', desc: 'SD Card backup & AWS Cloud integration.', icon: '☁️' }
       ],
+      // UPDATED: Focused on Town Junctions, Local Hospitals, and Markets
       applications: [
-        { title: 'Smart Cities', image: 'https://images.unsplash.com/photo-1496062031456-07b8f162a322?w=800', desc: 'City-wide pollution tracking and analysis.' },
-        { title: 'Industrial Zones', image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800', desc: 'Monitoring emission compliance in real-time.' },
-        { title: 'Schools & Campuses', image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800', desc: 'Ensuring safe air quality for students.' }
+        { title: 'Town Junctions', image: 'https://images.unsplash.com/photo-1572508589584-94d77ad8f970?w=800', desc: 'Monitoring vehicle emissions at busy local bus stands.' },
+        { title: 'Taluk Hospitals', image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800', desc: 'Ensuring sterile air quality near patient wards.' },
+        { title: 'Local Markets', image: 'https://images.unsplash.com/photo-1606037740876-0f1c483a9918?w=800', desc: 'Tracking dust and waste burning levels in market areas.' }
       ],
       impacts: [
         { label: 'Pollutants', value: '6 Types' }, { label: 'Rating', value: 'IP67' },
@@ -99,10 +100,11 @@ const ProjectDetail = () => {
         { title: 'Real-Time Alert', desc: 'Instant notifications for emergency response.', icon: '🚨' },
         { title: 'Ultrasonic Accuracy', desc: 'Precision level monitoring sensors.', icon: '📏' }
       ],
+      // UPDATED: Focused on specific Riverside communities and local bridges
       applications: [
-        { title: 'River Banks', image: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=800', desc: 'Early warning for riverside communities (Neeleswaram).' },
-        { title: 'Dam Management', image: 'https://images.unsplash.com/photo-1524410943962-42da6a603c40?w=800', desc: 'Optimizing water release schedules safely.' },
-        { title: 'Disaster Response', image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=800', desc: 'Data-driven evacuation planning.' }
+        { title: 'Riverside Homes', image: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=800', desc: 'Alerting specific households in low-lying Neeleswaram areas.' },
+        { title: 'Local Causeways', image: 'https://images.unsplash.com/photo-1524410943962-42da6a603c40?w=800', desc: 'Warning traffic before small bridges get submerged.' },
+        { title: 'Paddy Fields', image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800', desc: 'Protecting seasonal crops near the river banks.' }
       ],
       impacts: [
         { label: 'Lead Time', value: '6 Hours' }, { label: 'Model', value: 'LSTM' },
@@ -122,10 +124,11 @@ const ProjectDetail = () => {
         { title: 'Flow Analysis', desc: 'Real-time consumption tracking.', icon: '📊' },
         { title: 'Remote Valve', desc: 'Control water flow from the cloud.', icon: '🎛️' }
       ],
+      // UPDATED: Focused on Panchayat Wards and Local Residents Associations
       applications: [
-        { title: 'Municipalities', image: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=800', desc: 'Managing city-wide water supply.' },
-        { title: 'Apartments', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800', desc: 'Fair distribution to all floors.' },
-        { title: 'Treatment Plants', image: 'https://images.unsplash.com/photo-1563770095-39d46e8c78cc?w=800', desc: 'Monitoring output quality and flow.' }
+        { title: 'Panchayat Wards', image: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=800', desc: 'Equitable water distribution for specific village wards.' },
+        { title: 'Pump Houses', image: 'https://images.unsplash.com/photo-1563770095-39d46e8c78cc?w=800', desc: 'Automating local KWA sub-station pump operations.' },
+        { title: 'Housing Colonies', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800', desc: 'Leak detection for local residents associations.' }
       ],
       impacts: [
         { label: 'Partner', value: 'KWA' }, { label: 'Goal', value: 'Efficiency' },
@@ -145,15 +148,19 @@ const ProjectDetail = () => {
         { title: 'IoT Robotics', desc: 'ESP8266 to Raspberry Pi integration.', icon: '🤖' },
         { title: 'Computer Vision', desc: 'Raspberry Pi & OpenCV training.', icon: '👁️' }
       ],
+      // UPDATED: Focused on nearby Polytechnics and Local Engineering Colleges
       applications: [
-        { title: 'Universities', image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800', desc: 'Faculty Development Programs (FDP).' },
-        { title: 'Students', image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800', desc: 'Value-added courses and internships.' },
-        { title: 'Project Expo', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800', desc: 'Showcasing student innovations.' }
+        { title: 'Local Colleges', image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800', desc: 'Workshops for nearby Engineering & Polytechnic institutes.' },
+        { title: 'District Schools', image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800', desc: 'Setting up ATAL Tinkering Labs in local schools.' },
+        { title: 'Community Centers', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800', desc: 'Weekend robotics camps for neighborhood students.' }
       ],
       impacts: [
-        { label: 'Students', value: '250+' }, { label: 'Interns', value: '49+' },
-        { label: 'Workshops', value: '8+' }, { label: 'Startups', value: '6 Teams' }
-      ]
+    { label: 'Interns', value: '19+' },
+    { label: 'Workshops', value: '8+' },
+    { label: 'Startups', value: '6 Teams' },
+    { label: 'Staff', value: '6' }
+]
+
     },
   };
 
@@ -412,7 +419,7 @@ const ProjectDetail = () => {
       {/* 5. APPLICATIONS */}
       <section id="applications" style={{ background: '#eff6ff', padding: '5rem 0' }}>
         <div className="container">
-          <h2 className="section-title" style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '3rem', textAlign: 'center' }}>Where We Deploy</h2>
+          <h2 className="section-title" style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '3rem', textAlign: 'center' }}>Deployment Areas</h2>
           <div className="applications-grid">
             {project.applications && project.applications.map((app, idx) => (
               <div key={idx} className="application-card">

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // 1. Added useRef
 import { useParams, Link } from 'react-router-dom';
+import emailjs from '@emailjs/browser'; // 2. Added emailjs import
 import './ProductOverview.css';
 
 const ProductOverview = () => {
   const { productId } = useParams();
+  const form = useRef(); // 3. Created form reference
 
   // --- UI STATES ---
   const [activeCategory, setActiveCategory] = useState('Air Quality');
@@ -12,6 +14,9 @@ const ProductOverview = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileProductExpanded, setMobileProductExpanded] = useState(false);
   const [mobileSolutionsExpanded, setMobileSolutionsExpanded] = useState(false);
+  
+  // NEW: State for Request Modal
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
   // --- STATIC SOLUTIONS LIST ---
   const solutionsList = [
@@ -21,14 +26,14 @@ const ProductOverview = () => {
     { name: 'Startup & Skill Development', link: '/project/startup-skill' }
   ];
 
-  // --- UPDATED MENU STRUCTURE (Now with 3 Items in Air Quality) ---
+  // --- UPDATED MENU STRUCTURE ---
   const productMenuData = {
     'Air Quality': {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        { name: 'AQMS ', image: '/sensor_modules/aqms-station1.jpg', link: '/product-details/indoor-monitor' },
-        { name: 'AQMS  ', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
+        { name: 'AQMS-Indoor', image: '/sensor_modules/aqms-station1.jpg', link: '/product-details/indoor-monitor' },
+        { name: 'AQMS-Outdoor', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
         { name: 'Gas Sensors', image: '/sensor_modules/aqi-indoor.jpeg', link: '/product-details/gas-sensors' }
       ]
     },
@@ -60,12 +65,11 @@ const ProductOverview = () => {
 
   // --- HARDCODED PRODUCT DETAILS ---
   const productsDB = {
-    // 1. AQM v3 INDOOR
     'indoor-monitor': {
       name: "AQMS - Indoor Monitor",
       tagline: "Breathe healthy at home & office.",
       image: "/sensor_modules/aqms-station1.jpg",
-      desc: "The AQM v3 Indoor is designed for building health. It utilizes high-precision laser dispersion sensors for particulate matter and NTC thermistors for accurate temperature readings inside offices and homes.",
+      desc: "The AQMS Indoor is designed for building health. It utilizes high-precision laser dispersion sensors for particulate matter and NTC thermistors for accurate temperature readings inside offices and homes.",
       features: [
         "PM2.5 & PM10 Laser Dispersion Sensors",
         "NDIR CO2 Sensor for Ventilation",
@@ -80,8 +84,6 @@ const ProductOverview = () => {
         "Display": "OLED Screen" 
       }
     },
-
-    // 2. AQM v3 OUTDOOR (Added Back)
     'outdoor-station': {
       name: "AQMS- Outdoor Station",
       tagline: "City-wide pollution tracking.",
@@ -101,8 +103,6 @@ const ProductOverview = () => {
         "Protection": "IP67 Rated" 
       }
     },
-
-    // 3. AWS v1 & v2 (Weather Station)
     'weather-station': {
       name: "AWS- Field Meteorological Stations",
       tagline: "Comprehensive Sensing & Data Integrity.",
@@ -122,8 +122,6 @@ const ProductOverview = () => {
         "Power": "Solar + UPS" 
       }
     },
-
-    // 4. PREDICTING WATER LEVELS (Flood Alert)
     'flood-alert': {
       name: "Predictive Flood Alert System",
       tagline: "Predicting Water Levels 6 Hours Ahead.",
@@ -143,8 +141,6 @@ const ProductOverview = () => {
         "Target": "Flood Prevention" 
       }
     },
-
-    // 5. TRAINING PROGRAMS
     'iot-training': {
       name: "IoT & Embedded Systems Training",
       tagline: "Hands-on Workshops & Internships.",
@@ -164,8 +160,6 @@ const ProductOverview = () => {
         "Outcome": "Project Expo & Prototyping" 
       }
     },
-
-    // Keep other existing items
     'gas-sensors': {
       name: "Industrial Gas Sensors",
       tagline: "Detect invisible threats.",
@@ -210,14 +204,41 @@ const ProductOverview = () => {
 
   const product = productsDB[productId] || productsDB['default'];
 
+  // --- 4. NEW: SEND EMAIL FUNCTION ---
+  const sendEmail = (e) => {
+    e.preventDefault();
+
+    // UPDATED: Now it reads from the hidden file
+    // TEMPORARY TEST: Hardcode the keys to prove it works
+    const YOUR_SERVICE_ID = 'service_v53ie77';
+    const YOUR_TEMPLATE_ID = 'template_ctrip8o';
+    const YOUR_PUBLIC_KEY = 'uGhwYH7cKaKvnhFc3';
+
+    
+          // ... rest of code same as before
+    // ---------------------------------------------------------
+
+    emailjs.sendForm(YOUR_SERVICE_ID, YOUR_TEMPLATE_ID, form.current, YOUR_PUBLIC_KEY)
+      .then((result) => {
+          console.log(result.text);
+          alert("Request Sent! We will contact you soon.");
+          setIsRequestModalOpen(false);
+          e.target.reset(); // Clear form after sending
+      }, (error) => {
+          console.log(error.text);
+          alert("Failed to send message. Please try again.");
+      });
+  };
+
   useEffect(() => {
-    if (isMobileMenuOpen) {
+    // Lock scroll if Mobile Menu OR Modal is open
+    if (isMobileMenuOpen || isRequestModalOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
     }
     window.scrollTo(0, 0);
-  }, [isMobileMenuOpen, productId]);
+  }, [isMobileMenuOpen, productId, isRequestModalOpen]);
 
   return (
     <div className="project-page">
@@ -382,7 +403,12 @@ const ProductOverview = () => {
             <p className="product-desc">{product.desc}</p>
             
             <div style={{marginTop:'2rem'}}>
-               <button className="btn-primary">Request Info</button>
+               <button 
+                  className="btn-primary" 
+                  onClick={() => setIsRequestModalOpen(true)}
+                >
+                  Request Info
+                </button>
             </div>
           </div>
 
@@ -421,6 +447,86 @@ const ProductOverview = () => {
         </div>
 
       </div>
+      {/* --- NEW: REQUEST INFO MODAL --- */}
+      {isRequestModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsRequestModalOpen(false)} style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.6)', zIndex: 10005,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(5px)'
+        }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{
+                background: 'white', width: '90%', maxWidth: '500px',
+                borderRadius: '16px', padding: '2rem', position: 'relative',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+            }}>
+                <button 
+                    onClick={() => setIsRequestModalOpen(false)}
+                    style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}
+                >
+                    ✕
+                </button>
+                
+                <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#1e293b' }}>Request Information</h2>
+                <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+                    Interested in <strong>{product.name}</strong>? Fill out the form below.
+                </p>
+
+                {/* --- IMPORTANT: UPDATED FORM TAG --- */}
+                <form ref={form} onSubmit={sendEmail}>
+                    
+                    {/* HIDDEN INPUT: Sends product name automatically */}
+                    <input type="hidden" name="product_name" value={product.name} />
+
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Full Name</label>
+                        <input 
+                          type="text" 
+                          name="user_name"  /* MATCHES TEMPLATE {{user_name}} */
+                          placeholder="John Doe" 
+                          required 
+                          style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }} 
+                        />
+                    </div>
+                    
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Email Address</label>
+                        <input 
+                          type="email" 
+                          name="user_email" /* MATCHES TEMPLATE {{user_email}} */
+                          placeholder="john@company.com" 
+                          required 
+                          style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }} 
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Message</label>
+                        <textarea 
+                          rows="3" 
+                          name="message" /* MATCHES TEMPLATE {{message}} */
+                          placeholder="I am interested in..." 
+                          style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', fontFamily: 'inherit' }}
+                        ></textarea>
+                    </div>
+
+                    <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Send Request</button>
+                </form>
+
+                <div style={{ marginTop: '1.5rem', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Or chat with us directly</p>
+                    <a 
+                        href={`https://wa.me/919999999999?text=Hi, I am interested in ${product.name}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: '#16a34a', fontWeight: '600', marginTop: '0.5rem', textDecoration: 'none' }}
+                    >
+                       <span style={{ fontSize: '1.2rem' }}>📱</span> WhatsApp Us
+                    </a>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
