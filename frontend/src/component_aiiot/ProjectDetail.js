@@ -78,9 +78,21 @@ const ProjectDetail = () => {
       ],
       // UPDATED: Focused on Town Junctions, Local Hospitals, and Markets
       applications: [
-        { title: 'Town Junctions', image: 'https://images.unsplash.com/photo-1572508589584-94d77ad8f970?w=800', desc: 'Monitoring vehicle emissions at busy local bus stands.' },
-        { title: 'Taluk Hospitals', image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800', desc: 'Ensuring sterile air quality near patient wards.' },
-        { title: 'Local Markets', image: 'https://images.unsplash.com/photo-1606037740876-0f1c483a9918?w=800', desc: 'Tracking dust and waste burning levels in market areas.' }
+        { 
+          title: 'Local Schools', 
+          image: 'https://images.unsplash.com/photo-1588072432836-e10032774350?w=800', 
+          desc: 'Monitoring classroom air quality to ensure a healthy learning environment for students.' 
+        },
+        { 
+          title: 'College Interiors', 
+          image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=800', 
+          desc: 'Indoor monitoring device placed within college labs to track ventilation and safety.' 
+        },
+        { 
+          title: 'Town Center', 
+          image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800', 
+          desc: 'Tracking urban pollution, dust, and vehicle emissions at the main town junction.' 
+        }
       ],
       impacts: [
         { label: 'Pollutants', value: '6 Types' }, { label: 'Rating', value: 'IP67' },
@@ -102,9 +114,9 @@ const ProjectDetail = () => {
       ],
       // UPDATED: Focused on specific Riverside communities and local bridges
       applications: [
-        { title: 'Riverside Homes', image: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=800', desc: 'Alerting specific households in low-lying Neeleswaram areas.' },
-        { title: 'Local Causeways', image: 'https://images.unsplash.com/photo-1524410943962-42da6a603c40?w=800', desc: 'Warning traffic before small bridges get submerged.' },
-        { title: 'Paddy Fields', image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800', desc: 'Protecting seasonal crops near the river banks.' }
+        { title: 'Riverside', image: '/sensor_modules/bridge.jpg', desc: 'Alerting specific households in low-lying Neeleswaram areas.' },
+        { title: 'Local Causeways', image: '/sensor_modules/catchment.jpg', desc: 'Warning traffic before small bridges get submerged.' },
+        
       ],
       impacts: [
         { label: 'Lead Time', value: '6 Hours' }, { label: 'Model', value: 'LSTM' },
@@ -116,19 +128,31 @@ const ProjectDetail = () => {
       tagline: 'Smart flow for smart cities.',
       heroImage: 'https://images.unsplash.com/photo-1516937941348-c09645f3a2eb?q=80&w=2000&auto=format&fit=crop',
       subimage: '/sensor_modules/distribution.jpeg',
-      description: 'A digital twin system built to monitor, analyze, and optimize local water distribution networks.',
+      description: 'A system built to monitor, analyze, and optimize local water distribution networks.',
       fullDescription: `We conducted comprehensive ground studies engaging with KWA officials. This system digitizes the water network to ensure fair distribution, detect leaks instantly, and manage pressure across the pipeline network using IoT flow meters.`,
       innovations: [
-        { title: 'Digital Twin', desc: 'Virtual replica of pipe networks.', icon: '💻' },
+        
         { title: 'Leak Detection', desc: 'Instant pressure drop alerts.', icon: '💧' },
         { title: 'Flow Analysis', desc: 'Real-time consumption tracking.', icon: '📊' },
         { title: 'Remote Valve', desc: 'Control water flow from the cloud.', icon: '🎛️' }
       ],
       // UPDATED: Focused on Panchayat Wards and Local Residents Associations
       applications: [
-        { title: 'Panchayat Wards', image: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=800', desc: 'Equitable water distribution for specific village wards.' },
-        { title: 'Pump Houses', image: 'https://images.unsplash.com/photo-1563770095-39d46e8c78cc?w=800', desc: 'Automating local KWA sub-station pump operations.' },
-        { title: 'Housing Colonies', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800', desc: 'Leak detection for local residents associations.' }
+       { 
+          title: 'Kalady Panchayat Wards', 
+          image: '/sensor_modules/panchayath.jpg', 
+          desc: 'Equitable water distribution for specific wards in Kalady Grama Panchayat.' 
+        },
+        { 
+          title: 'Periyar Pump House', 
+          image: '/sensor_modules/pump.jpg', 
+          desc: 'Automating operations at the KWA sub-station near Kalady Bridge.' 
+        },
+        { 
+          title: 'Local Housing Colonies', 
+          image: 'https://images.unsplash.com/photo-1628624747186-a941c476b7ef?w=800', 
+          desc: 'Leak detection for residential associations in the Mattoor & Neeleeswaram areas.' 
+        }
       ],
       impacts: [
         { label: 'Partner', value: 'KWA' }, { label: 'Goal', value: 'Efficiency' },

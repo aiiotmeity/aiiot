@@ -317,7 +317,7 @@ const ProductOverview = () => {
                  </div>
                </div>
                
-               <Link to="/resources" className="project-nav-link">R&D Mission</Link>
+               <Link to="/resources" className="project-nav-link">R&D</Link>
                <a href="#contact" className="btn-primary-small">Get in Touch</a>
              </div>
  
