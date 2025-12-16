@@ -6,7 +6,7 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import './App.css';
-import { useLocation, useNavigate } from 'react-router-dom'; // CORRECTED: Added imports
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // --- LEAFLET ICON FIX ---
 let DefaultIcon = L.icon({
@@ -113,9 +113,9 @@ const WeatherMap = ({ stations, onStationSelect, currentStationId }) => {
     const [selectedStation, setSelectedStation] = useState(null);
 
     const handleMarkerClick = (station) => {
-    setSelectedStation(station);
-    onStationSelect(station.id);
-};
+        setSelectedStation(station);
+        onStationSelect(station.id);
+    };
 
     return (
         <div className="map-container">
@@ -724,16 +724,18 @@ const MapComponent = () => {
     const [notification, setNotification] = useState(null);
 
     const refreshIntervalRef = useRef(null);
-    // Change this to your Render Backend URL
-    // Pointing to your Backend URL
-    const API_URL = 'https://aiiot-1.onrender.com/api';
+    
+    // API CONFIGURATION
+    const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://aiiot-1.onrender.com'
+    : 'http://localhost:8000';
+    
     const currentStation = weatherStations.find(s => s.id === currentStationId);
 
-    // CORRECTED: Added hooks for navigation state
     const location = useLocation();
     const navigate = useNavigate();
 
-    // CORRECTED: This effect checks for navigation state and sets the active tab
+    // Set active tab based on navigation state
     useEffect(() => {
         if (location.state?.openTab) {
             setActiveTab(location.state.openTab);
@@ -741,71 +743,60 @@ const MapComponent = () => {
         }
     }, [location.state]);
 
+    const showNotification = (message, type = 'info') => {
+        setNotification({ message, type });
+    };
+
+    // --- FETCH WEATHER DATA ---
+    const fetchWeatherData = useCallback(async (stationId, showLoader = true) => {
+        const station = weatherStations.find(s => s.id === stationId);
+  
+        if (station?.status === 'development') {
+            setWeatherData(null);
+            setError('This station is currently under development...');
+            setLoading(false);
+            return;
+        }
+  
+        if (showLoader) setLoading(true);
+  
+        try {
+            // MATCHES BACKEND: /api/weather/current
+            const response = await fetch(`${API_URL}/api/weather/current?stationid=${stationId}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            setWeatherData(data);
+            setError(null);
+            if (!showLoader) {
+                showNotification('Weather data updated', 'success');
+            }
+        } catch (err) {
+            const errorMessage = err.message.includes('fetch')
+                ? 'Unable to connect to weather station.'
+                : 'Failed to fetch weather data.';
+            setError(errorMessage);
+            showNotification(errorMessage, 'error');
+        } finally {
+            if (showLoader) setLoading(false);
+        }
+    }, [API_URL]);
+
     // Auto-refresh weather data every 30 seconds
     useEffect(() => {
         if (currentStationId && currentStation?.status === 'active') {
             refreshIntervalRef.current = setInterval(() => {
-                fetchWeatherData(currentStationId, false); // Silent refresh
+                fetchWeatherData(currentStationId, false);
             }, 30000);
         }
-
+  
         return () => {
             if (refreshIntervalRef.current) {
                 clearInterval(refreshIntervalRef.current);
             }
         };
-    }, [currentStationId, currentStation]);
+    }, [currentStationId, currentStation, fetchWeatherData]);
 
-    const showNotification = (message, type = 'info') => {
-        setNotification({ message, type });
-    };
-
-    const fetchWeatherData = useCallback(async (stationId, showLoader = true) => {
-  const station = weatherStations.find(s => s.id === stationId);
-  
-  if (station?.status === 'development') {
-    setWeatherData(null);
-    setError('This station is currently under development...');
-    setLoading(false);
-    return;
-  }
-  
-  if (showLoader) setLoading(true);
-  
-  try {
-    const response = await fetch(`${API_URL}/weather?stationid=${stationId}`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    setWeatherData(data);
-    setError(null);
-    if (!showLoader) {
-      showNotification('Weather data updated', 'success');
-    }
-  } catch (err) {
-    const errorMessage = err.message.includes('fetch')
-      ? 'Unable to connect to weather station.'
-      : 'Failed to fetch weather data.';
-    setError(errorMessage);
-    showNotification(errorMessage, 'error');
-  } finally {
-    if (showLoader) setLoading(false);
-  }
-}, []);
-
-// 2. THEN, use it in useEffect
-useEffect(() => {
-  if (currentStationId && currentStation?.status === 'active') {
-    refreshIntervalRef.current = setInterval(() => {
-      fetchWeatherData(currentStationId, false);  // ✅ Now it exists!
-    }, 30000);
-  }
-  
-  return () => {
-    if (refreshIntervalRef.current) {
-      clearInterval(refreshIntervalRef.current);
-    }
-  };
-}, [currentStationId, currentStation, fetchWeatherData]); 
+    // --- FETCH HISTORICAL DATA ---
     const fetchHistoricalData = useCallback(async (days) => {
         if (!currentStationId) return;
         const station = weatherStations.find(s => s.id === currentStationId);
@@ -820,7 +811,8 @@ useEffect(() => {
         setHistoricalError(null);
 
         try {
-            const response = await fetch(`${API_URL}/historical-data?days=${days}&station_id=${currentStationId}`);
+            // MATCHES BACKEND: /api/weather/historical-data
+            const response = await fetch(`${API_URL}/api/weather/historical-data?days=${days}&station_id=${currentStationId}`);
             const result = await response.json();
 
             if (!response.ok) {
@@ -838,7 +830,7 @@ useEffect(() => {
         } finally {
             setHistoricalLoading(false);
         }
-    }, [currentStationId]);
+    }, [currentStationId, API_URL]);
 
     const handleStationSelect = (stationId) => {
         const station = weatherStations.find(s => s.id === stationId);
@@ -849,11 +841,13 @@ useEffect(() => {
         fetchWeatherData(stationId);
     };
 
+    // --- HANDLE DATA REQUEST ---
     const handleDataRequest = async (formData) => {
         setRequestLoading(true);
 
         try {
-            const response = await fetch(`${API_URL}/request-data`, {
+            // MATCHES BACKEND: /api/weather/request-data
+            const response = await fetch(`${API_URL}/api/weather/request-data`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
@@ -874,7 +868,6 @@ useEffect(() => {
         }
     };
 
-    // CORRECTED: This function now uses the navigate hook to go to the root URL
     const navigateToHome = () => {
         navigate('/weather-home');
     };

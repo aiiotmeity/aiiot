@@ -30,9 +30,9 @@ const ProjectDetail = () => {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        { name: 'AQMS ', image: '/sensor_modules/aqms-station1.jpg', link: '/product-details/indoor-monitor' },
-        { name: 'AQMS  ', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
-        { name: 'Gas Sensors', image: '/sensor_modules/aqi-indoor.jpeg', link: '/product-details/gas-sensors' }
+        { name: 'AQMS-Indoor ', image: '/sensor_modules/aqi-indoor1.jpg', link: '/product-details/indoor-monitor' },
+        { name: 'AQMS-Outdoor  ', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
+        
       ]
     },
     'Water Solutions': {
@@ -69,11 +69,11 @@ const ProjectDetail = () => {
       heroImage: 'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?q=80&w=2000&auto=format&fit=crop',
       subimage: '/sensor_modules/aqi1.jpeg',
       description: 'A comprehensive environmental monitoring solution measuring NO2, SO2, NH3, O3, PM2.5, and PM10 with LoRaWAN connectivity.',
-      fullDescription: `The AQMS is a state-of-the-art monitoring station designed for both urban and industrial applications. It integrates high-precision laser dispersion sensors and NTC thermistors to track pollutants and weather data in real-time. Built with a rugged IP67 enclosure, it ensures continuous operation with dual connectivity (LoRa + GSM) and backup power.`,
+      fullDescription: `The AQMS is a state-of-the-art monitoring station designed for both urban and industrial applications. It integrates high-precision laser dispersion sensors and NTC thermistors to track pollutants and weather data in real-time. Built with a rugged enclosure, it ensures continuous operation with dual connectivity (LoRa + GSM) and backup power.`,
       innovations: [
         { title: 'Multi-Gas Sensing', desc: 'Measures NO2, SO2, NH3, O3, PM2.5, PM10.', icon: '🔬' },
         { title: 'Dual Connectivity', desc: 'LoRaWAN for long range + GSM backup.', icon: '📡' },
-        { title: 'Design', desc: 'IP67 Weatherproof & Durable enclosure.', icon: '🛡️' },
+        { title: 'Design', desc: ' Weatherproof & Durable enclosure.', icon: '🛡️' },
         { title: 'Data Security', desc: 'SD Card backup & AWS Cloud integration.', icon: '☁️' }
       ],
       // UPDATED: Focused on Town Junctions, Local Hospitals, and Markets
@@ -84,7 +84,7 @@ const ProjectDetail = () => {
           desc: 'Monitoring classroom air quality to ensure a healthy learning environment for students.' 
         },
         { 
-          title: 'College Interiors', 
+          title: 'College', 
           image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=800', 
           desc: 'Indoor monitoring device placed within college labs to track ventilation and safety.' 
         },
@@ -95,7 +95,7 @@ const ProjectDetail = () => {
         }
       ],
       impacts: [
-        { label: 'Pollutants', value: '6 Types' }, { label: 'Rating', value: 'IP67' },
+        { label: 'Pollutants', value: '6 Types' }, 
         { label: 'Comms', value: 'LoRa/GSM' }, { label: 'Backup', value: '24hr UPS' }
       ]
     },
@@ -287,7 +287,7 @@ const ProjectDetail = () => {
                    </div>
                  </div>
 
-               <a href="#contact" className="btn-primary-small">Get in Touch</a>
+               <a href="#footer" className="btn-primary-small">Get in Touch</a>
             </div>
 
             <button 
@@ -478,7 +478,7 @@ const ProjectDetail = () => {
       </section>
 
       {/* Footer */}
-      <footer style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 0' }}>
+      <footer id="footer" style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 0' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
             <div>

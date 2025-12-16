@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import './WeatherHomepage.css';
 import { useNavigate } from 'react-router-dom';
 
+
+// --- API CONFIGURATION ---
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://aiiot-1.onrender.com'
+  : 'http://localhost:8000';
+
 const WeatherHomepage = ({ onNavigateToWeather }) => {
   const navigate = useNavigate();
   const [currentWeather, setCurrentWeather] = useState(null);
@@ -20,7 +26,12 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
     const fetchWeatherData = async () => {
       try {
         // Pointing to your Backend URL
-        const response = await fetch('https://aiiot-1.onrender.com/api/current');
+        
+        // Added '/weather' to the path
+        // MATCHES BACKEND: /api/weather/current
+        // MATCHES BACKEND: /api/weather/historical-data
+        // Removed the query parameter completely
+        const response = await fetch(`${API_BASE_URL}/api/weather/current`);
         if (response.ok) {
           const data = await response.json();
           setCurrentWeather(data);

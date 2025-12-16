@@ -32,6 +32,8 @@ def get_current_weather(request):
     Returns the latest weather reading
     """
     try:
+        # Note: Ensure the device_id matches exactly what is in your DynamoDB
+        # Your code used ' weather-v2' (with a leading space). Keep it if that's correct.
         response = weather_table.query(
             KeyConditionExpression=Key('device_id').eq(' weather-v2'),
             ScanIndexForward=False,
@@ -42,7 +44,9 @@ def get_current_weather(request):
         if not items:
             return JsonResponse({"error": "No data found"}, status=404)
         
-        latest = items['data']['decoded_payload']
+        # --- FIX IS HERE ---
+        # Access the first item in the list using index [0]
+        latest = items[0]['data']['decoded_payload'] 
         
         # Convert Decimal to float
         result = {k: float(v) if isinstance(v, Decimal) else v for k, v in latest.items()}
@@ -50,6 +54,7 @@ def get_current_weather(request):
         return JsonResponse(result, encoder=DecimalEncoder)
         
     except Exception as e:
+        # Check your terminal for this print statement to see the exact error
         print(f"Error in get_current_weather: {str(e)}")
         return JsonResponse({"error": "Failed to fetch weather data"}, status=500)
 
@@ -170,3 +175,4 @@ def get_all_requests(request):
     except Exception as e:
         print(f"Error fetching requests: {str(e)}")
         return JsonResponse({"error": "Failed to fetch requests"}, status=500)
+    

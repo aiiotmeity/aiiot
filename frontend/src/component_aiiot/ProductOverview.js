@@ -32,9 +32,9 @@ const ProductOverview = () => {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        { name: 'AQMS-Indoor', image: '/sensor_modules/aqms-station1.jpg', link: '/product-details/indoor-monitor' },
+        { name: 'AQMS-Indoor', image: '/sensor_modules/aqi-indoor1.jpg', link: '/product-details/indoor-monitor' },
         { name: 'AQMS-Outdoor', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
-        { name: 'Gas Sensors', image: '/sensor_modules/aqi-indoor.jpeg', link: '/product-details/gas-sensors' }
+        
       ]
     },
     'Water Solutions': {
@@ -68,7 +68,7 @@ const ProductOverview = () => {
     'indoor-monitor': {
       name: "AQMS - Indoor Monitor",
       tagline: "Breathe healthy at home & office.",
-      image: "/sensor_modules/aqms-station1.jpg",
+      image: "/sensor_modules/aqi-indoor1.jpg",
       desc: "The AQMS Indoor is designed for building health. It utilizes high-precision laser dispersion sensors for particulate matter and NTC thermistors for accurate temperature readings inside offices and homes.",
       features: [
         "PM2.5 & PM10 Laser Dispersion Sensors",
@@ -78,29 +78,29 @@ const ProductOverview = () => {
         "OLED Display for Instant Readings"
       ],
       specs: { 
-        "Pollutants": "PM2.5, PM10, CO2", 
+        "Pollutants": "PM2.5, PM10, CO2 ,no2", 
         "Power": "5V USB-C", 
         "Connectivity": "WiFi 2.4GHz", 
-        "Display": "OLED Screen" 
+        "Display": "BLE/WIFI Screen" 
       }
     },
     'outdoor-station': {
       name: "AQMS- Outdoor Station",
       tagline: "City-wide pollution tracking.",
       image: "/sensor_modules/aqi1.jpeg",
-      desc: "A rugged outdoor station capable of withstanding harsh weather (IP67) while providing accurate environmental data for smart cities. Features dual connectivity and backup power.",
+      desc: "A rugged outdoor station capable of withstanding harsh weather  while providing accurate environmental data for smart cities. Features dual connectivity and backup power.",
       features: [
         "Solar Powered & Battery Backup",
-        "Weatherproof IP67 Rugged Case",
+        "Weatherproof  Rugged Case",
         "Multi-Gas Sensors (NO2, SO2, O3)",
         "Long Range LoRa + GSM Backup",
         "Real-time Cloud Data Logging"
       ],
       specs: { 
-        "Range": "15km (LoRa)", 
+        "Range": "1.2km (LoRa)", 
         "Power": "Solar + Battery", 
         "Connectivity": "LoRaWAN / GSM", 
-        "Protection": "IP67 Rated" 
+        "Protection": "Splash-Protected Enclosure"  
       }
     },
     'weather-station': {
@@ -113,12 +113,11 @@ const ProductOverview = () => {
         "Dual LoRaWAN & GSM with Automatic Failover",
         "Onboard RTC & Local SD Card Storage",
         "High-Capacity UPS Backup Power",
-        "Rugged IP67 Enclosure for Monsoon Conditions"
+        
       ],
       specs: { 
-        "Sensors": "Wind, Rain, Temp, Hum", 
+        "Sensors": "Wind, Rain, Temp, Hum ,Speed ,Direction", 
         "Data Storage": "SD Card + Cloud", 
-        "Housing": "IP67 Rated", 
         "Power": "Solar + UPS" 
       }
     },
@@ -159,14 +158,6 @@ const ProductOverview = () => {
         "Tools": "KiCad, OpenCV, Arduino", 
         "Outcome": "Project Expo & Prototyping" 
       }
-    },
-    'gas-sensors': {
-      name: "Industrial Gas Sensors",
-      tagline: "Detect invisible threats.",
-      image: "/sensor_modules/aqi-indoor.jpeg",
-      desc: "High-precision electrochemical sensors designed to detect specific hazardous gases like Ammonia, Chlorine, and Methane in industrial zones.",
-      features: ["High Sensitivity", "Fast Response Time", "Calibrated Factory", "Industrial Grade"],
-      specs: { "Target Gas": "CO, NH3, H2S", "Output": "Analog/Digital", "Lifespan": "2 Years" }
     },
     'distribution-net': {
       name: "Digital Water Flow Meter",
@@ -318,7 +309,7 @@ const ProductOverview = () => {
                </div>
                
                <Link to="/resources" className="project-nav-link">R&D</Link>
-               <a href="#contact" className="btn-primary-small">Get in Touch</a>
+               <a href="#footer" className="btn-primary-small">Get in Touch</a>
              </div>
  
              {/* MOBILE HAMBURGER */}
@@ -444,9 +435,39 @@ const ProductOverview = () => {
                 ))}
               </div>
            </div>
+           
         </div>
-
+        
       </div>
+      {/* Footer */}
+            <footer id="footer" style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 0' }}>
+              <div className="container">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+                  <div>
+                    <h5 style={{ fontWeight: 700, color: 'white', marginBottom: '1rem' }}>AI-IoT Innovations</h5>
+                    <p style={{ fontSize: '0.875rem' }}>Advancing the integration of AI and IoT technologies for a smarter tomorrow.</p>
+                  </div>
+                  <div>
+                    <h5 style={{ fontWeight: 700, color: 'white', marginBottom: '1rem' }}>Quick Links</h5>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {['About', 'Team', 'Solutions', 'Contact'].map((link, idx) => (
+                        <li key={idx} style={{ marginBottom: '0.5rem' }}>
+                          <Link to={`/#${link.toLowerCase()}`} style={{ fontSize: '0.875rem', color: 'white', textDecoration: 'none' }}>{link}</Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="footer-section">
+                    <h3 style={{ color: 'white', fontWeight: 700, marginBottom: '1rem' }}>Contact Information</h3>
+                    <p style={{ fontSize: '0.875rem', color: '#cbd5e1' }}>Adi Shankara Institute of Engineering and Technology<br />Kalady 683574, Ernakulam<br />Kerala, India</p><br />
+                    <p style={{ fontSize: '0.875rem', color: '#cbd5e1' }}><strong style={{ color: 'white' }}>Email:</strong> aiiot@adishankara.ac.in<br /><strong style={{ color: 'white' }}>Phone:</strong> 9846900310</p>
+                  </div>
+                </div>
+                <div style={{ borderTop: '1px solid #334155', marginTop: '2rem', paddingTop: '2rem', textAlign: 'center', fontSize: '0.875rem' }}>
+                  <p>&copy; 2025 Center for AI-IoT Innovations. All rights reserved.</p>
+                </div>
+              </div>
+            </footer>
       {/* --- NEW: REQUEST INFO MODAL --- */}
       {isRequestModalOpen && (
         <div className="modal-overlay" onClick={() => setIsRequestModalOpen(false)} style={{
@@ -513,17 +534,7 @@ const ProductOverview = () => {
                     <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Send Request</button>
                 </form>
 
-                <div style={{ marginTop: '1.5rem', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-                    <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Or chat with us directly</p>
-                    <a 
-                        href={`https://wa.me/919999999999?text=Hi, I am interested in ${product.name}`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: '#16a34a', fontWeight: '600', marginTop: '0.5rem', textDecoration: 'none' }}
-                    >
-                       <span style={{ fontSize: '1.2rem' }}>📱</span> WhatsApp Us
-                    </a>
-                </div>
+                
             </div>
         </div>
       )}

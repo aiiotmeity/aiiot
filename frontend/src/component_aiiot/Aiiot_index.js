@@ -25,9 +25,9 @@ const AIIOT_INDEX = () => {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        { name: 'AQMS-Indoor', image: '/sensor_modules/aqms-station1.jpg', link: '/product-details/indoor-monitor' },
+        { name: 'AQMS-Indoor', image: '/sensor_modules/aqi-indoor1.jpg', link: '/product-details/indoor-monitor' },
         { name: 'AQMS-Outdoor', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
-        { name: 'Gas Sensors', image: '/sensor_modules/aqi-indoor.jpeg', link: '/product-details/gas-sensors' }
+        
       ]
     },
     'Water Solutions': {
@@ -89,9 +89,9 @@ const AIIOT_INDEX = () => {
 
   const setupCarousel = () => {
     const localImages = [
-      '/carousel-images/aiiot1.jpg',
-      '/carousel-images/aiiot2.jpeg',
       '/carousel-images/aiiot3.jpg',
+      '/carousel-images/aiiot5.jpeg',
+      '/carousel-images/aiiot1.jpg',
       '/carousel-images/aiiot4.jpg',
     ];
     setHeroImages(localImages);
@@ -201,7 +201,7 @@ const AIIOT_INDEX = () => {
 
               <Link to="/homepage" className="nav-link">AirAware</Link>
               <a href="/weather-home" className="nav-link">AWS</a>
-              <a href="#contact" className="nav-btn-primary">Get in Touch</a>
+              <a href="#footer" className="nav-btn-primary">Get in Touch</a>
             </div>
 
             {/* MOBILE HAMBURGER BUTTON */}
@@ -387,11 +387,11 @@ const AIIOT_INDEX = () => {
 
         {/* Contact Section */}
            {/* Contact Section */}
-        <section id="contact" className="reveal-on-scroll" style={{ padding: '5rem 0', background: '#f8fafc' }}>
+        <section id="#contact" className="reveal-on-scroll" style={{ padding: '5rem 0', background: '#f8fafc' }}>
           <div style={{ maxWidth: '48rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
             <h2 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>Let's Build the Future Together</h2>
             <p style={{ fontSize: '1.125rem', color: '#475569', marginBottom: '2rem' }}>Have a project in mind, a question, or want to collaborate? We'd love to hear from you.</p>
-            <a href="mailto:contact@aiiot.edu" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', background: '#3b82f6', color: 'white', fontWeight: 500, borderRadius: '0.5rem', textDecoration:'none' }}>
+            <a href="#footer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', background: '#3b82f6', color: 'white', fontWeight: 500, borderRadius: '0.5rem', textDecoration:'none' }}>
               <span>✉️</span> Contact Us
             </a>
           </div>
@@ -399,7 +399,7 @@ const AIIOT_INDEX = () => {
       </main>
 
       {/* Footer */}
-      <footer style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 0' }}>
+      <footer id="footer" style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 0' }}>
         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
             <div>

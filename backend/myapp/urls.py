@@ -74,7 +74,7 @@ urlpatterns = [
     path('brochures/', views.get_brochures, name='get_brochures'),
     path('api/products-menu/', views.get_products_menu, name='products-menu'),
     path('api/product/<str:slug>/', views.get_product_detail, name='product-detail'),
-   
+    
     # ...
 ]
 if settings.DEBUG:

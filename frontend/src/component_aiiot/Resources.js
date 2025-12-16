@@ -35,9 +35,9 @@ const ResourcesPage = () => {
       title: 'Air Quality Monitoring',
       description: 'Precision sensors for indoor and outdoor environments.',
       items: [
-        { name: 'AQMS ', image: '/sensor_modules/aqms-station1.jpg', link: '/product-details/indoor-monitor' },
+        { name: 'AQMS ', image: '/sensor_modules/aqi-indoor1.jpg', link: '/product-details/indoor-monitor' },
         { name: 'AQMS  ', image: '/sensor_modules/aqi1.jpeg', link: '/product-details/outdoor-station' },
-        { name: 'Gas Sensors', image: '/sensor_modules/aqi-indoor.jpeg', link: '/product-details/gas-sensors' }
+        
       ]
     },
     'Water Solutions': {
@@ -389,6 +389,35 @@ const ResourcesPage = () => {
 
         </div>
       </div>
+      {/* Footer */}
+            <footer id="footer" style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 0' }}>
+              <div className="container">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+                  <div>
+                    <h5 style={{ fontWeight: 700, color: 'white', marginBottom: '1rem' }}>AI-IoT Innovations</h5>
+                    <p style={{ fontSize: '0.875rem' }}>Advancing the integration of AI and IoT technologies for a smarter tomorrow.</p>
+                  </div>
+                  <div>
+                    <h5 style={{ fontWeight: 700, color: 'white', marginBottom: '1rem' }}>Quick Links</h5>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {['About', 'Team', 'Solutions', 'Contact'].map((link, idx) => (
+                        <li key={idx} style={{ marginBottom: '0.5rem' }}>
+                          <Link to={`/#${link.toLowerCase()}`} style={{ fontSize: '0.875rem', color: 'white', textDecoration: 'none' }}>{link}</Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="footer-section">
+                    <h3 style={{ color: 'white', fontWeight: 700, marginBottom: '1rem' }}>Contact Information</h3>
+                    <p style={{ fontSize: '0.875rem', color: '#cbd5e1' }}>Adi Shankara Institute of Engineering and Technology<br />Kalady 683574, Ernakulam<br />Kerala, India</p><br />
+                    <p style={{ fontSize: '0.875rem', color: '#cbd5e1' }}><strong style={{ color: 'white' }}>Email:</strong> aiiot@adishankara.ac.in<br /><strong style={{ color: 'white' }}>Phone:</strong> 9846900310</p>
+                  </div>
+                </div>
+                <div style={{ borderTop: '1px solid #334155', marginTop: '2rem', paddingTop: '2rem', textAlign: 'center', fontSize: '0.875rem' }}>
+                  <p>&copy; 2025 Center for AI-IoT Innovations. All rights reserved.</p>
+                </div>
+              </div>
+            </footer>
     </div>
   );
 };

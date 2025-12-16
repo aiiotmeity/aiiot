@@ -2722,3 +2722,5 @@ def get_products_menu(request):
             }
     
     return Response(menu_data, status=status.HTTP_200_OK)
+
+
