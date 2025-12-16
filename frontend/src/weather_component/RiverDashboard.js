@@ -18,7 +18,8 @@ const ALERT_THRESHOLDS = {
 const RiverDashboard = () => {
     // State
     const [currentLevel, setCurrentLevel] = useState(0);
-    const [forecastData, setForecastData] = useState([]); // Array of 6 hours
+    const [currentTimestamp, setCurrentTimestamp] = useState(null); // New state for timestamp
+    const [forecastData, setForecastData] = useState([]); // Array of objects {time, value}
     const [limeDetails, setLimeDetails] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +43,26 @@ const RiverDashboard = () => {
             case 'critical': return `🔴 Water level ${valStr}m - 🆘 CRITICAL FLOOD ALERT: Immediate evacuation may be required!`;
             default: return `Water level ${valStr}m`;
         }
+    };
+
+    // Helper to format date string from CSV
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        // Replace space with T to ensure better compatibility (YYYY-MM-DD HH:MM:SS -> YYYY-MM-DDTHH:MM:SS)
+        const safeDateStr = dateStr.replace(' ', 'T');
+        const date = new Date(safeDateStr);
+        
+        // If parsing fails, return original string
+        if (isNaN(date.getTime())) return dateStr;
+
+        // Format: "Aug 08, 13:00"
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
     };
 
     const parseCSV = (csvText) => {
@@ -78,24 +99,27 @@ const RiverDashboard = () => {
             const fullData = parseCSV(csvText);
 
             // Logic to simulate Current + Forecast from CSV
-            // Assuming the CSV has rows of predictions. 
-            // We take the FIRST row's first numeric value as "Current" (or a specific column if you have one)
-            // And subsequent rows/columns as forecast.
-            
-            // ADAPTATION: Mapping your CSV structure to the UI
-            // If fullData has multiple rows, we treat row 0 as current, rows 1-6 as forecast
             if (fullData.length > 0) {
-                // Find first numeric column to use as water level
+                // Determine keys dynamically
                 const keys = Object.keys(fullData[0]);
-                const valueKey = keys.find(k => !isNaN(fullData[0][k])); 
+                // Look for 'Predicted_Water_Level' or the first numeric column
+                const valueKey = keys.find(k => typeof fullData[0][k] === 'number'); 
+                // Look for 'Timestamp' or 'Date' or default to first column
+                const timeKey = keys.find(k => k.toLowerCase().includes('timestamp') || k.toLowerCase().includes('date')) || keys[0];
 
                 if (valueKey) {
+                    // Current Level (First row)
                     const current = fullData[0][valueKey];
+                    const currentTime = fullData[0][timeKey];
                     setCurrentLevel(current);
+                    setCurrentTimestamp(currentTime);
                     
-                    // Create forecast array from subsequent rows or fake it if only 1 row
+                    // Forecast (Next 6 rows)
                     const nextRows = fullData.slice(1, 7);
-                    const forecastValues = nextRows.map(row => row[valueKey]);
+                    const forecastValues = nextRows.map(row => ({
+                        value: row[valueKey],
+                        time: row[timeKey]
+                    }));
                     setForecastData(forecastValues);
                 }
             }
@@ -127,7 +151,9 @@ const RiverDashboard = () => {
     // --- Render Helpers ---
     const alertLevel = getAlertLevel(currentLevel);
     const alertMessage = getAlertMessage(alertLevel, currentLevel);
-    const nextHourValue = forecastData.length > 0 ? forecastData[0] : '--';
+    
+    // Helper to safely get next hour value
+    const nextHourValue = forecastData.length > 0 ? forecastData[0].value : '--';
 
     if (isLoading && refreshCount === 0) {
         return (
@@ -185,7 +211,7 @@ const RiverDashboard = () => {
                         <span>System Active</span>
                     </div>
                     <div className="last-update">
-                        Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : '...'}
+                        Last checked: {lastUpdated ? lastUpdated.toLocaleTimeString() : '...'}
                     </div>
                 </div>
 
@@ -202,24 +228,9 @@ const RiverDashboard = () => {
                             <span className="metric-unit">mtrs</span>
                         </div>
                         <div className="metric-timestamp">
-                            Live Reading
+                            {currentTimestamp ? formatDate(currentTimestamp) : 'Live Reading'}
                         </div>
                     </div>
-
-                    {/* Next Hour Forecast Card */}
-                    {/* <div className="metric-card forecast">
-                        <div className="metric-header">
-                            <div className="metric-title">Next Hour Forecast</div>
-                            <div className="metric-icon">🔮</div>
-                        </div>
-                        <div className="metric-value">
-                            {typeof nextHourValue === 'number' ? nextHourValue.toFixed(2) : nextHourValue}
-                            <span className="metric-unit">mtrs</span>
-                        </div>
-                        <div className="metric-timestamp">
-                            AI Prediction
-                        </div>
-                    </div> */}
                 </div>
 
                 {/* 6-Hour Forecast Section */}
@@ -229,11 +240,13 @@ const RiverDashboard = () => {
                     </div>
                     <div className="forecast-values">
                         {forecastData.length > 0 ? (
-                            forecastData.map((val, idx) => (
+                            forecastData.map((item, idx) => (
                                 <div key={idx} className="forecast-item">
-                                    <div className="forecast-time">+{idx + 1}hr</div>
+                                    <div className="forecast-time">
+                                        {formatDate(item.time)}
+                                    </div>
                                     <div className="forecast-value">
-                                        {typeof val === 'number' ? val.toFixed(2) : '--'} m
+                                        {typeof item.value === 'number' ? item.value.toFixed(2) : '--'} m
                                     </div>
                                 </div>
                             ))
@@ -245,7 +258,7 @@ const RiverDashboard = () => {
                     </div>
                 </div>
 
-                {/* LIME Analysis Section (Adapted to new design) */}
+                {/* LIME Analysis Section */}
                 <div className="forecast-section" style={{ borderLeft: '6px solid #a29bfe' }}>
                     <div className="forecast-header">
                         <div className="forecast-title">🧠 AI Causality Analysis</div>
