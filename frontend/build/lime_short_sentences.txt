@@ -1,6 +1,6 @@
-[GREEN] H+1: The river is expected to be high mainly because of forecasted rainfall.
-[GREEN] H+2: The river is expected to be high mainly because of forecasted rainfall.
-[GREEN] H+3: The river is expected to be high mainly because of forecasted rainfall.
-[ORANGE] H+4: The river is expected to be high mainly because of recent river level.
-[ORANGE] H+5: The river is expected to be high mainly because of recent river level and forecasted rainfall.
-[ORANGE] H+6: The river is expected to be high mainly because of recent river level.
+[GREEN] H+1: Level ≈ 1.38 — Expected to remain LOW because of the recent river readings are low and stable.
+[GREEN] H+2: Level ≈ 1.43 — Expected to remain LOW because of the recent river readings are low and stable.
+[GREEN] H+3: Level ≈ 1.46 — Expected to remain LOW because of the recent river readings are low and stable.
+[GREEN] H+4: Level ≈ 1.49 — Expected to remain LOW because of the recent river readings are low and stable.
+[GREEN] H+5: Level ≈ 1.52 — Expected to remain LOW because of the recent river readings are low and stable.
+[GREEN] H+6: Level ≈ 1.53 — Expected to remain LOW because recent river readings are low and stable; with some contribution from recent rainfall.

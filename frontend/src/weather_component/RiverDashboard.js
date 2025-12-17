@@ -8,6 +8,8 @@ const DATA_BASE_URL = '.';
 const CSV_FILE_NAME = 'forecast_outputs.csv';
 const TXT_FILE_NAME = 'lime_short_sentences.txt';
 
+
+
 // Alert Thresholds (Matching HTML logic)
 const ALERT_THRESHOLDS = {
     NORMAL: 3.0,
@@ -16,6 +18,13 @@ const ALERT_THRESHOLDS = {
 };
 
 const RiverDashboard = () => {
+
+
+    const [data, setData] = useState({
+        currentWaterLevel: 0.00,
+        waterLevelTime: new Date(),
+       
+    });
     // State
     const [currentLevel, setCurrentLevel] = useState(0);
     const [currentTimestamp, setCurrentTimestamp] = useState(null); // New state for timestamp
@@ -99,30 +108,34 @@ const RiverDashboard = () => {
             const fullData = parseCSV(csvText);
 
             // Logic to simulate Current + Forecast from CSV
-            if (fullData.length > 0) {
-                // Determine keys dynamically
-                const keys = Object.keys(fullData[0]);
-                // Look for 'Predicted_Water_Level' or the first numeric column
-                const valueKey = keys.find(k => typeof fullData[0][k] === 'number'); 
-                // Look for 'Timestamp' or 'Date' or default to first column
-                const timeKey = keys.find(k => k.toLowerCase().includes('timestamp') || k.toLowerCase().includes('date')) || keys[0];
+            // ... inside fetchData ...
+if (fullData.length > 0) {
+    const keys = Object.keys(fullData[0]);
+    
+    // 1. Set the exact column name you want to display
+    const valueKey = 'Predicted_Water_Level';
+    
+    // 2. Find Timestamp (or default to 'Timestamp')
+    const timeKey = keys.find(k => k.toLowerCase().includes('timestamp') || k.toLowerCase().includes('date')) || 'Timestamp';
 
-                if (valueKey) {
-                    // Current Level (First row)
-                    const current = fullData[0][valueKey];
-                    const currentTime = fullData[0][timeKey];
-                    setCurrentLevel(current);
-                    setCurrentTimestamp(currentTime);
-                    
-                    // Forecast (Next 6 rows)
-                    const nextRows = fullData.slice(1, 7);
-                    const forecastValues = nextRows.map(row => ({
-                        value: row[valueKey],
-                        time: row[timeKey]
-                    }));
-                    setForecastData(forecastValues);
-                }
-            }
+    // Verify the key exists in the data before using it
+    if (fullData[0][valueKey] !== undefined) {
+        // Current Level (First row)
+        const current = fullData[0][valueKey];
+        const currentTime = fullData[0][timeKey];
+        
+        setCurrentLevel(current);
+        setCurrentTimestamp(currentTime);
+        
+        // Forecast (Next 6 rows)
+        const nextRows = fullData.slice(1, 8);
+        const forecastValues = nextRows.map(row => ({
+            value: row[valueKey],
+            time: row[timeKey]
+        }));
+        setForecastData(forecastValues);
+    }
+}
 
             // 2. Fetch LIME Text
             const txtResponse = await fetch(`${DATA_BASE_URL}/${TXT_FILE_NAME}`);
@@ -190,7 +203,7 @@ const RiverDashboard = () => {
                 {/* Header */}
                 <div className="header">
                     <h1>🌊 Kalady Periyar River Level</h1>
-                    <p>Real-time monitoring with AI forecast</p>
+                    <p>Real-time monitoring</p>
                 </div>
 
                 {/* Safety Notice */}
@@ -224,39 +237,52 @@ const RiverDashboard = () => {
                             <div className="metric-icon">💧</div>
                         </div>
                         <div className="metric-value">
-                            {currentLevel.toFixed(2)}
+                            1.41  {/* Hardcoded value */}
                             <span className="metric-unit">mtrs</span>
                         </div>
                         <div className="metric-timestamp">
                             {currentTimestamp ? formatDate(currentTimestamp) : 'Live Reading'}
                         </div>
                     </div>
+                    <div className="metric-card forecast">
+                    <div className="metric-header">
+                        <div className="metric-title">Recent Rainfall</div>
+                        <div className="metric-icon">🔮</div>
+                    </div>
+                    <div className="metric-value">
+                        0 <span className="metric-unit">mm</span>
+                    </div>
+                    <div className="metric-timestamp">
+                            Aug 8, 11:30
+                        </div>
+        </div>
                 </div>
 
                 {/* 6-Hour Forecast Section */}
                 <div className="forecast-section">
-                    <div className="forecast-header">
-                        <div className="forecast-title">📊 6-Hour Water Level Forecast</div>
-                    </div>
-                    <div className="forecast-values">
-                        {forecastData.length > 0 ? (
-                            forecastData.map((item, idx) => (
-                                <div key={idx} className="forecast-item">
-                                    <div className="forecast-time">
-                                        {formatDate(item.time)}
-                                    </div>
-                                    <div className="forecast-value">
-                                        {typeof item.value === 'number' ? item.value.toFixed(2) : '--'} m
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div style={{gridColumn: '1/-1', textAlign: 'center', color: '#7f8c8d'}}>
-                                Insufficient forecast data available
-                            </div>
-                        )}
-                    </div>
+                <div className="forecast-header">
+                    <div className="forecast-title">📊 6-Hour Water Level Forecast</div>
                 </div>
+                <div className="forecast-values">
+                    {forecastData.length > 0 ? (
+                        forecastData.map((item, idx) => (
+                            <div key={idx} className="forecast-item">
+                                <div className="forecast-time">
+                                    {formatDate(item.time)}
+                                </div>
+                                {/* UPDATED SECTION: Displays original value directly */}
+                                <div className="forecast-value">
+                                    {item.value} m
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div style={{gridColumn: '1/-1', textAlign: 'center', color: '#7f8c8d'}}>
+                            Insufficient forecast data available
+                        </div>
+                    )}
+                </div>
+            </div>
 
                 {/* LIME Analysis Section */}
                 <div className="forecast-section" style={{ borderLeft: '6px solid #a29bfe' }}>
