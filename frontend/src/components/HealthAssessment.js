@@ -57,11 +57,11 @@ function HealthAssessment() {
           // --- ARATHY'S FIX 1: ---
           // The URL was incorrect. It was pointing to /health_assessment_api}
           // The correct URL from urls.py to check status is /health-assessment-status/
-          const response = await fetch(`${API_BASE_URL}/health-assessment-status/`, {
-            method: 'POST', // Assuming it needs a POST with user info, adjust if GET
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUsername }) // Send username to check
-          });
+          const response = await fetch(`${API_BASE_URL}/api/health-assessment-status/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: currentUsername })
+        });
           // --- END OF FIX 1 ---
           
           const data = await response.json();

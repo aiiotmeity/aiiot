@@ -45,9 +45,16 @@ function HomePage() {
       // Only check if there is a logged-in user
       if (user) {
         try {
-          const identifier = user.username || user.name || user.phone_number;
+          // New Corrected Code
           const url = new URL(`${API_BASE_URL}/api/health-assessment-status/`);
-          url.searchParams.append('username', identifier);
+
+          // Prioritize phone_number because it is unique and links the tables
+          if (user.phone_number) {
+              url.searchParams.append('phone_number', user.phone_number);
+} else {
+    // Fallback to username if phone is somehow missing
+    url.searchParams.append('username', user.username || user.name);
+}
           const response = await fetch(url.toString());
           const data = await response.json();
           if (response.ok) {
@@ -181,7 +188,7 @@ function HomePage() {
   const handleLogout = useCallback(() => {
     logout();
     setIsMenuOpen(false);
-    navigate('/');
+    navigate('/homepage');
   }, [logout, navigate]);
 
   const handleAdminPortalClick = useCallback(() => {

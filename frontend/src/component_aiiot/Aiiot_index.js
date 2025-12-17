@@ -259,7 +259,7 @@ const AIIOT_INDEX = () => {
                 </div>
               )}
             </div>
-            <Link to="/homepage" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>
+            <Link to="/homepage" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>AirAware
             </Link>
             <a href="/weather-home" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>AWS</a>
           </div>

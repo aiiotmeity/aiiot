@@ -75,6 +75,10 @@ urlpatterns = [
     path('api/products-menu/', views.get_products_menu, name='products-menu'),
     path('api/product/<str:slug>/', views.get_product_detail, name='product-detail'),
     
+
+    
+    path('forgot-password-request/', views.forgot_password_request_api, name='forgot_password_request'),
+    path('forgot-password-reset/', views.forgot_password_reset_api, name='forgot_password_reset'),
     # ...
 ]
 if settings.DEBUG:

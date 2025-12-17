@@ -14,7 +14,7 @@ function Signup() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(''); // Initialize as empty string
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -103,7 +103,7 @@ function Signup() {
       const data = await response.json();
       if (response.ok && data.success) {
         setOtpSent(true);
-        setError('OTP sent successfully. Check your phone.');
+        setSuccess('OTP sent successfully. Check your phone.'); // <--- Use setSuccess
       } else {
         setError(data.error || 'Failed to send OTP.');
       }
@@ -190,11 +190,11 @@ function Signup() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
-      } else {
+  setSuccess('Account created successfully! Redirecting...'); // <--- New string message
+  setTimeout(() => {
+    navigate('/login');
+  }, 2000);
+} else {
         setError(data.error || data.message || 'Registration failed.');
       }
     } catch (err) {
@@ -267,30 +267,43 @@ function Signup() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="phone_number">Phone Number</label>
-              <div className="input-group">
-                <input
-                  type="tel"
-                  id="phone_number"
-                  name="phone_number"
-                  value={formData.phone_number}
-                  onChange={handleChange}
-                  placeholder="+919876543210"
-                  required
-                  disabled={loading || otpSent}
-                  maxLength="13"
-                />
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={handleSendOtp}
-                  disabled={isSendingOtp || otpSent}
-                >
-                  {isSendingOtp ? 'Sending...' : (otpSent ? 'Sent' : 'Send OTP')}
-                </button>
-              </div>
+            <label htmlFor="phone_number">Phone Number</label>
+            
+            {/* Input Field */}
+            <div className="input-group">
+              <input
+                type="tel"
+                id="phone_number"
+                name="phone_number"
+                value={formData.phone_number}
+                onChange={handleChange}
+                placeholder="+919876543210"
+                required
+                disabled={loading || otpSent}
+                maxLength="13"
+                style={{ borderRadius: '12px' }} /* Round corners since button is gone */
+              />
             </div>
 
+            {/* Send OTP Button - Now Independent & Full Width */}
+            <button
+              type="button"
+              className={`btn-otp ${otpSent ? 'sent' : ''}`} 
+              onClick={handleSendOtp}
+              disabled={isSendingOtp || otpSent}
+            >
+              {isSendingOtp ? (
+                <span className="loader-spinner"></span>
+              ) : otpSent ? (
+                <>
+                  <span>✓ OTP Sent</span>
+                  {/* <span style={{fontSize: '0.8em', marginLeft: '5px', opacity: 0.8}}>(Resend?)</span> */}
+                </>
+              ) : (
+                'Send OTP'
+              )}
+            </button>
+          </div>
             {otpSent && !otpVerified && (
               <div className="form-group">
                 <label htmlFor="otp">Enter OTP</label>
