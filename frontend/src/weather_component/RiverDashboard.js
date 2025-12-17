@@ -204,7 +204,7 @@ const RiverDashboard = () => {
                     <div id="alertMessage">{alertMessage}</div>
                 </div>
 
-                {/* Status Bar */}
+                {/* Status Bar
                 <div className="status-bar">
                     <div className="status-indicator">
                         <div className={`status-dot ${alertLevel === 'warning' || alertLevel === 'critical' ? 'alert' : ''}`}></div>
@@ -213,7 +213,7 @@ const RiverDashboard = () => {
                     <div className="last-update">
                         Last checked: {lastUpdated ? lastUpdated.toLocaleTimeString() : '...'}
                     </div>
-                </div>
+                </div> */}
 
                 {/* Metrics Grid */}
                 <div className="metrics-grid">

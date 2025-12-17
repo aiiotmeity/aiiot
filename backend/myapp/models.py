@@ -291,9 +291,9 @@ class HealthAssessment(models.Model):
 
     def get_risk_level(self):
         if self.health_score is None: return "Unknown"
-        if self.health_score >= 80: return "Low"
+        if self.health_score >= 80: return "High"
         elif self.health_score >= 50: return "Medium"
-        return "High"
+        return "Low"
 
     def get_recommendations(self):
         risk = self.get_risk_level()
