@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from .models import (
     Signup, UserLogin, HealthAssessment, FamilyMembers, 
     Support, ResourceFile, Resource, Brochure, WorkshopEvent,
-    Product, ProductFeature, ProductSpecification, AdminUserlogin
+    Product, ProductFeature, ProductSpecification
 )
 
 admin.site.site_header = "AI-IoT Admin Panel"
@@ -91,9 +91,6 @@ class SupportAdmin(admin.ModelAdmin):
     short_desc.short_description = "Issue Summary"
 
 # --- REMAINING SIMPLE ADMINS ---
-@admin.register(AdminUserlogin)
-class AdminUserloginAdmin(admin.ModelAdmin):
-    list_display = ('username', 'created_at')
 
 @admin.register(Brochure)
 class BrochureAdmin(admin.ModelAdmin):
