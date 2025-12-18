@@ -91,19 +91,19 @@ class HealthAssessment(models.Model):
     # ADD THESE TWO FUNCTIONS HERE
     # ============================
 
-    def get_risk_level(self):
-        """
-        Convert health_score → risk level text.
-        """
-        if self.health_score is None:
-            return "Unknown"
+    # def get_risk_level(self):
+    #     """
+    #     Convert health_score → risk level text.
+    #     """
+    #     if self.health_score is None:
+    #         return "Unknown"
 
-        if self.health_score >= 80:
-            return "Low"
-        elif self.health_score >= 50:
-            return "Medium"
-        else:
-            return "High"
+    #     if self.health_score >= 80:
+    #         return "Low"
+    #     elif self.health_score >= 50:
+    #         return "Medium"
+    #     else:
+    #         return "High"
 
     def get_recommendations(self):
         """

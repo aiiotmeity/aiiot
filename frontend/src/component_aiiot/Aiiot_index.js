@@ -199,8 +199,40 @@ const AIIOT_INDEX = () => {
               </div>
               {/* === END MEGA MENU === */}
 
-              <Link to="/homepage" className="nav-link">AirAware</Link>
-              <a href="/weather-home" className="nav-link">AWS</a>
+              {/* Highlighted AirAware Button */}
+              <Link 
+                to="/homepage" 
+                className="nav-link" 
+                style={{ 
+                  backgroundColor: '#dcfce7',   // Light green background
+                  color: '#166534',             // Dark green text
+                  padding: '0.6rem 1.2rem',     // Padding to make it look like a button
+                  borderRadius: '50px',         // Rounded pill shape
+                  fontWeight: '700',
+                  marginRight: '0.5rem',
+                  textDecoration: 'none',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                AirAware
+              </Link>
+
+              {/* Highlighted AWS Button */}
+              <a 
+                href="/weather-home" 
+                className="nav-link" 
+                style={{ 
+                  backgroundColor: '#ffedd5',   // Light orange background
+                  color: '#c2410c',             // Dark orange text
+                  padding: '0.6rem 1.2rem', 
+                  borderRadius: '50px', 
+                  fontWeight: '700',
+                  textDecoration: 'none',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                AWS
+              </a>
               <a href="#footer" className="nav-btn-primary">Get in Touch</a>
             </div>
 
@@ -259,10 +291,39 @@ const AIIOT_INDEX = () => {
                 </div>
               )}
             </div>
-            <Link to="/homepage" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>AirAware
-            </Link>
-            <a href="/weather-home" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'block', padding: '1rem 0', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', borderBottom: '1px solid #f1f5f9', textDecoration: 'none' }}>AWS</a>
-          </div>
+            {/* Highlighted AirAware Button (Green Theme) */}
+          <Link 
+            to="/homepage" 
+            className="nav-link" 
+            style={{ 
+              backgroundColor: '#dcfce7',  // Light green background
+              color: '#166534',            // Dark green text
+              padding: '0.5rem 1rem',      // Padding to make it look like a button
+              borderRadius: '9999px',      // Rounded corners (Pill shape)
+              fontWeight: '600',
+              marginRight: '0.5rem',       // Spacing between the buttons
+              textDecoration: 'none'
+            }}
+          >
+            AirAware
+          </Link>
+
+          {/* Highlighted AWS Button (Orange/AWS Theme) */}
+          <a 
+            href="/weather-home" 
+            className="nav-link" 
+            style={{ 
+              backgroundColor: '#ffedd5',  // Light orange background
+              color: '#c2410c',            // Dark orange text
+              padding: '0.5rem 1rem', 
+              borderRadius: '9999px', 
+              fontWeight: '600',
+              textDecoration: 'none'
+            }}
+          >
+            AWS
+          </a>
+                    </div>
         )}
       </header>
 

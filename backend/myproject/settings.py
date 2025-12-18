@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'myapp',
     'weather_monitoring',
 
+    'jazzmin',                  # <--- Add this line at the top
+
 ]
 
 # ==========================================
@@ -219,3 +221,74 @@ LOGGING = {
 }
 
 
+# settings.py
+
+JAZZMIN_SETTINGS = {
+    # Title of the window
+    "site_title": "AI-IoT Admin",
+    "site_header": "AI-IoT Dashboard",
+    "site_brand": "AI-IoT System",
+    "welcome_sign": "Welcome to the AI-IoT Control Center",
+    "copyright": "Arathy Surendran & Team",
+    
+    # Sidebar Search (searches User model by default)
+    "search_model": "auth.User",
+
+    # Top Menu
+    "topmenu_links": [
+        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Live Map", "url": "https://aiiot.it.com", "new_window": True},
+    ],
+
+    # Side Menu Custom Icons (FontAwesome)
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        
+        # Your Custom Models
+        "myapp.Signup": "fas fa-user-plus",
+        "myapp.UserLogin": "fas fa-key",
+        "myapp.HealthAssessment": "fas fa-heartbeat",
+        "myapp.FamilyMembers": "fas fa-house-user",
+        "myapp.Product": "fas fa-box-open",
+        "myapp.WorkshopEvent": "fas fa-calendar-alt",
+        "myapp.Support": "fas fa-headset",
+        "myapp.Resource": "fas fa-file-download",
+    },
+    
+    # Order of apps in the sidebar
+    "order_with_respect_to": ["myapp", "auth"],
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-dark",
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "flatly",  # Options: darkly, flatly, simplex, slate
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
+}
