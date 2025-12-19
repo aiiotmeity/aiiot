@@ -1,0 +1,140 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block content %}
+<style>
+    .dashboard-container { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+    .sensor-card { 
+        flex: 1; 
+        min-width: 250px; 
+        background: white; 
+        padding: 20px; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-top: 5px solid #ccc;
+    }
+    .status-badge { 
+        display: inline-block; padding: 4px 8px; border-radius: 4px; 
+        font-weight: bold; font-size: 0.8rem; color: white;
+    }
+    .online { background-color: #28a745; border-color: #28a745; }
+    .offline { background-color: #dc3545; border-color: #dc3545; }
+    
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .data-item { font-size: 0.9rem; color: #555; }
+    .data-value { font-weight: bold; color: #333; }
+    
+    .malfunction-alert {
+        display: none; /* Hidden by default */
+        margin-top: 15px;
+        background-color: #ffebee;
+        color: #c62828;
+        padding: 10px;
+        border: 1px solid #ef9a9a;
+        border-radius: 4px;
+        font-weight: bold;
+        text-align: center;
+    }
+</style>
+
+<div style="margin-bottom: 20px;">
+    <h1>📡 Real-Time Sensor Control Center</h1>
+</div>
+
+<div class="dashboard-container">
+    <div id="card-v1" class="sensor-card">
+        <h3>Station 1 (ASIET)</h3>
+        <div>Status: <span id="status-v1" class="status-badge">Loading...</span></div>
+        
+        <div class="data-grid">
+            <div class="data-item">🌡️ Temp: <span id="temp-v1" class="data-value">--</span></div>
+            <div class="data-item">💧 Hum: <span id="hum-v1" class="data-value">--</span></div>
+            <div class="data-item">☁️ PM2.5: <span id="pm25-v1" class="data-value">--</span></div>
+            <div class="data-item">💨 AQI: <span id="aqi-v1" class="data-value">--</span></div>
+        </div>
+
+        <div id="alert-v1" class="malfunction-alert">
+            ⚠️ MALFUNCTION DETECTED <br>
+            <span style="font-size: 0.8rem; font-weight: normal;">Device is offline or sending bad data.</span>
+        </div>
+    </div>
+
+    <div id="card-v2" class="sensor-card">
+        <h3>Station 2 (Pothiyakkara)</h3>
+        <div>Status: <span id="status-v2" class="status-badge">Loading...</span></div>
+        
+        <div class="data-grid">
+            <div class="data-item">🌡️ Temp: <span id="temp-v2" class="data-value">--</span></div>
+            <div class="data-item">💧 Hum: <span id="hum-v2" class="data-value">--</span></div>
+            <div class="data-item">☁️ PM2.5: <span id="pm25-v2" class="data-value">--</span></div>
+            <div class="data-item">💨 AQI: <span id="aqi-v2" class="data-value">--</span></div>
+        </div>
+
+        <div id="alert-v2" class="malfunction-alert">
+            ⚠️ MALFUNCTION DETECTED <br>
+            <span style="font-size: 0.8rem; font-weight: normal;">Device is offline or sending bad data.</span>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<script>
+    // URL to your existing API in views.py
+    const API_URL = '/api/admin/dashboard/'; 
+
+    async function fetchDashboardData() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+
+            if (data.station_data) {
+                updateStationCard('v1', data.station_data['lora-v1']);
+                updateStationCard('v2', data.station_data['loradev2']);
+            }
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+        }
+    }
+
+    function updateStationCard(id, stationData) {
+        const card = document.getElementById('card-' + id);
+        const statusSpan = document.getElementById('status-' + id);
+        const alertBox = document.getElementById('alert-' + id);
+        
+        // 1. Get Data safely
+        const item = stationData.latest_item || {};
+        const isOnline = stationData.health && stationData.health.status === 'ONLINE';
+
+        // 2. Update Values
+        document.getElementById('temp-' + id).innerText = item.temperature || '--';
+        document.getElementById('hum-' + id).innerText = item.humidity || '--';
+        document.getElementById('pm25-' + id).innerText = item.pm25 || '--';
+        document.getElementById('aqi-' + id).innerText = stationData.aqi || '--';
+
+        // 3. Handle Status & Malfunction Alert
+        if (isOnline) {
+            // ONLINE STATE
+            statusSpan.innerText = "ONLINE";
+            statusSpan.className = "status-badge online";
+            card.style.borderTopColor = "#28a745"; // Green border
+            alertBox.style.display = "none"; // Hide alert
+        } else {
+            // MALFUNCTION / OFFLINE STATE
+            statusSpan.innerText = "MALFUNCTION";
+            statusSpan.className = "status-badge offline";
+            card.style.borderTopColor = "#dc3545"; // Red border
+            alertBox.style.display = "block"; // Show alert
+            
+            // Optional: You can replace values with "Err" if offline
+            // document.getElementById('temp-' + id).innerText = "Err";
+        }
+    }
+
+    // Load data immediately, then update every 5 seconds
+    fetchDashboardData();
+    setInterval(fetchDashboardData, 5000);
+</script>
+
+{{ block.super }}
+{% endblock %}
