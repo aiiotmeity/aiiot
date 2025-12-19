@@ -3,19 +3,22 @@
 
 {% block content %}
 <style>
-    /* MAIN LAYOUT */
+    /* MAIN LAYOUT - FORCES SINGLE ROW */
     .dashboard-container { 
         display: flex; 
-        gap: 20px; 
+        gap: 15px; 
         margin-bottom: 30px; 
-        flex-wrap: wrap; 
+        flex-wrap: nowrap; /* Prevents wrapping to next line */
+        overflow-x: auto;  /* Allows horizontal scroll on small screens */
+        padding-bottom: 15px; /* Space for scrollbar */
+        align-items: flex-start; /* Aligns cards to top */
     }
     
     .sensor-card { 
-        flex: 1; 
-        min-width: 320px; /* Made wider to fit data */
+        flex: 1;           /* Each card takes equal width */
+        min-width: 300px;  /* Minimum width to prevent squashing */
         background: white; 
-        padding: 20px; 
+        padding: 15px; 
         border-radius: 8px; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         border-top: 5px solid #ccc;
@@ -26,29 +29,29 @@
     /* STATUS BADGES */
     .status-badge { 
         display: inline-block; padding: 4px 8px; border-radius: 4px; 
-        font-weight: bold; font-size: 0.8rem; color: white; float: right;
+        font-weight: bold; font-size: 0.75rem; color: white; float: right;
     }
     .online { background-color: #28a745; }
     .offline { background-color: #dc3545; }
 
-    /* DATA GRID (3 Columns for better fit) */
+    /* DATA GRID */
     .data-grid { 
         display: grid; 
-        grid-template-columns: 1fr 1fr 1fr; 
-        gap: 12px; 
-        margin-top: 15px; 
+        grid-template-columns: 1fr 1fr 1fr; /* 3 columns */
+        gap: 8px; 
+        margin-top: 10px; 
         background: #f8f9fa;
-        padding: 10px;
+        padding: 8px;
         border-radius: 5px;
     }
-    .data-item { font-size: 0.85rem; color: #666; display: flex; flex-direction: column; }
-    .data-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
-    .data-value { font-weight: bold; color: #333; font-size: 1rem; }
+    .data-item { font-size: 0.8rem; color: #666; display: flex; flex-direction: column; }
+    .data-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; }
+    .data-value { font-weight: bold; color: #333; font-size: 0.95rem; }
 
     /* SECTIONS */
     .section-title { 
-        font-size: 0.75rem; color: #999; font-weight: bold; 
-        margin-top: 10px; margin-bottom: 5px; border-bottom: 1px solid #eee; 
+        font-size: 0.7rem; color: #999; font-weight: bold; 
+        margin-top: 12px; margin-bottom: 5px; border-bottom: 1px solid #eee; 
     }
 
     /* ALERTS */
@@ -61,6 +64,7 @@
         border: 1px solid #ef9a9a;
         border-radius: 4px;
         font-weight: bold; text-align: center;
+        font-size: 0.9rem;
     }
 </style>
 
@@ -71,10 +75,10 @@
 <div class="dashboard-container">
     
     <div id="card-v1" class="sensor-card">
-        <h3>Station 1 (ASIET) <span id="status-v1" class="status-badge">Loading...</span></h3>
+        <h3 style="margin-top:0; font-size: 1.1rem;">Station 1 (ASIET) <span id="status-v1" class="status-badge">Loading...</span></h3>
         
         <div class="section-title">METADATA</div>
-        <div style="font-size: 0.85rem; margin-bottom: 5px;">
+        <div style="font-size: 0.8rem; margin-bottom: 5px;">
             🕒 <span id="date-v1">--</span> at <span id="time-v1">--</span>
         </div>
 
@@ -103,10 +107,10 @@
     </div>
 
     <div id="card-v2" class="sensor-card">
-        <h3>Station 2 (Pothiyakkara) <span id="status-v2" class="status-badge">Loading...</span></h3>
+        <h3 style="margin-top:0; font-size: 1.1rem;">Station 2 (Pothiyakkara) <span id="status-v2" class="status-badge">Loading...</span></h3>
         
         <div class="section-title">METADATA</div>
-        <div style="font-size: 0.85rem; margin-bottom: 5px;">
+        <div style="font-size: 0.8rem; margin-bottom: 5px;">
             🕒 <span id="date-v2">--</span> at <span id="time-v2">--</span>
         </div>
 
@@ -135,10 +139,10 @@
     </div>
 
     <div id="card-v3" class="sensor-card">
-        <h3>Station 3 (Mattoor) <span id="status-v3" class="status-badge">Loading...</span></h3>
+        <h3 style="margin-top:0; font-size: 1.1rem;">Station 3 (Mattoor) <span id="status-v3" class="status-badge">Loading...</span></h3>
         
         <div class="section-title">METADATA</div>
-        <div style="font-size: 0.85rem; margin-bottom: 5px;">
+        <div style="font-size: 0.8rem; margin-bottom: 5px;">
             🕒 <span id="date-v3">--</span> at <span id="time-v3">--</span>
         </div>
 
@@ -155,12 +159,7 @@
             <div class="data-item"><span class="data-label">PM10</span><span id="pm10-v3" class="data-value">--</span></div>
             <div class="data-item"><span class="data-label">AQI</span><span id="aqi-v3" class="data-value">--</span></div>
             
-            <div class="data-item"><span class="data-label">CO</span><span id="co-v3" class="data-value">--</span></div>
-            <div class="data-item"><span class="data-label">NH3</span><span id="nh3-v3" class="data-value">--</span></div>
-            <div class="data-item"><span class="data-label">NO2</span><span id="no2-v3" class="data-value">--</span></div>
-            
-            <div class="data-item"><span class="data-label">SO2</span><span id="so2-v3" class="data-value">--</span></div>
-            <div class="data-item"><span class="data-label">O3</span><span id="o3-v3" class="data-value">--</span></div>
+        
         </div>
 
         <div id="alert-v3" class="malfunction-alert">⚠️ MALFUNCTION</div>
@@ -188,7 +187,7 @@
     }
 
     function updateStationCard(id, stationData) {
-        if (!stationData) return; // Skip if data missing
+        if (!stationData) return; 
 
         const card = document.getElementById('card-' + id);
         const statusSpan = document.getElementById('status-' + id);
@@ -197,13 +196,12 @@
         const item = stationData.latest_item || {};
         const isOnline = stationData.health && stationData.health.status === 'ONLINE';
 
-        // Helper to update text or show '--'
         const setVal = (elemId, val) => {
             const el = document.getElementById(elemId);
             if(el) el.innerText = val !== undefined && val !== null ? val : '--';
         };
 
-        // 1. UPDATE ALL VALUES
+        // UPDATE VALUES
         setVal('temp-' + id, item.temperature);
         setVal('hum-' + id, item.humidity);
         setVal('pre-' + id, item.pressure);
@@ -219,7 +217,7 @@
         setVal('so2-' + id, item.so2);
         setVal('o3-' + id, item.o3);
 
-        // 2. STATUS & ALERTS
+        // HANDLE ONLINE/OFFLINE
         if (isOnline) {
             statusSpan.innerText = "ONLINE";
             statusSpan.className = "status-badge online";
