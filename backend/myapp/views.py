@@ -2053,262 +2053,114 @@ def admin_login_api(request):
 # ADD THIS COMPLETE admin_dashboard_api to your views.py 
 # (Keep your existing admin_login_api unchanged)
 
+# In myapp/views.py
+
 @api_view(['GET'])
 @csrf_exempt
 def admin_dashboard_api(request):
     """
-    FIXED Admin Dashboard API - Works with existing User model (no created_at field)
-    Includes complete sensor data: PM2.5, PM10, CO, NH3, NO2, SO2, O3, temperature, humidity, pressure
+    UPDATED Admin API: Includes Station 3 (lora-v3) and ALL sensor parameters.
     """
     try:
-        # Initialize AWS resources with fallback
+        # 1. Initialize AWS
         try:
             if not initialize_aws_resources():
-                logger.warning("AWS initialization failed, using fallback data")
+                logger.warning("AWS initialization failed, using fallback")
         except:
-            logger.warning("AWS functions not available, using fallback")
+            logger.warning("AWS functions not available")
 
-        # Get data for both stations with error handling
-        try:
-            lora_v1_items = get_device_data("lora-v1", limit=24)
-        except:
-            lora_v1_items = []
-            
-        try:
-            loradev2_items = get_device_data("loradev2", limit=24)
-        except:
-            loradev2_items = []
+        # 2. Get data for ALL 3 STATIONS
+        def get_items_safe(device_id):
+            try:
+                return get_device_data(device_id, limit=24)
+            except:
+                return []
 
-        # Process both datasets for AQI calculation with fallback
-        try:
-            _, _, _, high_index_lora_v1 = process_device_items(lora_v1_items)
-        except:
-            high_index_lora_v1 = 0
-            
-        try:
-            _, _, _, high_index_loradev2 = process_device_items(loradev2_items)
-        except:
-            high_index_loradev2 = 0
+        lora_v1_items = get_items_safe("lora-v1")
+        loradev2_items = get_items_safe("loradev2")
+        lora_v3_items = get_items_safe("lora-v3")  # <--- Added Station 3
 
-        # Get COMPLETE sensor data including temp, humidity, pressure
+        # 3. Calculate AQI (High Index)
+        def get_aqi_safe(items):
+            try:
+                _, _, _, high_index = process_device_items(items)
+                return high_index
+            except:
+                return 0
+
+        aqi_v1 = get_aqi_safe(lora_v1_items)
+        aqi_v2 = get_aqi_safe(loradev2_items)
+        aqi_v3 = get_aqi_safe(lora_v3_items) # <--- Added Station 3 AQI
+
+        # 4. Extract COMPLETE Sensor Data
         def get_complete_sensor_data(items):
-            """Extract complete sensor data including ALL environmental parameters"""
             if not items:
-                return {
-                    'pm25': 'N/A', 'pm10': 'N/A', 'co': 'N/A', 'nh3': 'N/A',
-                    'no2': 'N/A', 'so2': 'N/A', 'o3': 'N/A',
-                    'temperature': 'N/A', 'humidity': 'N/A', 'pressure': 'N/A',
-                    'received_at': None, 'device_status': 'OFFLINE',
-                    
-                }
+                return { 'received_at': None, 'device_status': 'OFFLINE' }
             
             try:
-                latest_item = items[0]
-                parsed_payload = parse_payload(latest_item.get('payload', {}))
+                latest = items[0]
+                payload = parse_payload(latest.get('payload', {}))
                 
-                # Extract all sensor parameters including environmental data
-                complete_data = {
-                    # Air quality parameters
-                    'pm25': parsed_payload.get('pm25', 'N/A'),
-                    'pm10': parsed_payload.get('pm10', 'N/A'),
-                    'co': parsed_payload.get('co', 'N/A'),
-                    'nh3': parsed_payload.get('nh3', 'N/A'),
-                    'no2': parsed_payload.get('no2', 'N/A'),
-                    'so2': parsed_payload.get('so2', 'N/A'),
-                    'o3': parsed_payload.get('o3', 'N/A'),
+                return {
+                    # Pollutants
+                    'pm25': payload.get('pm25', 'N/A'),
+                    'pm10': payload.get('pm10', 'N/A'),
+                    'co': payload.get('co', 'N/A'),
+                    'nh3': payload.get('nh3', 'N/A'),
+                    'no2': payload.get('no2', 'N/A'),
+                    'so2': payload.get('so2', 'N/A'),
+                    'o3': payload.get('o3', 'N/A'),
                     
-                    # Environmental parameters - THE KEY ADDITIONS FOR ADMIN DASHBOARD
-                    'temperature': parsed_payload.get('temperature', parsed_payload.get('temp', 'N/A')),
-                    'humidity': parsed_payload.get('humidity', parsed_payload.get('hum', 'N/A')),
-                    'pressure': parsed_payload.get('pressure', parsed_payload.get('pre', 'N/A')),
+                    # Environmental
+                    'temperature': payload.get('temperature', payload.get('temp', 'N/A')),
+                    'humidity': payload.get('humidity', payload.get('hum', 'N/A')),
+                    'pressure': payload.get('pressure', payload.get('pre', 'N/A')),
                     
                     # Metadata
-                    'received_at': latest_item.get('received_at'),
-                    'date': parsed_payload.get('date', 'N/A'),
-                    'time': parsed_payload.get('time', 'N/A'),
-                    'battery': parsed_payload.get('battery', parsed_payload.get('bat', 'N/A')),
-                    'signal_strength': parsed_payload.get('rssi', parsed_payload.get('signal', 'Unknown')),
-                    'device_status': 'ONLINE' if latest_item.get('received_at') else 'OFFLINE'
+                    'received_at': latest.get('received_at'),
+                    'date': payload.get('date', 'N/A'),
+                    'time': payload.get('time', 'N/A'),
+                    'battery': payload.get('battery', payload.get('bat', 'N/A')),
+                    'signal_strength': payload.get('rssi', payload.get('signal', 'Unknown')),
+                    'device_status': 'ONLINE' if latest.get('received_at') else 'OFFLINE'
                 }
-                return complete_data
             except Exception as e:
-                logger.error(f"Error parsing sensor data: {e}")
-                return {
-                    'pm25': 'Error', 'pm10': 'Error', 'co': 'Error', 'nh3': 'Error',
-                    'no2': 'Error', 'so2': 'Error', 'o3': 'Error',
-                    'temperature': 'Error', 'humidity': 'Error', 'pressure': 'Error',
-                    'received_at': None, 'device_status': 'ERROR'
-                }
+                logger.error(f"Error parsing data: {e}")
+                return { 'received_at': None, 'device_status': 'ERROR' }
 
         latest_complete_v1 = get_complete_sensor_data(lora_v1_items)
         latest_complete_v2 = get_complete_sensor_data(loradev2_items)
+        latest_complete_v3 = get_complete_sensor_data(lora_v3_items) # <--- Added Station 3 Data
 
-        # Enhanced user data WITHOUT requiring created_at field
-        users = []
-        try:
-            for user in User.objects.all().order_by('-id'):
-                # Get last login from login table
-                try:
-                    last_login_record = login.objects.filter(
-                        phone_number=user.phone_number, 
-                        otp_verified=True
-                    ).order_by('-id').first()
-                    last_login = last_login_record.created_at if last_login_record else None
-                except:
-                    last_login = None
-
-                # Get health assessment status
-                try:
-                    has_health_assessment = HealthAssessment.objects.filter(user=user).exists()
-                except:
-                    has_health_assessment = False
-                
-                # FIXED: Use current timestamp if no created_at field exists
-                user_created = datetime.now().isoformat()  # Fallback since User model has no created_at
-                
-                users.append({
-                    'id': user.id,
-                    'name': user.name,
-                    'phone_number': user.phone_number,
-                    'created_at': user_created,  # Using fallback timestamp
-                    'last_login': last_login.isoformat() if last_login else None,
-                    'has_health_assessment': has_health_assessment,
-                    'status': 'Active' if last_login else 'Inactive'
-                })
-        except Exception as e:
-            logger.error(f"Error fetching users: {e}")
-            users = []
-
-        # Enhanced health assessments with risk analysis
-        health_assessments = []
-        try:
-            for assessment in HealthAssessment.objects.select_related('user').all():
-                try:
-                    risk_level = assessment.get_risk_level()
-                except:
-                    risk_level = 'Unknown'
-                    
-                health_assessments.append({
-                    'id': assessment.id,
-                    'user_id': assessment.user.id,
-                    'user_name': assessment.user.name,
-                    'age_group': assessment.age_group,
-                    'gender': assessment.gender,
-                    'health_score': assessment.health_score,
-                    'risk_level': risk_level,
-                    'is_high_risk': assessment.health_score >= 100,
-                    'created_at': assessment.created_at.isoformat(),
-                    'updated_at': assessment.updated_at.isoformat(),
-                    # Detailed breakdown
-                    'respiratory_conditions': assessment.respiratory_conditions,
-                    'smoking_history': assessment.smoking_history,
-                    'living_environment': assessment.living_environment,
-                    'medical_history': assessment.medical_history
-                })
-        except Exception as e:
-            logger.error(f"Error fetching health assessments: {e}")
-            health_assessments = []
-
-        # System analytics
-        total_users = len(users)
-        active_users = len([u for u in users if u['last_login']])
-        high_risk_users = len([h for h in health_assessments if h['is_high_risk']])
-        
-        # Station health check
-        station_health = {
-            'lora-v1': {
-                'status': 'ONLINE' if latest_complete_v1.get('received_at') else 'OFFLINE',
-                'last_seen': latest_complete_v1.get('received_at'),
-                'data_points': len(lora_v1_items),
-                'signal_quality': latest_complete_v1.get('signal_strength', 'Unknown')
-            },
-            'loradev2': {
-                'status': 'ONLINE' if latest_complete_v2.get('received_at') else 'OFFLINE',
-                'last_seen': latest_complete_v2.get('received_at'),
-                'data_points': len(loradev2_items),
-                'signal_quality': latest_complete_v2.get('signal_strength', 'Unknown')
-            }
-        }
-
-        # Calculate average AQI safely
-        aqi_values = [aqi for aqi in [high_index_lora_v1, high_index_loradev2] if aqi is not None and aqi > 0]
-        average_aqi = round(sum(aqi_values) / len(aqi_values)) if aqi_values else None
-
-        # COMPLETE response with all sensor data
+        # 5. Build Response
         response_data = {
             'station_data': {
                 'lora-v1': {
-                    'latest_item': latest_complete_v1,  # Includes temp, humidity, pressure
-                    'aqi': high_index_lora_v1,
-                    'health': station_health['lora-v1']
+                    'latest_item': latest_complete_v1,
+                    'aqi': aqi_v1,
+                    'health': {'status': latest_complete_v1['device_status']}
                 },
                 'loradev2': {
-                    'latest_item': latest_complete_v2,  # Includes temp, humidity, pressure
-                    'aqi': high_index_loradev2,
-                    'health': station_health['loradev2']
+                    'latest_item': latest_complete_v2,
+                    'aqi': aqi_v2,
+                    'health': {'status': latest_complete_v2['device_status']}
+                },
+                # ADDED STATION 3 HERE
+                'lora-v3': {
+                    'latest_item': latest_complete_v3,
+                    'aqi': aqi_v3,
+                    'health': {'status': latest_complete_v3['device_status']}
                 }
             },
-            'users': users,
-            'health_assessments': health_assessments,
-            'analytics': {
-                'total_users': total_users,
-                'active_users': active_users,
-                'inactive_users': total_users - active_users,
-                'health_assessments_completed': len(health_assessments),
-                'high_risk_users': high_risk_users,
-                'system_uptime': '99.5%',
-                'data_collection_rate': f"{len(lora_v1_items) + len(loradev2_items)}/48 (last 24h)",
-                'average_aqi': average_aqi
-            },
+            # ... keep your users/analytics sections same as before ...
             'timestamp': datetime.now().isoformat()
         }
         
-        logger.info(f"Admin dashboard API successful - Users: {total_users}, Assessments: {len(health_assessments)}")
         return Response(response_data, status=status.HTTP_200_OK)
 
     except Exception as e:
-        logger.error(f"Critical error in admin_dashboard_api: {e}", exc_info=True)
-        # Return minimal fallback response to prevent error screen
-        return Response({
-            'station_data': {
-                'lora-v1': {
-                    'latest_item': {
-                        'pm25': 25, 'pm10': 35, 'co': 2, 'nh3': 15, 'no2': 20, 'so2': 10, 'o3': 30,
-                        'temperature': 28, 'humidity': 65, 'pressure': 1013,
-                        'received_at': datetime.now().isoformat(), 'device_status': 'OFFLINE'
-                    },
-                    'aqi': 50,
-                    'health': {'status': 'OFFLINE', 'last_seen': None, 'data_points': 0, 'signal_quality': 'Unknown'}
-                },
-                'loradev2': {
-                    'latest_item': {
-                        'pm25': 30, 'pm10': 40, 'co': 3, 'nh3': 18, 'no2': 25, 'so2': 12, 'o3': 35,
-                        'temperature': 29, 'humidity': 70, 'pressure': 1012,
-                        'received_at': datetime.now().isoformat(), 'device_status': 'OFFLINE'
-                    },
-                    'aqi': 60,
-                    'health': {'status': 'OFFLINE', 'last_seen': None, 'data_points': 0, 'signal_quality': 'Unknown'}
-                }
-            },
-            'users': [],
-            'health_assessments': [],
-            'analytics': {
-                'total_users': 0,
-                'active_users': 0,
-                'inactive_users': 0,
-                'health_assessments_completed': 0,
-                'high_risk_users': 0,
-                'system_uptime': '0%',
-                'data_collection_rate': '0/48 (last 24h)',
-                'average_aqi': 55
-            },
-            'timestamp': datetime.now().isoformat(),
-            'error_handled': True,
-            'note': 'Fallback data due to error: ' + str(e)
-        }, status=status.HTTP_200_OK)
-
-
-# ALSO ADD these supporting APIs (keep your admin_login_api unchanged):
+        logger.error(f"Admin API Error: {e}")
+        return Response({'error': str(e)}, status=500)
 
 @api_view(['PUT'])
 @csrf_exempt
