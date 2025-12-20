@@ -3,64 +3,49 @@
 
 {% block content %}
 <style>
-    /* --- 1. DJANGO ADMIN LAYOUT FIXES --- */
-    /* Remove the empty sidebar that pushes content to the left */
-    #content-related {
-        display: none !important; 
-    }
-    /* Force the main container to be full width so we can center inside it */
-    #content-main {
-        width: 100% !important;
-        float: none !important;
-        display: flex !important;
-        justify-content: center !important; /* Centers the dashboard wrapper */
-    }
-    .main > .content {
-        max-width: 100% !important;
-    }
-    
-    /* --- 2. DASHBOARD STYLING --- */
     :root {
         --card-bg: #ffffff;
-        --text-primary: #2c3e50;
+        --text-primary: hwb(208 93% 2%);
         --text-secondary: #7f8c8d;
         --success: #10b981;
         --danger: #ef4444;
         --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --radius: 10px;
+        --radius: 8px; /* Reduced radius */
     }
 
-    /* MAIN WRAPPER - Centered with max-width */
+    /* MAIN WRAPPER */
     .dashboard-wrapper {
+        margin-bottom: 30px;
         width: 100%;
-        max-width: 1100px; /* Restricts width so cards stay in the center */
-        margin: 0 auto;    /* centers the block horizontally */
     }
 
     /* HEADER */
     .dashboard-header {
-        margin-bottom: 20px;
-        text-align: center; /* Centers the text */
+        margin-bottom: 15px;
         border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 15px;
+        padding-bottom: 10px;
     }
     .dashboard-header h1 {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
         color: #1e293b;
         margin: 0;
-        font-weight: 600;
+    }
+    .dashboard-header p {
+        margin: 2px 0 0 0;
+        color: #64748b;
+        font-size: 0.8rem;
     }
 
-    /* GRID CONTAINER */
+    /* GRID CONTAINER - FORCES 3 EQUAL COLUMNS */
     .dashboard-grid { 
         display: grid; 
-        grid-template-columns: repeat(3, 1fr); /* Forces exactly 3 columns */
-        gap: 20px; 
+        grid-template-columns: repeat(3, 1fr); /* Exactly 3 columns */
+        gap: 1px; 
         width: 100%;
-        justify-content: center;
+        align-items: center;
     }
     
-    /* CARD STYLING */
+    /* COMPACT CARD */
     .sensor-card { 
         background: var(--card-bg); 
         border-radius: var(--radius); 
@@ -73,7 +58,7 @@
 
     /* COMPACT HEADER */
     .card-header {
-        padding: 10px 15px;
+        padding: 10px 15px; /* Reduced padding */
         background: #f8fafc;
         border-bottom: 1px solid #e2e8f0;
         display: flex;
@@ -81,13 +66,13 @@
         align-items: center;
     }
     .station-title {
-        font-size: 1rem;
+        font-size: 0.95rem; /* Smaller font */
         font-weight: 700;
         color: var(--text-primary);
         margin: 0;
     }
     .station-meta {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         color: var(--text-secondary);
         display: block;
     }
@@ -96,26 +81,26 @@
     .status-pill {
         display: flex;
         align-items: center;
-        gap: 5px;
-        padding: 4px 10px;
-        border-radius: 15px;
-        font-size: 0.7rem;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.65rem;
         font-weight: 700;
         text-transform: uppercase;
     }
     .status-pill.online { background: #d1fae5; color: #065f46; }
     .status-pill.offline { background: #fee2e2; color: #991b1b; }
     
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; }
     .online .status-dot { background: var(--success); }
     .offline .status-dot { background: var(--danger); }
 
     /* CARD BODY */
-    .card-body { padding: 15px; }
+    .card-body { padding: 12px; } /* Reduced padding */
 
     /* SECTIONS */
     .section-label {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 800;
         color: #94a3b8;
         text-transform: uppercase;
@@ -128,25 +113,24 @@
     .metrics-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
+        gap: 8px; /* Tighter gap */
     }
     .metric-item {
         background: #f1f5f9;
-        padding: 8px 4px;
+        padding: 6px;
         border-radius: 6px;
         text-align: center;
     }
     .metric-label {
         display: block;
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         color: #64748b;
         text-transform: uppercase;
-        margin-bottom: 3px;
-        font-weight: 600;
+        margin-bottom: 2px;
     }
     .metric-value {
         display: block;
-        font-size: 0.95rem;
+        font-size: 0.9rem; /* Smaller value font */
         font-weight: 700;
         color: var(--text-primary);
     }
@@ -157,8 +141,8 @@
 
     /* FOOTER TIME */
     .update-time {
-        margin-top: 12px;
-        font-size: 0.7rem;
+        margin-top: 10px;
+        font-size: 0.65rem;
         text-align: center;
         color: #94a3b8;
     }
@@ -166,19 +150,18 @@
     /* ALERTS */
     .alert-banner {
         display: none;
-        background: #fee2e2;
-        border-top: 1px solid #fecaca;
-        color: #991b1b;
+        background: #fef2f2;
+        border-top: 1px solid #fee2e2;
+        color: #ef4444;
         padding: 8px;
         text-align: center;
         font-size: 0.75rem;
-        font-weight: 700;
+        font-weight: 600;
     }
 
-    /* RESPONSIVENESS */
-    @media (max-width: 1000px) {
-        /* On smaller screens, allow it to stack or shrink */
-        .dashboard-grid { grid-template-columns: 1fr; max-width: 500px; margin: 0 auto; }
+    /* RESPONSIVENESS: Stack on mobile, grid on desktop */
+    @media (max-width: 900px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
     }
 </style>
 
@@ -258,7 +241,8 @@
                     Updated: <span id="time-v1">--</span>
                 </div>
             </div>
-            <div id="alert-v1" class="alert-banner">⚠️ CONNECTION LOST</div>
+            
+            <div id="alert-v1" class="alert-banner">⚠️ OFFLINE</div>
         </div>
 
         <div id="card-v2" class="sensor-card">
@@ -329,7 +313,8 @@
                     Updated: <span id="time-v2">--</span>
                 </div>
             </div>
-            <div id="alert-v2" class="alert-banner">⚠️ CONNECTION LOST</div>
+            
+            <div id="alert-v2" class="alert-banner">⚠️ OFFLINE</div>
         </div>
 
         <div id="card-v3" class="sensor-card">
@@ -400,7 +385,8 @@
                     Updated: <span id="time-v3">--</span>
                 </div>
             </div>
-            <div id="alert-v3" class="alert-banner">⚠️ CONNECTION LOST</div>
+            
+            <div id="alert-v3" class="alert-banner">⚠️ OFFLINE</div>
         </div>
 
     </div>
