@@ -3,6 +3,21 @@
 
 {% block content %}
 <style>
+    /* --- DJANGO ADMIN OVERRIDES (Fixes the Layout) --- */
+    /* This removes the sidebar and forces full width */
+    #content-related {
+        display: none !important; /* Hides 'Recent Actions' sidebar */
+    }
+    #content-main {
+        width: 100% !important;   /* Forces your dashboard to take full width */
+        float: none !important;   /* Removes default floating */
+        margin-right: 0 !important;
+    }
+    .main > .content {
+        max-width: 100% !important; /* Ensures modern themes don't restrict width */
+    }
+    /* ------------------------------------------------- */
+
     :root {
         --card-bg: #ffffff;
         --text-primary: #2c3e50;
@@ -10,42 +25,48 @@
         --success: #10b981;
         --danger: #ef4444;
         --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --radius: 8px; /* Reduced radius */
+        --radius: 12px; /* Increased radius for modern look */
     }
 
     /* MAIN WRAPPER */
     .dashboard-wrapper {
         margin-bottom: 30px;
         width: 100%;
+        box-sizing: border-box; /* Ensures padding doesn't break width */
     }
 
     /* HEADER */
     .dashboard-header {
-        margin-bottom: 15px;
+        margin-bottom: 25px;
         border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 10px;
+        padding-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     .dashboard-header h1 {
-        font-size: 1.3rem;
+        font-size: 1.5rem;
         color: #1e293b;
         margin: 0;
+        font-weight: 600;
     }
     .dashboard-header p {
-        margin: 2px 0 0 0;
+        margin: 5px 0 0 0;
         color: #64748b;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
     }
 
-    /* GRID CONTAINER - FORCES 3 EQUAL COLUMNS */
+    /* GRID CONTAINER */
     .dashboard-grid { 
         display: grid; 
-        grid-template-columns: repeat(3, 1fr); /* Exactly 3 columns */
-        gap: 15px; 
+        /* Using minmax prevents cards from getting too squashed on small laptops */
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+        gap: 25px; /* Increased gap for better spacing */
         width: 100%;
         align-items: start;
     }
     
-    /* COMPACT CARD */
+    /* CARD STYLING */
     .sensor-card { 
         background: var(--card-bg); 
         border-radius: var(--radius); 
@@ -54,11 +75,18 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Hover effect for better UI feel */
+    .sensor-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
 
     /* COMPACT HEADER */
     .card-header {
-        padding: 10px 15px; /* Reduced padding */
+        padding: 12px 16px;
         background: #f8fafc;
         border-bottom: 1px solid #e2e8f0;
         display: flex;
@@ -66,46 +94,49 @@
         align-items: center;
     }
     .station-title {
-        font-size: 0.95rem; /* Smaller font */
+        font-size: 1rem;
         font-weight: 700;
         color: var(--text-primary);
         margin: 0;
     }
     .station-meta {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         color: var(--text-secondary);
         display: block;
+        margin-top: 2px;
     }
 
     /* STATUS PILL */
     .status-pill {
         display: flex;
         align-items: center;
-        gap: 4px;
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.65rem;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     .status-pill.online { background: #d1fae5; color: #065f46; }
     .status-pill.offline { background: #fee2e2; color: #991b1b; }
     
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
     .online .status-dot { background: var(--success); }
     .offline .status-dot { background: var(--danger); }
 
     /* CARD BODY */
-    .card-body { padding: 12px; } /* Reduced padding */
+    .card-body { padding: 16px; }
 
     /* SECTIONS */
     .section-label {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         font-weight: 800;
         color: #94a3b8;
         text-transform: uppercase;
-        margin-bottom: 8px;
-        margin-top: 12px;
+        margin-bottom: 10px;
+        margin-top: 15px;
+        letter-spacing: 0.5px;
     }
     .section-label:first-child { margin-top: 0; }
 
@@ -113,63 +144,77 @@
     .metrics-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 8px; /* Tighter gap */
+        gap: 10px;
     }
     .metric-item {
-        background: #f1f5f9;
-        padding: 6px;
-        border-radius: 6px;
+        background: #f8fafc;
+        padding: 8px 5px;
+        border-radius: 8px;
         text-align: center;
+        border: 1px solid transparent;
     }
     .metric-label {
         display: block;
-        font-size: 0.6rem;
+        font-size: 0.65rem;
         color: #64748b;
         text-transform: uppercase;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
+        font-weight: 600;
     }
     .metric-value {
         display: block;
-        font-size: 0.9rem; /* Smaller value font */
+        font-size: 1rem;
         font-weight: 700;
         color: var(--text-primary);
     }
 
     /* HIGHLIGHT METRIC */
-    .highlight-metric { background: #e0f2fe; border: 1px solid #bae6fd; }
+    .highlight-metric { 
+        background: #f0f9ff; 
+        border: 1px solid #bae6fd; 
+    }
     .highlight-metric .metric-value { color: #0284c7; }
 
     /* FOOTER TIME */
     .update-time {
-        margin-top: 10px;
-        font-size: 0.65rem;
+        margin-top: 15px;
+        font-size: 0.7rem;
         text-align: center;
         color: #94a3b8;
+        font-style: italic;
     }
 
     /* ALERTS */
     .alert-banner {
         display: none;
-        background: #fef2f2;
-        border-top: 1px solid #fee2e2;
-        color: #ef4444;
-        padding: 8px;
+        background: #fee2e2;
+        border-top: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 10px;
         text-align: center;
-        font-size: 0.75rem;
-        font-weight: 600;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
     }
 
-    /* RESPONSIVENESS: Stack on mobile, grid on desktop */
-    @media (max-width: 900px) {
+    /* RESPONSIVENESS */
+    @media (max-width: 1100px) {
+        /* On medium screens, switch to 2 columns */
+        .dashboard-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+        /* On mobile, switch to 1 column */
         .dashboard-grid { grid-template-columns: 1fr; }
     }
 </style>
 
 <div class="dashboard-wrapper">
     <div class="dashboard-header">
-        <h1>📡 Live Command Center</h1>
-        <p>Real-time monitoring of all field sensors</p>
-    </div>
+        <div>
+            <h1>📡 Live Command Center</h1>
+            <p>Real-time monitoring of all field sensors</p>
+        </div>
+        </div>
 
     <div class="dashboard-grid">
         
@@ -241,8 +286,7 @@
                     Updated: <span id="time-v1">--</span>
                 </div>
             </div>
-            
-            <div id="alert-v1" class="alert-banner">⚠️ OFFLINE</div>
+            <div id="alert-v1" class="alert-banner">⚠️ CONNECTION LOST</div>
         </div>
 
         <div id="card-v2" class="sensor-card">
@@ -313,8 +357,7 @@
                     Updated: <span id="time-v2">--</span>
                 </div>
             </div>
-            
-            <div id="alert-v2" class="alert-banner">⚠️ OFFLINE</div>
+            <div id="alert-v2" class="alert-banner">⚠️ CONNECTION LOST</div>
         </div>
 
         <div id="card-v3" class="sensor-card">
@@ -385,8 +428,7 @@
                     Updated: <span id="time-v3">--</span>
                 </div>
             </div>
-            
-            <div id="alert-v3" class="alert-banner">⚠️ OFFLINE</div>
+            <div id="alert-v3" class="alert-banner">⚠️ CONNECTION LOST</div>
         </div>
 
     </div>
