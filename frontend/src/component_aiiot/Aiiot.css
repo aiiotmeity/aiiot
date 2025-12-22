@@ -904,3 +904,217 @@ a {
         display: none !important;
     }
 }
+
+
+/* ========== PREMIUM HERO ADVANCED ========== */
+
+/* 1. The Container: Immersive Ambient Background */
+.hero-premium-container {
+    position: relative;
+    padding: 8rem 2rem 6rem;
+    /* Subtle mesh gradient background */
+    background: 
+        radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 25%),
+        #ffffff;
+    overflow: hidden;
+}
+
+/* 2. The Layout: Grid System */
+.hero-premium-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr; /* Text gets slightly more space */
+    gap: 5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+}
+
+/* 3. Advanced Typography */
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 99px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    margin-bottom: 2rem;
+    backdrop-filter: blur(4px);
+}
+
+.hero-super-title {
+    font-size: 4rem; /* Massive, modern font size */
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+}
+
+/* Gradient Text Effect */
+.text-gradient-blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-description-large {
+    font-size: 1.25rem;
+    color: #64748b;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    max-width: 90%;
+}
+
+/* 4. The "Advanced" Image: 3D Glass Effect */
+.hero-3d-card-wrapper {
+    position: relative;
+    perspective: 1500px; /* Creates 3D depth */
+}
+
+/* This creates the white/glass border frame around the image */
+.hero-3d-card-inner {
+    position: relative;
+    transform: rotateY(-6deg) rotateX(2deg); /* Subtle 3D Tilt */
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 30px;
+    padding: 12px; /* The width of the white frame */
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px); /* Glass effect */
+    box-shadow: 
+        0 30px 60px -15px rgba(0, 0, 0, 0.15), /* Deep shadow */
+        0 0 0 1px rgba(255, 255, 255, 0.5); /* Crisp border line */
+}
+
+/* Hover Effect: Card straightens up */
+.hero-3d-card-inner:hover {
+    transform: rotateY(0deg) rotateX(0deg) scale(1.02);
+    box-shadow: 
+        0 40px 80px -20px rgba(59, 130, 246, 0.2), 
+        0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+/* ========== HERO SECTION: CENTERED & STRAIGHT ========== */
+
+/* 1. Container */
+/* ========== HERO SECTION: CENTERED HEADER & ZOOM IMAGE ========== */
+
+/* 1. Main Container - Clean & Centered */
+.hero-centered-container {
+    padding: 6rem 1.5rem 4rem;
+    position: relative;
+    background: #ffffff; 
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+}
+
+/* 2. Wrapper to stack Text on Top, Image on Bottom */
+.hero-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Perfect horizontal centering */
+    text-align: center;  /* Ensures text aligns center */
+    width: 100%;
+    max-width: 1300px; /* Increased max-width for wider layout */
+    z-index: 10;
+}
+
+/* 3. Text Styling - Header Style */
+.hero-badge-pill {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 50px;
+    border: 1px solid #dbeafe;
+    margin-bottom: 2rem;
+}
+
+.hero-main-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+}
+
+.hero-sub-text {
+    font-size: 1.2rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    max-width: 900px; /* Slightly wider text area */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* 4. Button Area */
+.hero-cta-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 4rem; /* Spacing between buttons and image */
+}
+
+/* 5. Image Frame - Straight (No Tilt), Wider & Taller */
+.hero-image-frame-straight {
+    width: 100%;
+    max-width: 900px; /* INCREASED WIDTH (was 900px) */
+    height: 500px;     /* INCREASED HEIGHT (was 550px) */
+    border-radius: 10px;
+    padding: 0px;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.15), /* Soft drop shadow */
+        0 0 0 1px rgba(0, 0, 0, 0.05); /* Subtle border */
+    overflow: hidden;
+    position: relative;
+    margin-top: 0rem;
+}
+
+/* 6. Image Zoom Animation Container */
+.hero-zoom-container {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    background: #e2e8f0;
+}
+
+/* The Zooming Image Class */
+.hero-zoom-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transform: scale(1.15); /* Start zoomed in */
+    transition: opacity 1.5s ease-in-out, transform 5s ease-out; /* Slow zoom out effect */
+}
+
+/* Active State for Image */
+.hero-zoom-img.active {
+    opacity: 1;
+    transform: scale(1); /* Zooms out to normal scale */
+    z-index: 2;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .hero-main-title { font-size: 2.2rem; }
+    .hero-image-frame-straight { height: 300px; } /* Smaller height for mobile */
+    .hero-cta-group { flex-direction: column; width: 100%; padding: 0 2rem; }
+    .hero-cta-group a { justify-content: center; }
+}

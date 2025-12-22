@@ -350,22 +350,39 @@ const AIIOT_INDEX = () => {
                   </a>
                 </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <div id="hero-image-container" style={{ position: 'relative' }}>
-                  {isLoading ? (
-                    <div className="animate-pulse" style={{ width: '100%', height: '24rem', background: '#e2e8f0', borderRadius: '1rem' }}></div>
-                  ) : (
-                    <img id="hero-image" src={heroImages[currentImageIndex]} alt="AI IoT Innovation" style={{ width: '100%', height: '24rem', objectFit: 'cover', borderRadius: '1rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }} />
-                  )}
-                  {heroImages.length > 0 && (
-                     <div id="carousel-indicators" style={{ position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.5rem' }}>
-                      {heroImages.map((_, index) => (
-                        <button key={index} onClick={() => handleIndicatorClick(index)} className={`indicator ${index === currentImageIndex ? 'active' : ''}`} style={{ width: '0.75rem', height: '0.75rem', borderRadius: '9999px', background: index === currentImageIndex ? '#3b82f6' : 'rgba(255, 255, 255, 0.5)' }} aria-label={`Go to slide ${index + 1}`}></button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              <div className="hero-image-frame-straight">
+              <div className="hero-zoom-container">
+                {heroImages.map((imgSrc, index) => (
+                  <img 
+                    key={index}
+                    src={imgSrc} 
+                    alt={`Hero Slide ${index}`} 
+                    className={`hero-zoom-img ${index === currentImageIndex ? 'active' : ''}`}
+                  />
+                ))}
+                
+                {/* Dots Indicator (Centered at bottom of image) */}
+                {heroImages.length > 0 && (
+                  <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px', zIndex: 10, padding: '8px 16px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', borderRadius: '30px' }}>
+                    {heroImages.map((_, index) => (
+                      <button 
+                        key={index} 
+                        onClick={() => handleIndicatorClick(index)} 
+                        style={{ 
+                          width: '10px', 
+                          height: '10px', 
+                          borderRadius: '50%', 
+                          background: index === currentImageIndex ? '#ffffff' : 'rgba(255,255,255,0.4)', 
+                          border: 'none', 
+                          cursor: 'pointer',
+                          transition: 'all 0.3s'
+                        }} 
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
+            </div>
             </div>
           </div>
         </section>
