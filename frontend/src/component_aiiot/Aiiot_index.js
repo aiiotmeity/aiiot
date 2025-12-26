@@ -477,6 +477,7 @@ const AIIOT_INDEX = () => {
       </main>
 
       {/* Footer */}
+      {/* Footer */}
       <footer id="footer" style={{ background: '#1e293b', color: '#cbd5e1', padding: '3rem 0' }}>
         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
@@ -502,8 +503,23 @@ const AIIOT_INDEX = () => {
               <p style={{ fontSize: '0.875rem', color: '#cbd5e1' }}><strong style={{ color: 'white' }}>Email:</strong> aiiot@adishankara.ac.in<br /><strong style={{ color: 'white' }}>Phone:</strong> 9846900310</p>
             </div>
           </div>
+          
+          {/* UPDATED BOTTOM BAR WITH PRIVACY LINK */}
           <div style={{ borderTop: '1px solid #334155', marginTop: '2rem', paddingTop: '2rem', textAlign: 'center', fontSize: '0.875rem' }}>
-            <p>&copy; 2025 Center for AI-IoT Innovations. All rights reserved.</p>
+            <p>
+              &copy; 2025 Center for AI-IoT Innovations. All rights reserved.
+              
+              {/* Privacy Policy Link */}
+              <span style={{ margin: '0 10px', color: '#475569' }}>|</span>
+              <Link 
+                to="/privacy-policy" 
+                style={{ color: '#cbd5e1', textDecoration: 'none', transition: 'color 0.2s' }}
+                onMouseEnter={(e) => e.target.style.color = '#3b82f6'} 
+                onMouseLeave={(e) => e.target.style.color = '#cbd5e1'}
+              >
+                Privacy Policy
+              </Link>
+            </p>
           </div>
         </div>
       </footer>

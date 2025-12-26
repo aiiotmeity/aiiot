@@ -20,6 +20,7 @@ import MapComponent from './weather_component/MapComponent';
 import RiverDashboard from './weather_component/RiverDashboard';
 import ResourcesPage from './component_aiiot/Resources';
 import ProductOverview from './component_aiiot/ProductOverview';
+import PrivacyPolicy from './component_aiiot/PrivacyPolicy';
 
 // Session Manager
 const SessionManager = {
@@ -294,6 +295,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/resources" element={<ResourcesPage />} />
 
           {/* Admin Routes */}
