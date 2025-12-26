@@ -153,9 +153,15 @@ const PrivacyPolicy = () => {
 
       <nav style={styles.navBar}>
         <div style={styles.navContentWidth}>
-          <Link to="/" style={styles.logoText}>
-            AI-IoT Innovations
-          </Link>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', zIndex: 1001 }}>
+                        <div className="logo-box">
+                          <img src="/logo/logo.png" alt="Adi Shankara Institute" style={{ height: '100%', width: 'auto' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>AI-IoT Innovations</span>
+                          {/* <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>Adi Shankara Engineering Institute</span> */}
+                        </div>
+                      </Link>
           <Link 
             to="/" 
             style={styles.backButton}
@@ -173,9 +179,7 @@ const PrivacyPolicy = () => {
           <p style={styles.subtitle}>
             Transparency regarding our research data, location services, and health data usage.
           </p>
-          <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Effective Date: January 1, 2025
-          </p>
+          
         </div>
 
         <div style={styles.card} className="privacy-card">
@@ -232,8 +236,8 @@ const PrivacyPolicy = () => {
                 We do not sell your personal data. However, we share data with specific third-party providers to enable our services:
               </p>
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', color: '#475569', lineHeight: '1.8' }}>
-                <li style={{ marginBottom: '0.5rem' }}><strong>SMS Providers:</strong> Your phone number is shared with our SMS gateway partner (e.g., Twilio/Fast2SMS) solely for the purpose of sending OTPs.</li>
-                <li style={{ marginBottom: '0.5rem' }}><strong>Infrastructure:</strong> Data is stored on secure cloud services (AWS/Render) to ensure high availability of our IoT dashboard.</li>
+                <li style={{ marginBottom: '0.5rem' }}><strong>SMS Providers:</strong> Your phone number is shared with our SMS gateway partner  solely for the purpose of sending OTPs.</li>
+                <li style={{ marginBottom: '0.5rem' }}><strong>Infrastructure:</strong> Data is stored on secure cloud services  to ensure high availability of our IoT dashboard.</li>
               </ul>
             </div>
           </section>
