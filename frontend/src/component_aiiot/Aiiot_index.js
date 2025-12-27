@@ -512,7 +512,7 @@ const AIIOT_INDEX = () => {
               {/* Privacy Policy Link */}
               <span style={{ margin: '0 10px', color: '#475569' }}>|</span>
               <Link 
-                to="/privacy-policy" 
+                to="/airaware/privacy-policy"
                 style={{ color: '#cbd5e1', textDecoration: 'none', transition: 'color 0.2s' }}
                 onMouseEnter={(e) => e.target.style.color = '#3b82f6'} 
                 onMouseLeave={(e) => e.target.style.color = '#cbd5e1'}

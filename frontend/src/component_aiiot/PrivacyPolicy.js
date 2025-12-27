@@ -154,14 +154,13 @@ const PrivacyPolicy = () => {
       <nav style={styles.navBar}>
         <div style={styles.navContentWidth}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none', zIndex: 1001 }}>
-                        <div className="logo-box">
-                          <img src="/logo/logo.png" alt="Adi Shankara Institute" style={{ height: '100%', width: 'auto' }} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>AI-IoT Innovations</span>
-                          {/* <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>Adi Shankara Engineering Institute</span> */}
-                        </div>
-                      </Link>
+            <div className="logo-box">
+              <img src="/logo/logo.png" alt="Adi Shankara Institute" style={{ height: '100%', width: 'auto' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>AI-IoT Innovations</span>
+            </div>
+          </Link>
           <Link 
             to="/" 
             style={styles.backButton}
@@ -177,7 +176,7 @@ const PrivacyPolicy = () => {
         <div style={styles.heroText}>
           <h1 style={styles.title}>Privacy Policy</h1>
           <p style={styles.subtitle}>
-            Transparency regarding our research data, location services, and health data usage.
+            Transparency regarding our research data, location services, and health data usage for AirAware and AWS systems.
           </p>
           
         </div>
@@ -186,7 +185,7 @@ const PrivacyPolicy = () => {
           <section style={{ marginBottom: '3rem' }}>
             <div style={styles.highlightBox}>
               <p style={{ margin: 0 }}>
-                <strong>Scope:</strong> This policy applies to the <strong>Center for AI-IoT Innovations (AIIOT)</strong> website and associated IoT services managed by <strong>Adi Shankara Institute of Engineering Technology (ASIET)</strong>, Kerala.
+                <strong>Scope:</strong> This policy applies to the <strong>Center for AI-IoT Innovations (AIIOT)</strong> website and its core solutions: <strong>AirAware</strong> (Air Quality & Health Monitoring) and <strong>AWS</strong> (Automatic  Weather Station), managed by <strong>Adi Shankara Institute of Engineering Technology (ASIET)</strong>, Kerala.
               </p>
             </div>
           </section>
@@ -197,17 +196,21 @@ const PrivacyPolicy = () => {
             <div style={{ paddingLeft: '0.5rem' }}>
               <h3 style={styles.subHeader}>A. Location Data</h3>
               <p style={styles.paragraph}>
-                We collect your <strong>precise geolocation data</strong> while you are logged in to our application. This is strictly used to provide you with real-time Air Quality Index (AQI) readings and environmental parameter alerts specific to your current location.
+                We collect your <strong>precise geolocation data</strong> while you are logged in. This is strictly used by:
               </p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', color: '#475569', lineHeight: '1.8', marginBottom: '1.25rem' }}>
+                <li><strong>AirAware:</strong> To provide real-time Air Quality Index (AQI) readings specific to your area.</li>
+                <li><strong>AWS:</strong> To display hyper-local weather parameters relevant to your current location.</li>
+              </ul>
 
               <h3 style={styles.subHeader}>B. Health Data (Sensitive)</h3>
               <p style={styles.paragraph}>
-                We may collect health-related information that you voluntarily provide (e.g., respiratory conditions, asthma triggers). This data is processed to offer personalized health advisories based on the air quality in your vicinity.
+                Through the <strong>AirAware</strong> system, we may collect health-related information that you voluntarily provide (e.g., respiratory conditions, asthma triggers). This data is processed to offer personalized health advisories based on the air quality in your vicinity.
               </p>
 
               <h3 style={styles.subHeader}>C. Contact & Verification Data</h3>
               <p style={styles.paragraph}>
-                We collect your mobile number to perform <strong>SMS-based One-Time Password (OTP) verification</strong>. This ensures the security of your account and prevents unauthorized access.
+                We collect your mobile number to perform <strong>SMS-based One-Time Password (OTP) verification</strong>. This ensures the security of your account across both AirAware and AWS platforms.
               </p>
             </div>
           </section>
@@ -217,10 +220,13 @@ const PrivacyPolicy = () => {
             <div style={{ paddingLeft: '0.5rem' }}>
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', color: '#475569', lineHeight: '1.8' }}>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  <strong>Real-Time Environmental Analysis:</strong> To calculate and display real-time parameters including <strong>CO, NO2, NH3, PM2.5, and PM10</strong> based on your specific user location.
+                  <strong>AWS Environmental Analysis:</strong> To calculate and display real-time weather parameters including <strong>Temperature, Humidity, and Pressure</strong> based on sensor data.
                 </li>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  <strong>Personalized AQI Alerts:</strong> To generate location-specific Air Quality Index (AQI) reports and warn you if pollution levels exceed safe limits for your specific health profile.
+                  <strong>AirAware Monitoring:</strong> To track pollutants such as <strong>CO, NO2, NH3, PM2.5, and PM10</strong> and generate location-specific Air Quality Index (AQI) reports.
+                </li>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <strong>Personalized Health Alerts:</strong> To warn you if pollution levels detected by AirAware exceed safe limits for your specific health profile.
                 </li>
                 <li style={{ marginBottom: '0.5rem' }}>
                   <strong>Account Security:</strong> To verify your identity via third-party SMS services during login or registration.
@@ -236,8 +242,8 @@ const PrivacyPolicy = () => {
                 We do not sell your personal data. However, we share data with specific third-party providers to enable our services:
               </p>
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', color: '#475569', lineHeight: '1.8' }}>
-                <li style={{ marginBottom: '0.5rem' }}><strong>SMS Providers:</strong> Your phone number is shared with our SMS gateway partner  solely for the purpose of sending OTPs.</li>
-                <li style={{ marginBottom: '0.5rem' }}><strong>Infrastructure:</strong> Data is stored on secure cloud services  to ensure high availability of our IoT dashboard.</li>
+                <li style={{ marginBottom: '0.5rem' }}><strong>SMS Providers:</strong> Your phone number is shared with our SMS gateway partner solely for the purpose of sending OTPs.</li>
+                <li style={{ marginBottom: '0.5rem' }}><strong>Infrastructure:</strong> Data is stored on secure cloud services to ensure high availability of our IoT dashboards.</li>
               </ul>
             </div>
           </section>
@@ -246,7 +252,7 @@ const PrivacyPolicy = () => {
             <h2 style={styles.sectionTitle}><span style={styles.iconCircle}>4</span> Grievance Officer</h2>
             <div style={{ paddingLeft: '0.5rem' }}>
               <p style={styles.paragraph}>
-                If you have concerns about the use of your health or location data, please contact our designated officer:
+                If you have concerns about the use of your health or location data in AirAware or AWS, please contact our designated officer:
               </p>
               <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <p style={{ margin: '0 0 0.5rem 0', fontWeight: '700', color: '#1e293b' }}>Project Coordinator</p>

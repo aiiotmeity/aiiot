@@ -619,8 +619,24 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
             </div>
           </div>
           <div className="footer-bottom">
-          <p>&copy; 2025 AirAware Kalady. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
+          <p>&copy; 2025 AirAware Kalady. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.
+            <span style={{ margin: '0 10px', color: '#475569' }}>|</span>
+              <Link 
+                to="/airaware/privacy-policy"
+                style={{ color: '#cbd5e1', textDecoration: 'none', transition: 'color 0.2s' }}
+                onMouseEnter={(e) => e.target.style.color = '#3b82f6'} 
+                onMouseLeave={(e) => e.target.style.color = '#cbd5e1'}
+              >
+                Privacy Policy
+              </Link>
+          </p>
         </div>
+
+
+        
+
+
+
 
         </div>
       </footer>

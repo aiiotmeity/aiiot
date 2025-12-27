@@ -295,7 +295,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/airaware/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/resources" element={<ResourcesPage />} />
 
           {/* Admin Routes */}
