@@ -614,7 +614,7 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
               </p>
               <br />
               <button onClick={() => navigate('/support')} className="footer-link footer-button">
-                Support / Complaints
+                Support 
               </button>
             </div>
           </div>
