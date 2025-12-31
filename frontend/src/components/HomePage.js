@@ -632,12 +632,6 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
           </p>
         </div>
 
-
-        
-
-
-
-
         </div>
       </footer>
 

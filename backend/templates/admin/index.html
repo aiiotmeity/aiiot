@@ -393,11 +393,15 @@
 </div>
 
 <script>
-    const API_URL = '/api/admin/dashboard/'; 
+    const API_URL = "{% url 'admin_dashboard_api' %}";
 
     async function fetchDashboardData() {
         try {
-            const response = await fetch(API_URL);
+            const response = await fetch(API_URL, { credentials: 'same-origin' });
+            if (!response.ok) {
+                console.error('Dashboard API returned status', response.status);
+                return;
+            }
             const data = await response.json();
 
             if (data.station_data) {
@@ -413,71 +417,69 @@
     function updateStationCard(id, stationData) {
         if (!stationData) return;
 
+        // Debug log (helps when inspecting in browser console)
+        try { console.debug('updateStationCard', id, stationData); } catch(e) {}
+
         const badge = document.getElementById('badge-' + id);
         const textSpan = document.getElementById('text-' + id);
         const alertBox = document.getElementById('alert-' + id);
-        
-        const item = stationData.latest_item || {};
-        const isOnline = stationData.health && stationData.health.status === 'ONLINE';
 
-        const setVal = (elemId, val) => {
-            const el = document.getElementById(elemId);
-            if(el) {
-                if (val !== undefined && val !== null && val !== 'N/A') {
-                    if(!isNaN(val) && val.toString().indexOf('.') !== -1) {
-                         el.innerText = parseFloat(val).toFixed(2);
-                    } else {
-                         el.innerText = val;
-                    }
-                } else {
-                    el.innerText = '--';
-                }
+        const item = stationData.latest_item || {};
+        const isOnline = stationData.health && (stationData.health.status || '').toUpperCase() === 'ONLINE';
+
+        const readVal = (obj, keys) => {
+            for (let k of keys) {
+                if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== 'N/A') return obj[k];
             }
+            return null;
         };
-        
-        const setValUnit = (elemId, val, unit) => {
-            const el = document.getElementById(elemId);
-            if(el) {
-                 if (val !== undefined && val !== null && val !== 'N/A') {
-                     let displayVal = val;
-                     if(!isNaN(val) && val.toString().indexOf('.') !== -1) {
-                         displayVal = parseFloat(val).toFixed(2);
-                     }
-                     el.innerText = displayVal + unit;
-                 } else {
-                     el.innerText = '--';
-                 }
+
+        const formatVal = (val, decimals) => {
+            if (val === null || val === undefined) return '--';
+            if (!isNaN(val)) {
+                if (decimals !== undefined && val.toString().indexOf('.') !== -1) return parseFloat(val).toFixed(decimals);
+                return val;
             }
+            return val;
+        };
+
+        const setText = (elemId, text) => {
+            const el = document.getElementById(elemId);
+            if (!el) return;
+            el.innerText = (text === null || text === undefined || text === 'N/A') ? '--' : text;
         };
 
         // METADATA
         const timeEl = document.getElementById('time-' + id);
-        if(timeEl) timeEl.innerText = (item.time || '--') + ' ' + (item.date || '');
-        
-        // ENVIRONMENT
-        setValUnit('temp-' + id, item.temperature, '°C');
-        setValUnit('hum-' + id, item.humidity, '%');
-        setValUnit('pre-' + id, item.pressure, ' hPa');
+        if(timeEl) timeEl.innerText = (readVal(item, ['time', 'timestamp']) || '--') + ' ' + (readVal(item, ['date']) || '');
 
-        // AIR QUALITY
-        setVal('aqi-' + id, stationData.aqi);
-        setVal('pm25-' + id, item.pm25);
-        setVal('pm10-' + id, item.pm10);
-        setVal('co-' + id, item.co);
-        setVal('nh3-' + id, item.nh3);
-        setVal('no2-' + id, item.no2);
-        setVal('so2-' + id, item.so2);
-        setVal('o3-' + id, item.o3);
+        // ENVIRONMENT (try multiple key names)
+        const temp = readVal(item, ['temperature', 'temp', 't']);
+        const hum = readVal(item, ['humidity', 'hum']);
+        const pre = readVal(item, ['pressure', 'pre']);
+        setText('temp-' + id, formatVal(temp, 2) !== '--' ? formatVal(temp, 2) + '°C' : '--');
+        setText('hum-' + id, formatVal(hum, 2) !== '--' ? formatVal(hum, 2) + '%' : '--');
+        setText('pre-' + id, formatVal(pre, 2) !== '--' ? formatVal(pre, 2) + ' hPa' : '--');
+
+        // AIR QUALITY (try multiple key names)
+        setText('aqi-' + id, formatVal(readVal(stationData, ['aqi', 'highest_sub_index', 'highest_index'])));
+        setText('pm25-' + id, formatVal(readVal(item, ['pm25', 'pm_25', 'pm2_5']), 2));
+        setText('pm10-' + id, formatVal(readVal(item, ['pm10', 'pm_10']), 2));
+        setText('co-' + id, formatVal(readVal(item, ['co']), 3));
+        setText('nh3-' + id, formatVal(readVal(item, ['nh3']), 2));
+        setText('no2-' + id, formatVal(readVal(item, ['no2']), 2));
+        setText('so2-' + id, formatVal(readVal(item, ['so2']), 2));
+        setText('o3-' + id, formatVal(readVal(item, ['o3']), 2));
 
         // STATUS
         if (isOnline) {
-            badge.className = "status-pill online";
-            textSpan.innerText = "LIVE";
-            alertBox.style.display = "none";
+            if (badge) badge.className = "status-pill online";
+            if (textSpan) textSpan.innerText = "LIVE";
+            if (alertBox) alertBox.style.display = "none";
         } else {
-            badge.className = "status-pill offline";
-            textSpan.innerText = "OFFLINE";
-            alertBox.style.display = "block";
+            if (badge) badge.className = "status-pill offline";
+            if (textSpan) textSpan.innerText = "OFFLINE";
+            if (alertBox) alertBox.style.display = "block";
         }
     }
 
