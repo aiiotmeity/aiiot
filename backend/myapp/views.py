@@ -2582,35 +2582,26 @@ def get_products_menu(request):
 @csrf_exempt
 def forgot_password_request_api(request):
     """
-    Step 1: User enters phone number. 
-    System checks if user exists and sends OTP.
+    Simplified forgot password request: verify phone exists and return success.
+    No OTP will be sent. Frontend should call `forgot_password_reset_api`
+    with `phone_number` and `new_password` to complete the reset.
     """
     try:
         data = json.loads(request.body)
-        phone_number = data.get('phone_number', '').strip()
+        phone_number = (data.get('phone_number') or '').strip()
 
         if not phone_number:
             return Response({'error': 'Phone number is required'}, status=400)
 
-        # Check if user exists
         if not Signup.objects.filter(phone_number=phone_number).exists():
             return Response({'error': 'No account found with this phone number'}, status=404)
 
-        # Check Twilio Client
-        if not client:
-            return Response({'error': 'SMS service is currently unavailable'}, status=503)
-
-        # Send OTP via Twilio
-        client.verify.v2.services(VERIFY_SERVICE_SID).verifications.create(
-            to=phone_number,
-            channel='sms'
-        )
-
-        return Response({'success': True, 'message': 'OTP sent successfully'}, status=200)
+        # Return success so frontend proceeds to password update step
+        return Response({'success': True, 'message': 'Phone number validated. Proceed to reset password.'}, status=200)
 
     except Exception as e:
-        logger.error(f"Forgot Password Request Error: {e}")
-        return Response({'error': str(e)}, status=500)
+        logger.exception("Forgot Password Request Error")
+        return Response({'error': 'Internal server error'}, status=500)
 
 
 @api_view(['POST'])
@@ -2622,31 +2613,18 @@ def forgot_password_reset_api(request):
     """
     try:
         data = json.loads(request.body)
-        phone_number = data.get('phone_number', '').strip()
-        otp_code = data.get('otp_code', '').strip()
-        new_password = data.get('new_password', '').strip()
+        phone_number = (data.get('phone_number') or '').strip()
+        new_password = (data.get('new_password') or '').strip()
 
-        if not all([phone_number, otp_code, new_password]):
-            return Response({'error': 'All fields are required'}, status=400)
+        if not phone_number or not new_password:
+            return Response({'error': 'phone_number and new_password are required'}, status=400)
 
-        if not client:
-            return Response({'error': 'SMS service is currently unavailable'}, status=503)
-
-        # Verify OTP
-        verification_check = client.verify.v2.services(VERIFY_SERVICE_SID).verification_checks.create(
-            to=phone_number,
-            code=otp_code
-        )
-
-        if verification_check.status != "approved":
-            return Response({'error': 'Invalid or expired OTP'}, status=400)
-
-        # Update Password
         try:
             user = Signup.objects.get(phone_number=phone_number)
-            user.password = new_password  # Storing plain text as per your existing logic
+            # NOTE: This project stores plain-text passwords currently; keep same behaviour
+            user.password = new_password
             user.save()
-            return Response({'success': True, 'message': 'Password reset successfully. Please login.'}, status=200)
+            return Response({'success': True, 'message': 'Password updated successfully. Please login.'}, status=200)
         except Signup.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
 

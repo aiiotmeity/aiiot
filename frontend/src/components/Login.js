@@ -123,13 +123,13 @@ function Login() {
       const data = await response.json();
       
       if (response.ok) {
-        setSuccess('OTP sent successfully!');
+        setSuccess('Phone validated — enter new password');
         setTimeout(() => {
             setSuccess('');
             setView('forgot_verify'); // Move to next step
-        }, 1500);
+        }, 800);
       } else {
-        setError(data.error || 'Failed to send OTP');
+        setError(data.error || 'Validation failed');
       }
     } catch (err) {
       setError('Network error occurred.');
@@ -148,14 +148,13 @@ function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone_number: formData.phone_number,
-          otp_code: formData.otp_code,
           new_password: formData.new_password
         })
       });
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess('Password Reset Successful! Redirecting to Login...');
+        setSuccess('Password updated successfully! Redirecting to Login...');
         setTimeout(() => {
             setSuccess('');
             setFormData({ ...formData, password: '', otp_code: '', new_password: '' });
@@ -182,9 +181,9 @@ function Login() {
             {view === 'forgot_verify' && <h2>🔐 Reset Password</h2>}
             
             <p>
-                {view === 'login' && "Enter your credentials to continue"}
-                {view === 'forgot_request' && "Enter your phone number to receive OTP"}
-                {view === 'forgot_verify' && "Enter OTP and your new password"}
+                  {view === 'login' && "Enter your credentials to continue"}
+                  {view === 'forgot_request' && "Enter your phone number to proceed"}
+                  {view === 'forgot_verify' && "Enter your new password"}
             </p>
           </div>
 
@@ -253,7 +252,7 @@ function Login() {
               </div>
 
               <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? 'Sending OTP...' : 'Send OTP'}
+                {loading ? 'Validating...' : 'Validate Phone'}
               </button>
 
               <div className="back-button-container">
@@ -268,18 +267,6 @@ function Login() {
           {view === 'forgot_verify' && (
             <form onSubmit={handleForgotReset}>
               <div className="form-group">
-                  <label>One-Time Password (OTP)</label>
-                  <input
-                    type="text"
-                    name="otp_code"
-                    value={formData.otp_code}
-                    onChange={handleChange}
-                    placeholder="Enter 6-digit OTP"
-                    required
-                  />
-              </div>
-
-              <div className="form-group">
                   <label>New Password</label>
                   <input
                     type="password"
@@ -292,7 +279,7 @@ function Login() {
               </div>
 
               <button type="submit" className="btn-primary otp-verify" disabled={loading}>
-                {loading ? 'Resetting...' : 'Reset Password'}
+                {loading ? 'Updating...' : 'Update Password'}
               </button>
 
               <div className="back-button-container">
