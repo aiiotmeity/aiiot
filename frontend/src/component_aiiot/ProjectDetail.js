@@ -65,7 +65,7 @@ const ProjectDetail = () => {
   const projectsData = {
     'intelligent-sensor': {
       title: 'AQMS- Advanced Air Quality Monitoring',
-      tagline: 'Real-time. Reliable. Rugged.',
+      tagline: 'Real-time Reliable Rugged.',
       heroImage: 'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?q=80&w=2000&auto=format&fit=crop',
       subimage: '/sensor_modules/aqi1.jpeg',
       description: 'A comprehensive environmental monitoring solution measuring NO2, SO2, NH3, O3, PM2.5, and PM10 with LoRaWAN connectivity.',
@@ -156,7 +156,7 @@ const ProjectDetail = () => {
       ],
       impacts: [
         { label: 'Partner', value: 'KWA' }, { label: 'Goal', value: 'Efficiency' },
-        { label: 'Tech', value: 'XAI' }, { label: 'Method', value: 'Digital Twin' }
+        { label: 'Tech', value: 'XAI' }
       ]
     },
     'startup-skill': {
@@ -174,7 +174,7 @@ const ProjectDetail = () => {
       ],
       // UPDATED: Focused on nearby Polytechnics and Local Engineering Colleges
       applications: [
-        { title: 'Local Colleges', image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800', desc: 'Workshops for nearby Engineering & Polytechnic institutes.' },
+        { title: 'Local Colleges', image: '/sensor_modules/asiet.png', desc: 'Workshops for nearby Engineering & Polytechnic institutes.' },
         { title: 'District Schools', image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800', desc: 'Setting up ATAL Tinkering Labs in local schools.' },
         { title: 'Community Centers', image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800', desc: 'Weekend robotics camps for neighborhood students.' }
       ],
@@ -416,7 +416,7 @@ const ProjectDetail = () => {
 
       {/* 4. INNOVATIONS GRID */}
       <div className="container section-padding" id="innovations" style={{ paddingBottom: '4rem' }}>
-         <h2 className="section-title" style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '2rem', textAlign: 'center' }}>Key Technologies</h2>
+         <h2 className="section-title" style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem', marginTop: '2rem', textAlign: 'center' }}>Key Technologies</h2>
          {projectId === 'startup-skill' && workshops.length > 0 ? (
             <div className="innovation-grid">
                {workshops.map((ws) => (

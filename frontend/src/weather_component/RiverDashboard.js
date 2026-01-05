@@ -8,6 +8,33 @@ const DATA_BASE_URL = '.';
 const CSV_FILE_NAME = 'forecast_outputs.csv';
 const TXT_FILE_NAME = 'lime_short_sentences.txt';
 
+// --- S3 / Remote data configuration ---
+// Set USE_S3 to true to build direct S3 URLs (public buckets) or to request
+// presigned URLs from your backend if S3 is private.
+const USE_S3 = false; // toggle to true to fetch from S3
+const S3_BUCKET = 'aqi-training';
+const S3_REGION = 'us-east-1'; // update as needed
+const S3_PREFIX = 'aqi-training'; // optional folder/prefix inside bucket (no leading/trailing slash preferred)
+const S3_PUBLIC = true; // if false, frontend will call backend endpoint to get presigned URL
+
+// Build the URL for a given file depending on configured source
+const getFileUrl = (fileName) => {
+    if (USE_S3) {
+        // If bucket is public, build a direct S3 URL
+        const prefix = S3_PREFIX ? `${S3_PREFIX.replace(/^\/+|\/+$/g, '')}/` : '';
+        if (S3_PUBLIC) {
+            return `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${prefix}${fileName}`;
+        }
+
+        // For private buckets: expect backend provides presigned URLs at /api/s3-presign?file=<name>
+        // You should implement that endpoint in your Django backend to return a JSON { url: "..." }
+        return `/api/s3-presign?file=${encodeURIComponent(fileName)}`;
+    }
+
+    // Default: local relative path
+    return `${DATA_BASE_URL}/${fileName}`;
+};
+
 
 
 // Alert Thresholds (Matching HTML logic)
@@ -102,9 +129,24 @@ const RiverDashboard = () => {
         setError(null);
         try {
             // 1. Fetch Forecast CSV
-            const csvResponse = await fetch(`${DATA_BASE_URL}/${CSV_FILE_NAME}`);
+            // CSV fetch: support direct URLs or backend presign endpoint returning JSON {url: "..."}
+            const csvFetchUrl = getFileUrl(CSV_FILE_NAME);
+            let csvText;
+            const csvResponse = await fetch(csvFetchUrl);
             if (!csvResponse.ok) throw new Error('Failed to load Forecast CSV');
-            const csvText = await csvResponse.text();
+            const csvContentType = csvResponse.headers.get('content-type') || '';
+            if (csvContentType.includes('application/json')) {
+                const presignData = await csvResponse.json();
+                if (presignData.url) {
+                    const remoteResp = await fetch(presignData.url);
+                    if (!remoteResp.ok) throw new Error('Failed to load Forecast CSV from presigned URL');
+                    csvText = await remoteResp.text();
+                } else {
+                    throw new Error('Presign endpoint did not return a URL');
+                }
+            } else {
+                csvText = await csvResponse.text();
+            }
             const fullData = parseCSV(csvText);
 
             // Logic to simulate Current + Forecast from CSV
@@ -138,9 +180,24 @@ if (fullData.length > 0) {
 }
 
             // 2. Fetch LIME Text
-            const txtResponse = await fetch(`${DATA_BASE_URL}/${TXT_FILE_NAME}`);
+            // TXT fetch: same presign-aware flow
+            const txtFetchUrl = getFileUrl(TXT_FILE_NAME);
+            let txtText;
+            const txtResponse = await fetch(txtFetchUrl);
             if (!txtResponse.ok) throw new Error('Failed to load LIME Text');
-            const txtText = await txtResponse.text();
+            const txtContentType = txtResponse.headers.get('content-type') || '';
+            if (txtContentType.includes('application/json')) {
+                const presignData = await txtResponse.json();
+                if (presignData.url) {
+                    const remoteTxtResp = await fetch(presignData.url);
+                    if (!remoteTxtResp.ok) throw new Error('Failed to load LIME Text from presigned URL');
+                    txtText = await remoteTxtResp.text();
+                } else {
+                    throw new Error('Presign endpoint did not return a URL for TXT');
+                }
+            } else {
+                txtText = await txtResponse.text();
+            }
             setLimeDetails(txtText.split('\n').filter(line => line.trim() !== ''));
 
             setLastUpdated(new Date());
@@ -204,6 +261,9 @@ if (fullData.length > 0) {
                 <div className="header">
                     <h1>🌊 Kalady Periyar River Level</h1>
                     <p>Real-time monitoring</p>
+                    <div style={{fontSize: '0.85rem', color: '#666', marginTop: 6}}>
+                        Source: {USE_S3 ? `S3 (${S3_BUCKET}/${S3_PREFIX || ''})` : 'Local files'}
+                    </div>
                 </div>
 
                 {/* Safety Notice */}

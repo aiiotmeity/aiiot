@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
+from botocore.exceptions import ClientError, NoCredentialsError
 import boto3
 from boto3.dynamodb.conditions import Attr, Key
 from datetime import datetime, timedelta, timezone
@@ -9,8 +10,32 @@ import json
 import uuid
 import os
 from dotenv import load_dotenv
+from rest_framework.renderers import JSONRenderer 
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 load_dotenv()
+
+# Initialize S3 client (will use environment credentials or IAM role if available)
+try:
+    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+    AWS_REGION = os.getenv('AWS_S3_REGION_NAME', 'us-east-1')
+    S3_BUCKET_FORECAST = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST')
+
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION
+        )
+    else:
+        # boto3 will fallback to environment / instance profile if available
+        s3_client = boto3.client('s3', region_name=AWS_REGION)
+except Exception as e:
+    s3_client = None
+    print(f"Failed to initialize S3 client: {e}")
 
 # DynamoDB setup
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
@@ -176,3 +201,38 @@ def get_all_requests(request):
         print(f"Error fetching requests: {str(e)}")
         return JsonResponse({"error": "Failed to fetch requests"}, status=500)
     
+
+
+@require_GET
+def s3_presign(request):
+    """Return a presigned S3 GET URL for a requested file.
+
+    Query param: file=<path-or-filename>
+    Uses `AWS_STORAGE_BUCKET_NAME_FORECAST` if set, otherwise returns error.
+    """
+    file_name = request.GET.get('file')
+    if not file_name:
+        return JsonResponse({'error': 'Missing `file` query parameter.'}, status=400)
+
+    bucket = S3_BUCKET_FORECAST
+    if not bucket:
+        return JsonResponse({'error': 'S3 forecast bucket not configured on server.'}, status=500)
+
+    if not s3_client:
+        return JsonResponse({'error': 'S3 client not available on server.'}, status=500)
+
+    key = file_name.lstrip('/')
+
+    try:
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket, 'Key': key},
+            ExpiresIn=3600
+        )
+        return JsonResponse({'url': presigned_url})
+    except NoCredentialsError:
+        return JsonResponse({'error': 'AWS credentials not available.'}, status=500)
+    except ClientError as e:
+        print(f"Error generating presign URL: {e}")
+        return JsonResponse({'error': 'Unable to generate presigned URL.'}, status=500)
+
