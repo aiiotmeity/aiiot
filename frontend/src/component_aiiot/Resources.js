@@ -166,7 +166,7 @@ const ResourcesPage = () => {
                    </div>
                  </div>
 
-               <a href="/#contact" className="btn-primary-small">Get in Touch</a>
+                <a href="#footer" className="nav-btn-primary">Get in Touch</a>
             </div>
 
             <button 
@@ -245,7 +245,7 @@ const ResourcesPage = () => {
       <div className="rd-header">
          <div className="rd-header-content">
              <h1>Research & Development Center</h1>
-             <p>Driving innovation through IoT, AI, and Environmental Intelligence.</p>
+             <p>Driving innovation through AI,IOT and Environmental Intelligence.</p>
          </div>
       </div>
 

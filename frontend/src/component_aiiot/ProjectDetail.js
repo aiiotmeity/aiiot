@@ -120,7 +120,7 @@ const ProjectDetail = () => {
       ],
       impacts: [
         { label: 'Lead Time', value: '6 Hours' }, { label: 'Model', value: 'LSTM' },
-        { label: 'Accuracy', value: '98%' }, { label: 'Region', value: 'Kerala' }
+        { label: 'Accuracy', value: '98%' }, { label: 'Area', value: 'Kalady' }
       ]
     },
     'digital-water': {
