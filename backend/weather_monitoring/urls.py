@@ -11,5 +11,9 @@ urlpatterns = [
     path('request-data', views.request_data, name='request_data'),
     path('requests', views.get_all_requests, name='all_requests'),
     # Presign endpoint for frontend to request temporary S3 URLs for forecast files
-    path('s3-presign', views.s3_presign, name='s3_presign'),
+    # Accept both with and without trailing slash to match frontend requests
+    path('s3-presign', views.S3PresignView.as_view(), name='s3-presign'),
+    path('s3-presign/', views.S3PresignView.as_view(), name='s3-presign-slash'),
+    path('debug-read-s3', views.debug_read_s3_csv),
+
 ]

@@ -78,7 +78,7 @@ const ProductOverview = () => {
         "OLED Display for Instant Readings"
       ],
       specs: { 
-        "Pollutants": "PM2.5, PM10, CO2 ,no2", 
+        "Pollutants": "PM2.5, PM10, CO2 ,NO2", 
         "Power": "5V USB-C", 
         "Connectivity": "WiFi 2.4GHz", 
         "Display": "BLE/WIFI Screen" 

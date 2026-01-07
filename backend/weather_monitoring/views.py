@@ -10,9 +10,12 @@ import json
 import uuid
 import os
 from dotenv import load_dotenv
-from rest_framework.renderers import JSONRenderer 
+from rest_framework.renderers import JSONRenderer
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from botocore.config import Config
 
 load_dotenv()
 
@@ -37,10 +40,16 @@ except Exception as e:
     s3_client = None
     print(f"Failed to initialize S3 client: {e}")
 
-# DynamoDB setup
-dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-weather_table = dynamodb.Table('weather_station_data')
-requests_table = dynamodb.Table('data_requests')
+# DynamoDB setup (initialize safely to avoid import-time failures)
+try:
+    dynamodb = boto3.resource('dynamodb', region_name=os.getenv('AWS_DYNAMODB_REGION', 'us-east-1'))
+    weather_table = dynamodb.Table('weather_station_data')
+    requests_table = dynamodb.Table('data_requests')
+except Exception as e:
+    dynamodb = None
+    weather_table = None
+    requests_table = None
+    print(f"DynamoDB initialization failed: {e}")
 
 # Custom JSON encoder for Decimal
 class DecimalEncoder(json.JSONEncoder):
@@ -203,36 +212,106 @@ def get_all_requests(request):
     
 
 
+# Ensure we have a usable S3 client (don't raise at import time)
+if 's3_client' not in globals() or s3_client is None:
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            region_name=os.getenv('AWS_S3_REGION_NAME', os.getenv('AWS_S3_REGION_NAME_BUCKET', 'ap-south-1'))
+        )
+    except Exception as e:
+        s3_client = None
+        print(f"Failed to initialize S3 client (fallback): {e}")
+
+class S3PresignView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        file_name = request.query_params.get('file', None)
+        file_type = request.query_params.get('file_type', None)
+
+        # Mapping for file_type requests
+        file_mapping = {
+            'forecast': 'forecast_output.csv',
+            'causality': 'lime_sentences_manual.txt', # Updated to match your specific file
+            'labels': 'latest_water_level.csv',
+        }
+
+        if not file_name and file_type:
+            file_name = file_mapping.get(file_type)
+
+        if not file_name:
+            return Response({'error': 'Missing file parameter'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Use the specific bucket where your CSVs are stored
+        bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST')
+        if not bucket:
+            # Fallback if the specific forecast bucket env var isn't set
+            bucket = 'aqi-training' 
+
+        try:
+            # Generate a Presigned URL (valid for 1 hour)
+            url = s3_client.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={
+                    'Bucket': bucket,
+                    'Key': file_name,
+                    'ResponseContentType': 'text/csv' if file_name.endswith('.csv') else 'text/plain'
+                },
+                ExpiresIn=3600
+            )
+
+            # Return the URL so the frontend can use it
+            return Response({'status': 'success', 'url': url})
+
+        except ClientError as e:
+            print('❌ S3 GENERATE URL ERROR:', e)
+            return Response({'error': str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print('❌ GENERAL ERROR:', e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @require_GET
-def s3_presign(request):
-    """Return a presigned S3 GET URL for a requested file.
+def debug_read_s3_csv(request):
+    file_name = request.GET.get('file', 'forecast_output.csv')
 
-    Query param: file=<path-or-filename>
-    Uses `AWS_STORAGE_BUCKET_NAME_FORECAST` if set, otherwise returns error.
-    """
-    file_name = request.GET.get('file')
-    if not file_name:
-        return JsonResponse({'error': 'Missing `file` query parameter.'}, status=400)
+    bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
+    region = os.getenv('AWS_S3_REGION_NAME_BUCKET', 'ap-south-1')
 
-    bucket = S3_BUCKET_FORECAST
-    if not bucket:
-        return JsonResponse({'error': 'S3 forecast bucket not configured on server.'}, status=500)
-
-    if not s3_client:
-        return JsonResponse({'error': 'S3 client not available on server.'}, status=500)
-
-    key = file_name.lstrip('/')
+    # ✅ EXACT key from S3 console
+    key = f"aqi-training/{file_name}"
 
     try:
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': bucket, 'Key': key},
-            ExpiresIn=3600
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            region_name=region
         )
-        return JsonResponse({'url': presigned_url})
-    except NoCredentialsError:
-        return JsonResponse({'error': 'AWS credentials not available.'}, status=500)
-    except ClientError as e:
-        print(f"Error generating presign URL: {e}")
-        return JsonResponse({'error': 'Unable to generate presigned URL.'}, status=500)
 
+        obj = s3.get_object(Bucket=bucket, Key=key)
+        content = obj['Body'].read().decode('utf-8')
+
+        lines = content.splitlines()
+
+        print("📄 FIRST 5 LINES FROM S3:")
+        for line in lines[:5]:
+            print(line)
+
+        return JsonResponse({
+            "status": "success",
+            "bucket": bucket,
+            "key": key,
+            "preview": lines[:5]
+        })
+
+    except Exception as e:
+        print("❌ S3 READ ERROR:", e)
+        return JsonResponse({
+            "error": str(e),
+            "bucket": bucket,
+            "key": key
+        }, status=500)
