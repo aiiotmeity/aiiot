@@ -96,7 +96,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
               </div>
               <div className="title-section">
                 <h1>Weather Monitoring System</h1>
-                <p>Adishankara Engineering College</p>
+                <p>Adi Shankara Institute of Engineering & Technology</p>
                 <div className="subtitle">Kalady, Kerala - 683574</div>
               </div>
             </div>
