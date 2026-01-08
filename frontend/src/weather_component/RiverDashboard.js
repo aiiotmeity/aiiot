@@ -3,7 +3,12 @@ import axios from "axios";
 import { useNavigate } from 'react-router-dom'; 
 import "./RiverDashboard.css";
 
-const DEBUG_API = "http://127.0.0.1:8000/api/weather/debug-read-s3";
+// ✅ SMART API SWITCH: Automatically detects if you are on Localhost or the Live Web
+const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? "http://127.0.0.1:8000"       // Use this when testing on your laptop
+  : "https://aiiot.it.com";       // Use this when deployed to the web
+
+const DEBUG_API = `${API_BASE}/api/weather/debug-read-s3`;
 
 const RiverDashboard = () => {
   const navigate = useNavigate();
@@ -11,6 +16,8 @@ const RiverDashboard = () => {
   // --- STATE ---
   const [forecastData, setForecastData] = useState([]);
   const [limeData, setLimeData] = useState([]);
+  const [realTimeLevel, setRealTimeLevel] = useState("--"); 
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState("");
@@ -19,30 +26,39 @@ const RiverDashboard = () => {
   // --- HELPERS ---
   const getStatus = (level) => {
     const val = parseFloat(level);
+    if (isNaN(val)) return { label: "--", class: "", color: "#ccc", icon: "fa-question-circle" };
     if (val < 5.5) return { label: "Normal", class: "status-normal", color: "#10b981", icon: "fa-check-circle" }; 
     if (val < 6.0) return { label: "Caution", class: "status-caution", color: "#f59e0b", icon: "fa-exclamation-circle" }; 
     return { label: "Warning", class: "status-critical", color: "#ef4444", icon: "fa-radiation-alt" }; 
   };
 
-  // --- EFFECTS ---
+  // --- CLOCK EFFECT ---
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // --- DATA FETCHING EFFECT (With Auto-Refresh) ---
   useEffect(() => {
+    
+    // 1. Fetch Forecast Data
     const fetchForecast = async () => {
       try {
-        const response = await axios.get(DEBUG_API, { params: { file: "forecast_output.csv" } });
+        // ✅ ADDED: Cache Buster (_t) to force new data
+        const response = await axios.get(DEBUG_API, { 
+          params: { file: "forecast_output.csv", _t: new Date().getTime() } 
+        });
+        
         if (response.data.status === "success") {
           const rawLines = response.data.preview;
           const parsedData = rawLines.slice(1).map((line) => {
               const cols = line.split(",");
-              const level = cols[cols.length - 1]?.trim();
+              const level = cols[cols.length - 1]?.trim(); 
               return { level: parseFloat(level).toFixed(2), status: getStatus(level) };
             }).filter((item) => !isNaN(item.level));
+            
           setForecastData(parsedData);
-          setLastUpdated(new Date().toLocaleTimeString("en-US", {hour: '2-digit', minute:'2-digit'}));
+          setLastUpdated(new Date().toLocaleTimeString("en-IN", {hour: '2-digit', minute:'2-digit'}));
         }
       } catch (err) {
         console.error("Forecast API error:", err);
@@ -50,9 +66,53 @@ const RiverDashboard = () => {
       }
     };
 
+    // 2. Fetch Real-Time Level (latest_water_level.csv)
+    // 2. Fetch Real-Time Level (latest_water_level.csv)
+    const fetchRealTimeLevel = async () => {
+      try {
+        const response = await axios.get(DEBUG_API, { 
+          params: { file: "latest_water_level.csv", _t: new Date().getTime() } 
+        });
+        
+        if (response.data.status === "success" && response.data.preview.length > 0) {
+          const rawLines = response.data.preview;
+          
+          // Need at least header (row 0) and data (row 1)
+          if (rawLines.length > 1) {
+            // 1. Parse Headers (Row 0) to find where "level" is
+            const headers = rawLines[0].split(",").map(h => h.trim().toLowerCase());
+            const targetIndex = headers.indexOf("level");
+
+            // 2. Parse Data (Row 1)
+            const values = rawLines[1].split(",");
+            
+            let val;
+            if (targetIndex !== -1 && values[targetIndex]) {
+              // ✅ Found "level" column? Use that specific index!
+              val = values[targetIndex].trim();
+            } else {
+              // ⚠️ Fallback: If "level" header not found, grab the last valid value
+              const validValues = values.filter(v => v.trim() !== "");
+              val = validValues[validValues.length - 1];
+            }
+
+            if (val && !isNaN(val)) {
+              setRealTimeLevel(parseFloat(val).toFixed(2));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Real-Time Level API error:", err);
+      }
+    };
+
+    // 3. Fetch LIME Insights
     const fetchLimeInsights = async () => {
       try {
-        const response = await axios.get(DEBUG_API, { params: { file: "lime_short_sentences_and_labels.txt" } });
+        // ✅ ADDED: Cache Buster
+        const response = await axios.get(DEBUG_API, { 
+          params: { file: "lime_short_sentences_and_labels.txt", _t: new Date().getTime() } 
+        });
         if (response.data.status === "success") {
           setLimeData(response.data.preview);
         }
@@ -61,29 +121,36 @@ const RiverDashboard = () => {
       }
     };
 
+    // Master function to load all data
     const loadAllData = async () => {
-      setLoading(true);
-      await Promise.all([fetchForecast(), fetchLimeInsights()]);
-      setLoading(false);
+      await Promise.all([fetchForecast(), fetchLimeInsights(), fetchRealTimeLevel()]);
+      setLoading(false); 
     };
 
-    loadAllData();
+    // --- EXECUTION ---
+    loadAllData(); // Initial Load
+
+    // ✅ ADDED: Auto-Refresh Interval (Every 60 seconds)
+    // This makes the dashboard dynamic!
+    const intervalId = setInterval(() => {
+      console.log("Auto-refreshing dashboard data...");
+      loadAllData();
+    }, 60000); 
+
+    return () => clearInterval(intervalId);
+
   }, []);
 
-  // --- RENDER VARS ---
+  // --- RENDER HELPERS ---
   const nextHour = forecastData[0] || { level: "--", status: getStatus(0) };
-  const currentLevel = (parseFloat(nextHour.level) - 0.17).toFixed(2);
-  const currentStatus = getStatus(currentLevel);
+  const currentStatus = getStatus(realTimeLevel !== "--" ? realTimeLevel : 0);
 
   if (loading) return <div className="rd-loading"><div className="rd-spinner"></div><p>Syncing Satellite Models...</p></div>;
   if (error && forecastData.length === 0) return <div className="rd-error"><h3>Connection Failed</h3><p>{error}</p></div>;
 
   return (
     <div className="rd-container">
-      
-      {/* --- HERO BACKGROUND SECTION --- */}
       <div className="rd-hero">
-        {/* Navigation Overlay */}
         <nav className="rd-nav-overlay">
           <div className="rd-wrapper rd-flex-between">
             <div className="rd-brand">
@@ -97,7 +164,6 @@ const RiverDashboard = () => {
           </div>
         </nav>
 
-        {/* Hero Content */}
         <div className="rd-hero-content rd-wrapper">
           <div className="rd-hero-text">
             <span className="rd-pill"><i className="fas fa-satellite-dish"></i> Live Monitoring • Kalady Station</span>
@@ -105,7 +171,6 @@ const RiverDashboard = () => {
             <p className="rd-hero-sub">AI-Powered Flood Forecasting System developed by ASIET & MeitY</p>
           </div>
           
-          {/* Main Status Badge */}
           <div className={`rd-status-badge glass ${currentStatus.class}`}>
             <div className="badge-icon"><i className={`fas ${currentStatus.icon}`}></i></div>
             <div className="badge-info">
@@ -116,27 +181,24 @@ const RiverDashboard = () => {
         </div>
       </div>
 
-      {/* --- MAIN CONTENT (OVERLAPPING) --- */}
       <main className="rd-main-content rd-wrapper">
-        
-        {/* Top Stats Row */}
         <div className="rd-stats-grid">
           
-          {/* Card 1: Live Water Level */}
+          {/* CARD 1: REAL-TIME LEVEL */}
           <div className="rd-card glass">
             <div className="card-head">
               <span>Real-Time Level</span>
               <i className="fas fa-ruler-vertical"></i>
             </div>
             <div className="big-stat">
-              {currentLevel}<small>m</small>
+              {realTimeLevel}<small>m</small>
             </div>
             <div className="stat-footer">
               <span className="dot live"></span> Updated: {lastUpdated}
             </div>
           </div>
 
-          {/* Card 2: 1-Hour Forecast */}
+          {/* CARD 2: NEXT HOUR FORECAST */}
           <div className="rd-card glass">
             <div className="card-head">
               <span>Next Hour Forecast</span>
@@ -150,7 +212,7 @@ const RiverDashboard = () => {
             </div>
           </div>
 
-          {/* Card 3: System Status */}
+          {/* CARD 3: TIME */}
           <div className="rd-card glass">
             <div className="card-head">
               <span>Location Time</span>
@@ -165,10 +227,8 @@ const RiverDashboard = () => {
           </div>
         </div>
 
-        {/* Middle Section: Graph & Feed */}
         <div className="rd-content-split">
           
-          {/* Left: 6-Hour Timeline */}
           <section className="rd-section glass">
             <div className="sec-header">
               <h3><i className="fas fa-chart-line"></i> 6-Hour Projection</h3>
@@ -181,7 +241,7 @@ const RiverDashboard = () => {
                     <div 
                       className="t-bar" 
                       style={{
-                        height: `${Math.min((data.level / 8) * 100, 100)}%`, // Scale based on max 8m
+                        height: `${Math.min((data.level / 8) * 100, 100)}%`,
                         backgroundColor: data.status.color
                       }}
                     ></div>
@@ -193,7 +253,6 @@ const RiverDashboard = () => {
             </div>
           </section>
 
-          {/* Right: AI Insights */}
           <section className="rd-section glass">
             <div className="sec-header">
               <h3><i className="fas fa-robot"></i> AI Explainability (LIME)</h3>
@@ -220,8 +279,10 @@ const RiverDashboard = () => {
         </div>
       </main>
       
-      {/* Simple Footer */}
       <footer className="rd-footer">
+        <div className="dashboard-footer">
+          ⚠️ Disclaimer: Forecasts are derived from observed data patterns and computational analysis. Real-world conditions may vary. Always depend on official alerts.
+        </div>
         <p>&copy; 2026 Adi Shankara Institute • Ministry of Earth Sciences</p>
       </footer>
     </div>
