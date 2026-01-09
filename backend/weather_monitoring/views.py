@@ -315,3 +315,105 @@ def debug_read_s3_csv(request):
             "bucket": bucket,
             "key": key
         }, status=500)
+
+
+@require_GET
+def flood_analysis(request):
+    """
+    1. Fetches real-time water level from S3.
+    2. Processes kalady_dem.tif to find flooded areas.
+    3. Returns flooded coordinates and details JSON.
+    """
+    # --- 1. GET WATER LEVEL FROM S3 ---
+    bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
+    key = "aqi-training/latest_water_level.csv" # Ensure this matches your S3 path
+    current_water_level = 0.0
+
+    try:
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            region_name=os.getenv('AWS_S3_REGION_NAME_BUCKET', 'ap-south-1')
+        )
+        obj = s3.get_object(Bucket=bucket, Key=key)
+        content = obj['Body'].read().decode('utf-8').splitlines()
+        
+        # Parsing CSV: Assuming format is header, then data "date,time,level"
+        # We grab the last non-empty line
+        if len(content) > 1:
+            last_line = content[-1].split(',')
+            # Adjust index [-1] based on your CSV column structure
+            val = last_line[-1].strip() 
+            current_water_level = float(val) if val else 0.0
+            
+    except Exception as e:
+        print(f"⚠️ S3 Error (using default): {e}")
+        current_water_level = 0.0 # Default safe level
+
+    # --- 2. CHECK THRESHOLD ---
+    # Only calculate if water is high (Optimization)
+    if current_water_level < 3.0:
+        return JsonResponse({
+            "status": "normal",
+            "message": "Water level is safe. No flood analysis needed.",
+            "current_water_level": current_water_level,
+            "data": []
+        })
+
+    # --- 3. PROCESS TIFF FILE ---
+    # Ensure 'kalady_dem.tif' is in your Django project base directory
+    tif_path = os.path.join(settings.BASE_DIR, 'kalady_dem.tif') 
+    
+    flooded_locations = []
+    
+    try:
+        with rasterio.open(tif_path) as src:
+            dem = src.read(1)
+            nodata = src.nodata
+            transform_affine = src.transform
+            crs = src.crs
+
+            # Identify flooded pixels
+            valid_mask = (dem != nodata) & (dem <= current_water_level)
+            
+            rows, cols = np.where(valid_mask)
+            
+            # Optimization: Downsample points if too many (take every 10th point)
+            # This prevents the frontend map from crashing
+            step = 10 if len(rows) > 5000 else 1 
+            
+            rows = rows[::step]
+            cols = cols[::step]
+            
+            if len(rows) > 0:
+                xs, ys = rasterio.transform.xy(transform_affine, rows, cols)
+                lons, lats = transform(crs, "EPSG:4326", xs, ys)
+                
+                # Extract depths
+                ground_levels = dem[rows, cols]
+                
+                for lat, lon, ground_h in zip(lats, lons, ground_levels):
+                    depth = current_water_level - ground_h
+                    
+                    if depth < 0.3: expl = "Minor Waterlogging"
+                    elif depth < 1.0: expl = "Moderate Flooding"
+                    elif depth < 3.0: expl = "Significant Flooding"
+                    else: expl = "Severe Flooding"
+
+                    flooded_locations.append({
+                        "lat": round(lat, 6),
+                        "lon": round(lon, 6),
+                        "depth": round(float(depth), 2),
+                        "explanation": expl
+                    })
+
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    return JsonResponse({
+        "status": "alert",
+        "current_water_level": current_water_level,
+        "flooded_count": len(flooded_locations),
+        "data": flooded_locations
+    })

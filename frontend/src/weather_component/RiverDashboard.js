@@ -5,11 +5,16 @@ import "./RiverDashboard.css";
 
 // ✅ SMART API SWITCH
 // ✅ Correct Logic
-const API_BASE = window.location.hostname === "aiiot-1.onrender.com"
+const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://aiiot-1.onrender.com'
   : 'http://localhost:8000';
 
-const DEBUG_API = `${API_BASE}/api/weather/debug-read-s3`;
+
+
+
+
+
+const DEBUG_API = `${API_BASE_URL}/api/weather/debug-read-s3`;
 
 const RiverDashboard = () => {
   const navigate = useNavigate();
@@ -28,8 +33,8 @@ const RiverDashboard = () => {
   const getStatus = (level) => {
     const val = parseFloat(level);
     if (isNaN(val)) return { label: "--", class: "", color: "#ccc", icon: "fa-question-circle" };
-    if (val < 5.5) return { label: "Normal", class: "status-normal", color: "#10b981", icon: "fa-check-circle" }; 
-    if (val < 6.0) return { label: "Caution", class: "status-caution", color: "#f59e0b", icon: "fa-exclamation-circle" }; 
+    if (val < 3) return { label: "Normal", class: "status-normal", color: "#10b981", icon: "fa-check-circle" }; 
+    if (val < 8.0) return { label: "Caution", class: "status-caution", color: "#f59e0b", icon: "fa-exclamation-circle" }; 
     return { label: "Warning", class: "status-critical", color: "#ef4444", icon: "fa-radiation-alt" }; 
   };
 
@@ -146,6 +151,7 @@ const RiverDashboard = () => {
               <button onClick={() => navigate('/')}>Home</button>
               <button className="active">Live Dashboard</button>
               <button onClick={() => navigate('/weather-map')}>Map View</button>
+              <button onClick={() => navigate('/flood-analysis')}>Flood Analysis</button>
             </div>
           </div>
         </nav>
