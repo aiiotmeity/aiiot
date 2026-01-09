@@ -51,6 +51,11 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
 from .serializers import  BrochureSerializer, WorkshopEventSerializer 
+
+
+import rasterio
+import numpy as np
+from rasterio.warp import transform
  # <-- Make sure this is imported
 
 

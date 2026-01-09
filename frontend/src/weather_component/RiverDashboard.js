@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import "./RiverDashboard.css";
 
 // ✅ SMART API SWITCH
-const API_BASE = window.location.hostname === process.env.NODE_ENV === 'production'
+// ✅ Correct Logic
+const API_BASE = window.location.hostname === "aiiot-1.onrender.com"
   ? 'https://aiiot-1.onrender.com'
   : 'http://localhost:8000';
 
