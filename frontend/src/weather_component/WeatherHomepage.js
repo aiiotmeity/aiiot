@@ -71,9 +71,9 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
         <div className="header-top">
           <div className="header-top-content">
             <div className="gov-links">
-              <a href="https://www.india.gov.in" target="_blank" rel="noopener noreferrer">
+              {/* <a href="https://www.india.gov.in" target="_blank" rel="noopener noreferrer">
                 Govt.of India
-              </a>
+              </a> */}
               <a href="https://moes.gov.in" target="_blank" rel="noopener noreferrer">
                 Ministry of Earth Sciences
               </a>
@@ -338,7 +338,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
                 <div className="contact-details">
                   <h4>Address</h4>
                   <p>
-                    Adishankara Engineering College<br />
+                   Adi Shankara Institute of Engineering & Technology<br />
                     Kalady, Ernakulam District<br />
                     Kerala - 683574, India
                   </p>
@@ -417,17 +417,21 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
             <div className="footer-section">
               <h4>Institution</h4>
               <ul className="footer-links">
-                <li><a href="https://www.adishankara.ac.in" target="_blank" rel="noopener noreferrer">Adishankara Engineering College</a></li>
-                <li><a href="https://www.india.gov.in" target="_blank" rel="noopener noreferrer">
+                <li><a href="https://www.adishankara.ac.in" target="_blank" rel="noopener noreferrer">Adi Shankara Institute of Engineering & Technology,Kalady</a></li>
+                {/* <li><a href="https://www.india.gov.in" target="_blank" rel="noopener noreferrer">
                 Govt. of India
-              </a></li>
+              </a></li> */}
               </ul>
             </div>
           </div>
 
           <div className="footer-bottom">
             <p>
-              © {new Date().getFullYear()} Adishankara Engineering College Weather Monitoring System. 
+              © {new Date().getFullYear()} Adi Shankara Institute of Engineering & TechnologyWeather Monitoring System. 
+
+          
+
+
               All rights reserved.
             </p>
           </div>

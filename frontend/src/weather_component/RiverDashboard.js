@@ -80,25 +80,36 @@ const RiverDashboard = () => {
           params: { file: "latest_water_level.csv", _t: new Date().getTime() } 
         });
 
-        // 🔍 DEBUG: Check for HTML response here too
         if (typeof response.data === 'string' && response.data.trim().startsWith("<!DOCTYPE")) {
-            return; // Already caught by the other function
+            return; 
         }
 
         if (response.data.status === "success" && response.data.preview.length > 0) {
           const rawLines = response.data.preview;
-          if (rawLines.length > 1) {
+          
+          // Only proceed if we have data lines
+          if (rawLines.length > 0) {
+            
+            // --- FIX STARTS HERE ---
+            // 1. Get the very last line from the array (The newest data)
+            const lastLine = rawLines[rawLines.length - 1]; 
+            const values = lastLine.split(",");
+            
+            // 2. Determine index for 'level' dynamically or fallback to last column
+            // (We check the first line for headers, but valid data is in the last line)
             const headers = rawLines[0].split(",").map(h => h.trim().toLowerCase());
             const targetIndex = headers.indexOf("level");
-            const values = rawLines[1].split(",");
             
             let val;
             if (targetIndex !== -1 && values[targetIndex]) {
               val = values[targetIndex].trim();
             } else {
+              // Fallback: take the last non-empty value in the row
               const validValues = values.filter(v => v.trim() !== "");
               val = validValues[validValues.length - 1];
             }
+            // --- FIX ENDS HERE ---
+
             if (val && !isNaN(val)) setRealTimeLevel(parseFloat(val).toFixed(2));
           }
         }
@@ -195,40 +206,89 @@ const RiverDashboard = () => {
         </div>
 
         <div className="rd-content-split">
+         
           <section className="rd-section glass">
             <div className="sec-header"><h3><i className="fas fa-chart-line"></i> 6-Hour Projection</h3></div>
             <div className="rd-timeline">
-              {forecastData.slice(0, 6).map((data, index) => (
-                <div key={index} className="rd-time-slot">
-                  <span className="t-hour">H+{index + 1}</span>
-                  <div className="t-bar-container">
-                    <div className="t-bar" style={{height: `${Math.min((data.level / 8) * 100, 100)}%`, backgroundColor: data.status.color}}></div>
-                  </div>
-                  <span className="t-val">{data.level}m</span>
-                  <span className="t-status" style={{color: data.status.color}}>{data.status.label}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+              {forecastData.slice(-6).map((data, index) => {
+                
+                // 1. Check if this forecast is risky (Orange/Red)
+                const isRisk = data.level >= 3.0; // "Caution" threshold
 
-          <section className="rd-section glass">
-            <div className="sec-header"><h3><i className="fas fa-robot"></i> AI Explainability (LIME)</h3></div>
-            <div className="rd-insights-list">
-              {limeData.length > 0 ? (
-                limeData.slice(0, 6).map((line, index) => {
-                  const statusColor = forecastData[index]?.status?.color || "#ccc";
-                  return (
-                    <div key={index} className="rd-insight-item">
-                      <div className="insight-marker" style={{backgroundColor: statusColor}}><span>H+{index+1}</span></div>
-                      <p>{line}</p>
+                return (
+                  <div 
+                    key={index} 
+                    className="rd-time-slot"
+                    // 2. Add Click Handler: Only navigate if it's a risk
+                    onClick={() => isRisk && navigate(`/flood-analysis?level=${data.level}`)}
+                    style={{ 
+                      cursor: isRisk ? 'pointer' : 'default',
+                      // Add a visual cue (border) for clickable items
+                      border: isRisk ? '1px solid rgba(255, 255, 255, 0.4)' : 'none',
+                      transition: 'transform 0.2s'
+                    }}
+                    // Tooltip to guide the user
+                    title={isRisk ? `Click to simulate flood at ${data.level}m` : "Safe level"}
+                  >
+                    <span className="t-hour">H+{index + 1}</span>
+                    <div className="t-bar-container">
+                      <div 
+                        className="t-bar" 
+                        style={{
+                          height: `${Math.min((data.level / 8) * 100, 100)}%`, 
+                          backgroundColor: data.status.color
+                        }}
+                      ></div>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="empty-msg">No anomalies detected.</div>
-              )}
+                    <span className="t-val">{data.level}m</span>
+                    <span className="t-status" style={{color: data.status.color}}>
+                      {data.status.label} 
+                      {/* 3. Add a tiny icon to indicate it's clickable */}
+                      {isRisk && <i className="fas fa-external-link-alt" style={{fontSize:'0.6rem', marginLeft:'4px'}}></i>}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </section>
+          <section className="rd-section glass">
+  <div className="sec-header"><h3><i className="fas fa-robot"></i> AI Explainability (LIME)</h3></div>
+  <div className="rd-insights-list">
+    {limeData.length > 0 ? (
+      limeData.slice(0, 6).map((line, index) => {
+        
+        // 1. Define colors based on your logic
+        const colorMap = {
+          "[GREEN]": "#10b981",   
+          "[ORANGE]": "#f59e0b",  
+          "[RED]": "#ef4444",     
+          "[WARNING]": "#ef4444"  
+        };
+
+        // 2. Find the tag (e.g. "[ORANGE]")
+        const match = line.match(/^\[(GREEN|ORANGE|RED|WARNING)\]/);
+        const tag = match ? match[0] : "";
+        
+        // 3. Get color (default to grey)
+        const statusColor = colorMap[tag] || "#ccc";
+
+        // 4. Remove the tag for clean text
+        const cleanText = line.replace(tag, "").trim();
+
+        return (
+          <div key={index} className="rd-insight-item">
+            <div className="insight-marker" style={{backgroundColor: statusColor}}>
+              <span>H+{index+1}</span>
+            </div>
+            <p>{cleanText}</p>
+          </div>
+        );
+      })
+    ) : (
+      <div className="empty-msg">No anomalies detected.</div>
+    )}
+  </div>
+</section>
         </div>
       </main>
       

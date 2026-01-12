@@ -280,8 +280,6 @@ def debug_read_s3_csv(request):
 
     bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
     region = os.getenv('AWS_S3_REGION_NAME_BUCKET', 'ap-south-1')
-
-    # ✅ EXACT key from S3 console
     key = f"aqi-training/{file_name}"
 
     try:
@@ -294,65 +292,80 @@ def debug_read_s3_csv(request):
 
         obj = s3.get_object(Bucket=bucket, Key=key)
         content = obj['Body'].read().decode('utf-8')
-
         lines = content.splitlines()
 
-        print("📄 FIRST 5 LINES FROM S3:")
-        for line in lines[:5]:
-            print(line)
+        # ✅ CRITICAL FIX FOR LIME DATA
+        if file_name.endswith('.txt'):
+            # For text files
+            preview_data = lines[-6:]
+        else:
+            # For CSV files (Water Level & Forecast)
+            header = lines[0] if lines else ""
+            
+            # ✅ FIX: Change [-5:] to [-12:] to ensure we have enough data for all 6 cards
+            recent_lines = lines[-6:]
+            
+            if len(lines) > 12 and header not in recent_lines:
+                preview_data = [header] + recent_lines
+            else:
+                preview_data = recent_lines
 
         return JsonResponse({
             "status": "success",
             "bucket": bucket,
             "key": key,
-            "preview": lines[:5]
+            "preview": preview_data 
         })
 
     except Exception as e:
         print("❌ S3 READ ERROR:", e)
-        return JsonResponse({
-            "error": str(e),
-            "bucket": bucket,
-            "key": key
-        }, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 @require_GET
 def flood_analysis(request):
     """
-    1. Fetches real-time water level from S3.
-    2. Processes kalady_dem.tif to find flooded areas.
-    3. Returns flooded coordinates and details JSON.
+    Returns flood zones. 
+    If 'level' param is provided (e.g. ?level=3.56), it simulates that specific scenario.
+    Otherwise, it fetches the real-time sensor level from S3.
     """
-    # --- 1. GET WATER LEVEL FROM S3 ---
-    bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
-    key = "aqi-training/latest_water_level.csv" # Ensure this matches your S3 path
+    # 1. Check if frontend requested a simulation
+    simulated_level = request.GET.get('level')
+    
     current_water_level = 0.0
 
-    try:
-        s3 = boto3.client(
-            's3',
-            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-            region_name=os.getenv('AWS_S3_REGION_NAME_BUCKET', 'ap-south-1')
-        )
-        obj = s3.get_object(Bucket=bucket, Key=key)
-        content = obj['Body'].read().decode('utf-8').splitlines()
+    if simulated_level:
+        try:
+            # Use the clicked forecast level
+            current_water_level = float(simulated_level)
+        except ValueError:
+            current_water_level = 0.0
+    else:
+        # --- FALLBACK: GET REAL-TIME LEVEL FROM S3 (Existing Logic) ---
+        bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
+        key = "aqi-training/latest_water_level.csv"
         
-        # Parsing CSV: Assuming format is header, then data "date,time,level"
-        # We grab the last non-empty line
-        if len(content) > 1:
-            last_line = content[-1].split(',')
-            # Adjust index [-1] based on your CSV column structure
-            val = last_line[-1].strip() 
-            current_water_level = float(val) if val else 0.0
-            
-    except Exception as e:
-        print(f"⚠️ S3 Error (using default): {e}")
-        current_water_level = 0.0 # Default safe level
+        try:
+            # (Your existing S3 code here)
+            if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+                s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+            else:
+                s3 = boto3.client('s3', region_name=AWS_REGION)
 
-    # --- 2. CHECK THRESHOLD ---
-    # Only calculate if water is high (Optimization)
+            obj = s3.get_object(Bucket=bucket, Key=key)
+            content = obj['Body'].read().decode('utf-8').splitlines()
+            
+            if len(content) > 1:
+                last_line = content[-1].split(',')
+                val = last_line[-1].strip() 
+                current_water_level = float(val) if val else 0.0
+                
+        except Exception as e:
+            print(f"⚠️ S3 Error (using default): {e}")
+            current_water_level = 0.0 
+
+    # --- 2. CHECK THRESHOLD (Safe Level) ---
+    # If level is low (< 3.0), return empty list to save processing power
     if current_water_level < 3.0:
         return JsonResponse({
             "status": "normal",
@@ -361,13 +374,17 @@ def flood_analysis(request):
             "data": []
         })
 
-    # --- 3. PROCESS TIFF FILE ---
-    # Ensure 'kalady_dem.tif' is in your Django project base directory
-    tif_path = os.path.join(settings.BASE_DIR, 'kalady_dem.tif') 
-    
-    flooded_locations = []
-    
+    # --- 3. PROCESS TIFF FILE (Calculates Lat/Lon for Map) ---
     try:
+        import rasterio
+        from rasterio.warp import transform
+        import numpy as np
+        from django.conf import settings
+
+        # Make sure kalady_dem.tif is in your base folder
+        tif_path = os.path.join(settings.BASE_DIR, 'kalady_dem.tif') 
+        flooded_locations = []
+        
         with rasterio.open(tif_path) as src:
             dem = src.read(1)
             nodata = src.nodata
@@ -376,21 +393,15 @@ def flood_analysis(request):
 
             # Identify flooded pixels
             valid_mask = (dem != nodata) & (dem <= current_water_level)
-            
             rows, cols = np.where(valid_mask)
             
-            # Optimization: Downsample points if too many (take every 10th point)
-            # This prevents the frontend map from crashing
+            # Optimization: Downsample to prevent browser crash (take every 10th point)
             step = 10 if len(rows) > 5000 else 1 
-            
-            rows = rows[::step]
-            cols = cols[::step]
+            rows, cols = rows[::step], cols[::step]
             
             if len(rows) > 0:
                 xs, ys = rasterio.transform.xy(transform_affine, rows, cols)
                 lons, lats = transform(crs, "EPSG:4326", xs, ys)
-                
-                # Extract depths
                 ground_levels = dem[rows, cols]
                 
                 for lat, lon, ground_h in zip(lats, lons, ground_levels):
