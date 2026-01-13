@@ -1,0 +1,16 @@
+# Installation
+> `npm install --save @types/leaflet-geosearch`
+
+# Summary
+This package contains type definitions for leaflet-geosearch (https://github.com/smeijer/leaflet-geosearch#readme).
+
+# Details
+Files were exported from https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/leaflet-geosearch
+
+Additional Details
+ * Last updated: Mon, 26 Aug 2019 15:09:17 GMT
+ * Dependencies: @types/leaflet
+ * Global values: none
+
+# Credits
+These definitions were written by Dmytro Borysovskyi <https://github.com/dimabory>.

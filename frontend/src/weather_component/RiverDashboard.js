@@ -213,7 +213,8 @@ const RiverDashboard = () => {
               {forecastData.slice(-6).map((data, index) => {
                 
                 // 1. Check if this forecast is risky (Orange/Red)
-                const isRisk = data.level >= 3.0; // "Caution" threshold
+                const isRisk = data.level >= 0.5; 
+               // "Caution" threshold
 
                 return (
                   <div 
@@ -252,43 +253,53 @@ const RiverDashboard = () => {
             </div>
           </section>
           <section className="rd-section glass">
-  <div className="sec-header"><h3><i className="fas fa-robot"></i> AI Explainability (LIME)</h3></div>
-  <div className="rd-insights-list">
-    {limeData.length > 0 ? (
-      limeData.slice(0, 6).map((line, index) => {
-        
-        // 1. Define colors based on your logic
-        const colorMap = {
-          "[GREEN]": "#10b981",   
-          "[ORANGE]": "#f59e0b",  
-          "[RED]": "#ef4444",     
-          "[WARNING]": "#ef4444"  
-        };
-
-        // 2. Find the tag (e.g. "[ORANGE]")
-        const match = line.match(/^\[(GREEN|ORANGE|RED|WARNING)\]/);
-        const tag = match ? match[0] : "";
-        
-        // 3. Get color (default to grey)
-        const statusColor = colorMap[tag] || "#ccc";
-
-        // 4. Remove the tag for clean text
-        const cleanText = line.replace(tag, "").trim();
-
-        return (
-          <div key={index} className="rd-insight-item">
-            <div className="insight-marker" style={{backgroundColor: statusColor}}>
-              <span>H+{index+1}</span>
+            <div className="sec-header">
+              <h3><i className="fas fa-robot"></i> AI Explainability (LIME)</h3>
             </div>
-            <p>{cleanText}</p>
-          </div>
-        );
-      })
-    ) : (
-      <div className="empty-msg">No anomalies detected.</div>
-    )}
-  </div>
-</section>
+
+            <div className="lime-btn-grid">
+              {limeData.length > 0 ? (
+                limeData.slice(0, 6).map((line, index) => {
+
+                  const colorMap = {
+                    "[GREEN]": "#10b981",
+                    "[ORANGE]": "#f59e0b",
+                    "[RED]": "#ef4444",
+                    "[WARNING]": "#ef4444"
+                  };
+
+                  const match = line.match(/^\[(GREEN|ORANGE|RED|WARNING)\]/);
+                  const tag = match ? match[0] : "";
+                  const statusColor = colorMap[tag] || "#94a3b8";
+                  const cleanText = line.replace(tag, "").trim();
+
+                  return (
+                  <button
+                    key={index}
+                    className="lime-btn"
+                    style={{ borderLeft: `6px solid ${statusColor}` }}
+                    title={`Click to view flood impact at H+${index + 1}`}
+                    onClick={() => {
+                      // 🔥 Extract water level from sentence (last number in text)
+                      const levelMatch = cleanText.match(/(\d+(\.\d+)?)/);
+                      if (levelMatch) {
+                        const level = levelMatch[0];
+                        navigate(`/flood-analysis?level=${level}`);
+                      }
+                    }}
+                  >
+                  <span className="lime-hour">H+{index + 1}</span>
+                  <span className="lime-text">{cleanText}</span>
+                </button>
+
+                  );
+                })
+              ) : (
+                <div className="empty-msg">No anomalies detected.</div>
+              )}
+            </div>
+          </section>
+
         </div>
       </main>
       

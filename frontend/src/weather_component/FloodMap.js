@@ -108,7 +108,9 @@ const FloodMap = () => {
                             <Popup>
                                 <strong>Flood Depth: {point.depth}m</strong><br/>
                                 {point.explanation}<br/>
+                                <strong>{point.place}</strong><br/>
                                 Lat: {point.lat}, Lon: {point.lon}
+
                             </Popup>
                         </CircleMarker>
                     ))}

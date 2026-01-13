@@ -7,7 +7,7 @@ from boto3.dynamodb.conditions import Attr, Key
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
-import uuid
+import uuid,requests
 import os
 from dotenv import load_dotenv
 from rest_framework.renderers import JSONRenderer
@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from botocore.config import Config
+import reverse_geocoder as rg
 
 load_dotenv()
 
@@ -366,7 +367,9 @@ def flood_analysis(request):
 
     # --- 2. CHECK THRESHOLD (Safe Level) ---
     # If level is low (< 3.0), return empty list to save processing power
-    if current_water_level < 3.0:
+    # --- 2. CHECK THRESHOLD (Safe Level) ---
+    # Only skip if it's REAL-TIME mode. If it's a SIMULATION, run it anyway.
+    if not simulated_level and current_water_level < 0.0:
         return JsonResponse({
             "status": "normal",
             "message": "Water level is safe. No flood analysis needed.",
@@ -381,8 +384,7 @@ def flood_analysis(request):
         import numpy as np
         from django.conf import settings
 
-        # Make sure kalady_dem.tif is in your base folder
-        tif_path = os.path.join(settings.BASE_DIR, 'kalady_dem.tif') 
+        tif_path = os.path.join(settings.BASE_DIR, 'weather_monitoring', 'kalady_dem.tif')
         flooded_locations = []
         
         with rasterio.open(tif_path) as src:
@@ -395,7 +397,7 @@ def flood_analysis(request):
             valid_mask = (dem != nodata) & (dem <= current_water_level)
             rows, cols = np.where(valid_mask)
             
-            # Optimization: Downsample to prevent browser crash (take every 10th point)
+            # Optimization: Downsample (adjust step as needed)
             step = 10 if len(rows) > 5000 else 1 
             rows, cols = rows[::step], cols[::step]
             
@@ -403,8 +405,18 @@ def flood_analysis(request):
                 xs, ys = rasterio.transform.xy(transform_affine, rows, cols)
                 lons, lats = transform(crs, "EPSG:4326", xs, ys)
                 ground_levels = dem[rows, cols]
+
+                # --- NEW FAST GEOCODING LOGIC STARTS HERE ---
                 
-                for lat, lon, ground_h in zip(lats, lons, ground_levels):
+                # 1. Prepare all coordinates for batch processing
+                coords_for_geocoding = list(zip(lats, lons))
+
+                # 2. Perform offline batch search (Takes milliseconds)
+                # This returns a list of dictionaries [{'name': 'Kalady', ...}, ...]
+                geo_results = rg.search(coords_for_geocoding)
+
+                # 3. Iterate and build response
+                for i, (lat, lon, ground_h) in enumerate(zip(lats, lons, ground_levels)):
                     depth = current_water_level - ground_h
                     
                     if depth < 0.3: expl = "Minor Waterlogging"
@@ -412,14 +424,20 @@ def flood_analysis(request):
                     elif depth < 3.0: expl = "Significant Flooding"
                     else: expl = "Severe Flooding"
 
+                    # Get place name from the batch result
+                    place = geo_results[i].get('name', 'Unknown Area')
+
                     flooded_locations.append({
                         "lat": round(lat, 6),
                         "lon": round(lon, 6),
                         "depth": round(float(depth), 2),
-                        "explanation": expl
+                        "explanation": expl,
+                        "place": place  # Now contains correct Village/Town name
                     })
+                 # --- NEW LOGIC ENDS HERE ---
 
     except Exception as e:
+        print(f"Error in flood analysis: {e}")
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     return JsonResponse({
@@ -428,3 +446,17 @@ def flood_analysis(request):
         "flooded_count": len(flooded_locations),
         "data": flooded_locations
     })
+
+
+
+
+def get_place(lat, lon):
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
+        headers = {"User-Agent": "PeriyarWatch/1.0"}
+        r = requests.get(url, headers=headers, timeout=2)
+        if r.status_code == 200:
+            data = r.json()
+            return data.get("display_name", "Unknown Area")
+    except:
+        return "Unknown Area"
