@@ -42,3 +42,5 @@ numpy
 django-storages
 
 django-jazzmin
+
+reverse_geocoder
