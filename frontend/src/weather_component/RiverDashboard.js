@@ -162,7 +162,7 @@ const RiverDashboard = () => {
               <button onClick={() => navigate('/')}>Home</button>
               <button className="active">Live Dashboard</button>
               <button onClick={() => navigate('/weather-map')}>Map View</button>
-              <button onClick={() => navigate('/flood-analysis')}>Flood Analysis</button>
+              {/* <button onClick={() => navigate('/flood-analysis')}>Flood Analysis</button> */}
             </div>
           </div>
         </nav>
