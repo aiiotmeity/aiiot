@@ -429,7 +429,6 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
             <p>
               © {new Date().getFullYear()} Adi Shankara Institute of Engineering & Technology Weather Monitoring System.
 
-          
 
 
               All rights reserved.
