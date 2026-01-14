@@ -427,7 +427,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
 
           <div className="footer-bottom">
             <p>
-              © {new Date().getFullYear()} Adi Shankara Institute of Engineering & TechnologyWeather Monitoring System.
+              © {new Date().getFullYear()} Adi Shankara Institute of Engineering & Technology,Weather Monitoring System.
 
           
 
