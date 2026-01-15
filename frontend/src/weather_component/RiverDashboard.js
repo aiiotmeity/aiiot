@@ -164,7 +164,7 @@ const RiverDashboard = () => {
           <div className="rd-hero-text">
             <span className="rd-pill"><i className="fas fa-satellite-dish"></i> Live Monitoring • Kalady Station</span>
             <h1>Periyar River Water Level</h1>
-            <p className="rd-hero-sub">Official AI-Powered Flood Forecasting System developed by ASIET & Ministry of Earth Sciences</p>
+            <p className="rd-hero-sub">Official AI-Powered Flood Forecasting System developed by ASIET </p>
           </div>
           
           <div className={`rd-status-badge ${currentStatus.class}`}>
