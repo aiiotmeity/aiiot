@@ -50,12 +50,27 @@ const RiverDashboard = () => {
 
         if (response.data.status === "success") {
           const rawLines = response.data.preview;
-          const parsedData = rawLines.slice(1).map((line) => {
-              const cols = line.split(",");
-              const level = cols[cols.length - 1]?.trim(); 
-              return { level: parseFloat(level).toFixed(2), status: getStatus(level) };
-            }).filter((item) => !isNaN(item.level));
-            
+          // Remove .slice(1) so it reads ALL lines, including the first one
+        // 1. Reads ALL lines (removes .slice so no data is lost)
+        // 1. Reads ALL lines (removes .slice so no data is lost)
+        const parsedData = rawLines.map((line) => {
+            const cols = line.split(",");
+            const rawVal = cols[cols.length - 1]?.trim();
+
+            if (!rawVal || isNaN(rawVal)) return { level: NaN };
+
+            // 2. LOGIC: "Display Same" unless it has >2 decimals
+            let displayVal = rawVal;
+            if (rawVal.includes('.')) {
+                const parts = rawVal.split('.');
+                // If decimals exist and are longer than 2 digits, cut them off
+                if (parts[1].length > 2) {
+                    displayVal = `${parts[0]}.${parts[1].substring(0, 2)}`;
+                }
+            }
+
+            return { level: displayVal, status: getStatus(rawVal) };
+        }).filter((item) => !isNaN(item.level)); // Removes Headers/Empty lines            
           setForecastData(parsedData);
           setLastUpdated(new Date().toLocaleTimeString("en-IN", {hour: '2-digit', minute:'2-digit'}));
         }
@@ -184,12 +199,13 @@ const RiverDashboard = () => {
           </div>
         </div>
 
+
         <div className="rd-content-split">
          
           <section className="rd-section">
             <div className="sec-header"><h3><i className="fas fa-chart-line"></i> 6-Hour Projection</h3></div>
             <div className="rd-timeline">
-              {forecastData.slice(-6).map((data, index) => {
+              {forecastData.slice(-7).map((data, index) => {
                 const isRisk = data.level >= 0.5; 
                 return (
                   <div 
@@ -229,7 +245,7 @@ const RiverDashboard = () => {
 
             <div className="lime-btn-grid">
               {limeData.length > 0 ? (
-                limeData.slice(0, 5).map((line, index) => { // Reduced to 5 for better fit
+                limeData.slice(0, 6).map((line, index) => { // Reduced to 5 for better fit
                   const colorMap = {
                     "[GREEN]": "#10b981",
                     "[ORANGE]": "#f59e0b",
@@ -270,7 +286,7 @@ const RiverDashboard = () => {
       
       <footer className="rd-footer">
         <div className="dashboard-footer">⚠️ Disclaimer: Forecasts are derived from observed data patterns and computational analysis. Real-world conditions may vary. Always depend on official alerts.</div>
-        <p>&copy; 2026 Adi Shankara Institute • Ministry of Earth Sciences</p>
+        <p>&copy; 2026 Adi Shankara Institute of Engineering & Technology • Ministry of Earth Sciences</p>
       </footer>
     </div>
   );
