@@ -4,15 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import "./RiverDashboard.css";
 
 // ✅ SMART API SWITCH
-// ✅ Correct Logic
 const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://aiiot-1.onrender.com'
   : 'http://localhost:8000';
-
-
-
-
-
 
 const DEBUG_API = `${API_BASE_URL}/api/weather/debug-read-s3`;
 
@@ -26,7 +20,7 @@ const RiverDashboard = () => {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [debugMsg, setDebugMsg] = useState(""); // Stores technical error details
+  const [debugMsg, setDebugMsg] = useState(""); 
   const [lastUpdated, setLastUpdated] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -44,16 +38,14 @@ const RiverDashboard = () => {
   }, []);
 
   useEffect(() => {
-    
     const fetchForecast = async () => {
       try {
         const response = await axios.get(DEBUG_API, { 
           params: { file: "forecast_output.csv", _t: new Date().getTime() } 
         });
         
-        // 🔍 DEBUG: Check for HTML response (The "Silent Failure" Detector)
         if (typeof response.data === 'string' && response.data.trim().startsWith("<!DOCTYPE")) {
-           throw new Error("SERVER ERROR: The backend returned HTML (index.html) instead of JSON. Check your Nginx/Apache proxy settings for /api/ paths.");
+           throw new Error("SERVER ERROR: The backend returned HTML instead of JSON.");
         }
 
         if (response.data.status === "success") {
@@ -69,7 +61,7 @@ const RiverDashboard = () => {
         }
       } catch (err) {
         console.error("Forecast Error:", err);
-        setDebugMsg(err.message); // Show this on screen
+        setDebugMsg(err.message);
         setError("API Connection Failed");
       }
     };
@@ -80,36 +72,22 @@ const RiverDashboard = () => {
           params: { file: "latest_water_level.csv", _t: new Date().getTime() } 
         });
 
-        if (typeof response.data === 'string' && response.data.trim().startsWith("<!DOCTYPE")) {
-            return; 
-        }
+        if (typeof response.data === 'string' && response.data.trim().startsWith("<!DOCTYPE")) return; 
 
         if (response.data.status === "success" && response.data.preview.length > 0) {
           const rawLines = response.data.preview;
-          
-          // Only proceed if we have data lines
           if (rawLines.length > 0) {
-            
-            // --- FIX STARTS HERE ---
-            // 1. Get the very last line from the array (The newest data)
             const lastLine = rawLines[rawLines.length - 1]; 
             const values = lastLine.split(",");
-            
-            // 2. Determine index for 'level' dynamically or fallback to last column
-            // (We check the first line for headers, but valid data is in the last line)
             const headers = rawLines[0].split(",").map(h => h.trim().toLowerCase());
             const targetIndex = headers.indexOf("level");
-            
             let val;
             if (targetIndex !== -1 && values[targetIndex]) {
               val = values[targetIndex].trim();
             } else {
-              // Fallback: take the last non-empty value in the row
               const validValues = values.filter(v => v.trim() !== "");
               val = validValues[validValues.length - 1];
             }
-            // --- FIX ENDS HERE ---
-
             if (val && !isNaN(val)) setRealTimeLevel(parseFloat(val).toFixed(2));
           }
         }
@@ -139,14 +117,14 @@ const RiverDashboard = () => {
   const nextHour = forecastData[0] || { level: "--", status: getStatus(0) };
   const currentStatus = getStatus(realTimeLevel !== "--" ? realTimeLevel : 0);
 
-  if (loading) return <div className="rd-loading"><div className="rd-spinner"></div><p>Syncing Satellite Models...</p></div>;
+  if (loading) return <div className="rd-loading"><div className="rd-spinner"></div><p>Syncing Government Servers...</p></div>;
 
-  // 🔴 ERROR DISPLAY ON SCREEN
+  // 🔴 ERROR DISPLAY
   if (error || debugMsg) return (
-      <div className="rd-error" style={{textAlign: 'center', padding: '50px', color: '#ff4d4d'}}>
+      <div className="rd-error" style={{textAlign: 'center', padding: '50px', color: '#dc2626'}}>
           <h3>⚠️ Data Connection Failed</h3>
           <p>{error}</p>
-          <div style={{background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '8px', marginTop: '15px', fontFamily: 'monospace', fontSize: '12px'}}>
+          <div style={{background: '#f1f5f9', padding: '15px', borderRadius: '8px', marginTop: '15px', fontFamily: 'monospace', fontSize: '12px', color: '#333'}}>
             <strong>Debug Log:</strong> {debugMsg || "Check console for details"}
           </div>
       </div>
@@ -154,15 +132,15 @@ const RiverDashboard = () => {
 
   return (
     <div className="rd-container">
+      {/* 1. Header & Hero Combined */}
       <div className="rd-hero">
         <nav className="rd-nav-overlay">
           <div className="rd-wrapper rd-flex-between">
             <div className="rd-brand"><i className="fas fa-water"></i> Periyar<span>Watch</span></div>
             <div className="rd-links">
-              <button onClick={() => navigate('/')}>Home</button>
+              <button onClick={() => navigate('/weather-home')}>Home</button>
               <button className="active">Live Dashboard</button>
               <button onClick={() => navigate('/weather-map')}>Map View</button>
-              {/* <button onClick={() => navigate('/flood-analysis')}>Flood Analysis</button> */}
             </div>
           </div>
         </nav>
@@ -171,10 +149,10 @@ const RiverDashboard = () => {
           <div className="rd-hero-text">
             <span className="rd-pill"><i className="fas fa-satellite-dish"></i> Live Monitoring • Kalady Station</span>
             <h1>Periyar River Water Level</h1>
-            <p className="rd-hero-sub">AI-Powered Flood Forecasting System developed by ASIET & MeitY</p>
+            <p className="rd-hero-sub">Official AI-Powered Flood Forecasting System developed by ASIET & Ministry of Earth Sciences</p>
           </div>
           
-          <div className={`rd-status-badge glass ${currentStatus.class}`}>
+          <div className={`rd-status-badge ${currentStatus.class}`}>
             <div className="badge-icon"><i className={`fas ${currentStatus.icon}`}></i></div>
             <div className="badge-info">
               <span className="badge-label">Current Condition</span>
@@ -184,21 +162,22 @@ const RiverDashboard = () => {
         </div>
       </div>
 
+      {/* 2. Main Content Cards */}
       <main className="rd-main-content rd-wrapper">
         <div className="rd-stats-grid">
-          <div className="rd-card glass">
+          <div className="rd-card">
             <div className="card-head"><span>Real-Time Level</span><i className="fas fa-ruler-vertical"></i></div>
             <div className="big-stat">{realTimeLevel}<small>m</small></div>
             <div className="stat-footer"><span className="dot live"></span> Updated: {lastUpdated}</div>
           </div>
 
-          <div className="rd-card glass">
+          <div className="rd-card">
             <div className="card-head"><span>Next Hour Forecast</span><i className="fas fa-clock"></i></div>
             <div className="big-stat" style={{color: nextHour.status.color}}>{nextHour.level}<small>m</small></div>
             <div className="stat-footer"><i className="fas fa-brain"></i> AI Confidence: 98.5%</div>
           </div>
 
-          <div className="rd-card glass">
+          <div className="rd-card">
             <div className="card-head"><span>Location Time</span><i className="far fa-calendar-alt"></i></div>
             <div className="big-stat text-sm">{currentTime.toLocaleTimeString('en-IN', {timeStyle: 'short'})}</div>
             <div className="stat-footer">{currentTime.toLocaleDateString('en-IN', {dateStyle: 'medium'})}</div>
@@ -207,28 +186,19 @@ const RiverDashboard = () => {
 
         <div className="rd-content-split">
          
-          <section className="rd-section glass">
+          <section className="rd-section">
             <div className="sec-header"><h3><i className="fas fa-chart-line"></i> 6-Hour Projection</h3></div>
             <div className="rd-timeline">
               {forecastData.slice(-6).map((data, index) => {
-                
-                // 1. Check if this forecast is risky (Orange/Red)
                 const isRisk = data.level >= 0.5; 
-               // "Caution" threshold
-
                 return (
                   <div 
                     key={index} 
                     className="rd-time-slot"
-                    // 2. Add Click Handler: Only navigate if it's a risk
                     onClick={() => isRisk && navigate(`/flood-analysis?level=${data.level}`)}
                     style={{ 
                       cursor: isRisk ? 'pointer' : 'default',
-                      // Add a visual cue (border) for clickable items
-                      border: isRisk ? '1px solid rgba(255, 255, 255, 0.4)' : 'none',
-                      transition: 'transform 0.2s'
                     }}
-                    // Tooltip to guide the user
                     title={isRisk ? `Click to simulate flood at ${data.level}m` : "Safe level"}
                   >
                     <span className="t-hour">H+{index + 1}</span>
@@ -244,7 +214,6 @@ const RiverDashboard = () => {
                     <span className="t-val">{data.level}m</span>
                     <span className="t-status" style={{color: data.status.color}}>
                       {data.status.label} 
-                      {/* 3. Add a tiny icon to indicate it's clickable */}
                       {isRisk && <i className="fas fa-external-link-alt" style={{fontSize:'0.6rem', marginLeft:'4px'}}></i>}
                     </span>
                   </div>
@@ -252,22 +221,21 @@ const RiverDashboard = () => {
               })}
             </div>
           </section>
-          <section className="rd-section glass">
+
+          <section className="rd-section">
             <div className="sec-header">
               <h3><i className="fas fa-robot"></i> AI Explainability (LIME)</h3>
             </div>
 
             <div className="lime-btn-grid">
               {limeData.length > 0 ? (
-                limeData.slice(0, 6).map((line, index) => {
-
+                limeData.slice(0, 5).map((line, index) => { // Reduced to 5 for better fit
                   const colorMap = {
                     "[GREEN]": "#10b981",
                     "[ORANGE]": "#f59e0b",
                     "[RED]": "#ef4444",
                     "[WARNING]": "#ef4444"
                   };
-
                   const match = line.match(/^\[(GREEN|ORANGE|RED|WARNING)\]/);
                   const tag = match ? match[0] : "";
                   const statusColor = colorMap[tag] || "#94a3b8";
@@ -277,25 +245,22 @@ const RiverDashboard = () => {
                   <button
                     key={index}
                     className="lime-btn"
-                    style={{ borderLeft: `6px solid ${statusColor}` }}
-                    title={`Click to view flood impact at H+${index + 1}`}
+                    style={{ borderLeft: `5px solid ${statusColor}` }}
+                    title={`Click to view flood impact`}
                     onClick={() => {
-                      // 🔥 Extract water level from sentence (last number in text)
                       const levelMatch = cleanText.match(/(\d+(\.\d+)?)/);
                       if (levelMatch) {
-                        const level = levelMatch[0];
-                        navigate(`/flood-analysis?level=${level}`);
+                        navigate(`/flood-analysis?level=${levelMatch[0]}`);
                       }
                     }}
                   >
                   <span className="lime-hour">H+{index + 1}</span>
                   <span className="lime-text">{cleanText}</span>
                 </button>
-
                   );
                 })
               ) : (
-                <div className="empty-msg">No anomalies detected.</div>
+                <div className="empty-msg" style={{color:'#6b7280', textAlign:'center', marginTop:'20px'}}>System normal. No anomalies detected.</div>
               )}
             </div>
           </section>

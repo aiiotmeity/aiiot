@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import "./RiverDashboard.css";
+import "./RiverDashboard.css"; // Uses the new Government CSS
 
 const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://aiiot-1.onrender.com'
@@ -37,7 +37,7 @@ const generateSmartName = (osmData) => {
 // 📍 COMPONENT 1: Map Popup
 // ---------------------------------------------------------
 const LocationPopup = ({ lat, lon, depth, explanation }) => {
-  const [address, setAddress] = useState("Loading...");
+  const [address, setAddress] = useState("Loading details...");
   const [title, setTitle] = useState("Flood Point");
 
   useEffect(() => {
@@ -55,12 +55,12 @@ const LocationPopup = ({ lat, lon, depth, explanation }) => {
   }, [lat, lon]);
 
   return (
-    <div className="popup-content">
-      <strong style={{fontSize: '14px', color: '#0f172a'}}>{title}</strong>
-      <hr style={{margin: '5px 0', border: '0', borderTop: '1px solid #ccc'}}/>
-      <div><span className="label">Depth:</span> <strong style={{color:'#ef4444'}}>{depth}m</strong></div>
-      <div><span className="label">Status:</span> {explanation}</div>
-      <div style={{fontSize:'10px', marginTop:'5px', color:'#555', lineHeight:'1.2'}}>{address}</div>
+    <div style={{fontFamily: 'Inter, sans-serif', minWidth: '200px'}}>
+      <strong style={{fontSize: '14px', color: '#1e3a8a', display:'block', marginBottom:'4px'}}>{title}</strong>
+      <div style={{height:'1px', background:'#e2e8f0', margin:'4px 0'}}></div>
+      <div style={{fontSize:'12px', margin:'4px 0'}}><span style={{color:'#64748b'}}>Depth:</span> <strong style={{color:'#ef4444'}}>{depth}m</strong></div>
+      <div style={{fontSize:'12px', margin:'4px 0'}}><span style={{color:'#64748b'}}>Status:</span> {explanation}</div>
+      <div style={{fontSize:'11px', marginTop:'8px', color:'#94a3b8', lineHeight:'1.2', borderTop:'1px dashed #e2e8f0', paddingTop:'4px'}}>{address}</div>
     </div>
   );
 };
@@ -73,28 +73,32 @@ const Pagination = ({ currentPage, totalItems, onPageChange }) => {
   if (totalPages <= 1) return null;
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', padding: '20px 0' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', padding: '25px 0' }}>
       <button 
         onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}
         style={{
-          padding: '8px 16px', borderRadius: '20px', border: 'none', 
-          background: currentPage === 1 ? '#e2e8f0' : '#3b82f6', 
-          color: currentPage === 1 ? '#94a3b8' : 'white', cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+          padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', 
+          background: currentPage === 1 ? '#f8fafc' : '#ffffff', 
+          color: currentPage === 1 ? '#cbd5e1' : '#1e40af', 
+          cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+          fontWeight: '500', transition: 'all 0.2s'
         }}
       >
         <i className="fas fa-chevron-left"></i> Prev
       </button>
       
-      <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>
-        Page {currentPage} of {totalPages}
+      <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '500' }}>
+        Page <strong>{currentPage}</strong> of {totalPages}
       </span>
 
       <button 
         onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}
         style={{
-          padding: '8px 16px', borderRadius: '20px', border: 'none', 
-          background: currentPage === totalPages ? '#e2e8f0' : '#3b82f6', 
-          color: currentPage === totalPages ? '#94a3b8' : 'white', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+          padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', 
+          background: currentPage === totalPages ? '#f8fafc' : '#ffffff', 
+          color: currentPage === totalPages ? '#cbd5e1' : '#1e40af', 
+          cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+          fontWeight: '500', transition: 'all 0.2s'
         }}
       >
         Next <i className="fas fa-chevron-right"></i>
@@ -104,7 +108,7 @@ const Pagination = ({ currentPage, totalItems, onPageChange }) => {
 };
 
 // ---------------------------------------------------------
-// 📋 COMPONENT 3: List Item (With Spinner & Auto-Fetch)
+// 📋 COMPONENT 3: List Item
 // ---------------------------------------------------------
 const AffectedAreaItem = ({ data, index }) => {
   const [expanded, setExpanded] = useState(false);
@@ -114,6 +118,8 @@ const AffectedAreaItem = ({ data, index }) => {
 
   const isSevere = data.depth >= 1.5;
   const borderColor = isSevere ? "#ef4444" : "#f59e0b";
+  const bgBadge = isSevere ? "rgba(239, 68, 68, 0.1)" : "rgba(245, 158, 11, 0.1)";
+  const textBadge = isSevere ? "#b91c1c" : "#b45309";
   const icon = isSevere ? "fa-exclamation-triangle" : "fa-water";
 
   const fetchDetails = async () => {
@@ -131,7 +137,6 @@ const AffectedAreaItem = ({ data, index }) => {
   };
 
   useEffect(() => {
-    // Only auto-fetch if severe. 
     if (isSevere) {
       const timer = setTimeout(() => { fetchDetails(); }, index * 800);
       return () => clearTimeout(timer);
@@ -140,63 +145,65 @@ const AffectedAreaItem = ({ data, index }) => {
 
   return (
     <div style={{
-      background: 'rgba(255, 255, 255, 0.95)', borderRadius: '12px', marginBottom: '12px',
-      borderLeft: `6px solid ${borderColor}`, padding: '15px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+      background: '#ffffff', borderRadius: '8px', marginBottom: '16px',
+      border: '1px solid #e2e8f0', borderLeft: `4px solid ${borderColor}`, 
+      padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'transform 0.2s'
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div style={{ 
-            background: borderColor, color: 'white', width: '40px', height: '40px', 
+            background: bgBadge, color: textBadge, width: '45px', height: '45px', 
             borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem'
           }}>
             <i className={`fas ${icon}`}></i>
           </div>
           <div>
-            {/* 🔥 UPDATED: Name + Loading Spinner */}
-            <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ margin: '0 0 5px 0', fontSize: '1.05rem', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
               {displayName}
               {loading && <i className="fas fa-circle-notch fa-spin" style={{ fontSize: '0.9rem', color: '#94a3b8' }}></i>}
             </h4>
             
             <span style={{ fontSize: '0.9rem', color: '#64748b' }}>
-              Water Level: <strong>{data.depth}m</strong> • {isSevere ? "Danger Zone" : "Waterlogging"}
+              Inundation: <strong style={{color: textBadge}}>{data.depth}m</strong> • {isSevere ? "High Risk Zone" : "Moderate Risk"}
             </span>
           </div>
         </div>
         <button 
           onClick={() => { if(!expanded && !details) fetchDetails(); setExpanded(!expanded); }}
           style={{
-            padding: '8px 15px', background: expanded ? '#e2e8f0' : '#3b82f6', color: expanded ? '#475569' : 'white',
-            border: 'none', borderRadius: '20px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem'
+            padding: '8px 16px', background: expanded ? '#f1f5f9' : '#fff', color: expanded ? '#64748b' : '#3b82f6',
+            border: expanded ? '1px solid #e2e8f0' : '1px solid #3b82f6', 
+            borderRadius: '6px', cursor: 'pointer', fontWeight: '500', fontSize: '0.85rem'
           }}
         >
-          {expanded ? "Close" : "Get Exact Location"}
+          {expanded ? "Close Details" : "Locate"}
         </button>
       </div>
 
       {expanded && (
-        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', fontSize: '0.9rem' }}>
+        <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', fontSize: '0.9rem', background: '#f8fafc', padding: '15px', borderRadius: '6px' }}>
           {loading ? (
             <div style={{color: '#64748b', display:'flex', alignItems:'center', gap:'10px'}}>
-              <i className="fas fa-spinner fa-spin"></i> Finding street details...
+              <i className="fas fa-spinner fa-spin"></i> Retrieving geospatial data...
             </div>
           ) : details && !details.error ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-               <div style={{gridColumn: 'span 2', marginBottom:'5px'}}>
-                 <small style={{color:'#94a3b8'}}>FULL ADDRESS</small><br/>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+               <div style={{gridColumn: 'span 2'}}>
+                 <small style={{color:'#94a3b8', fontSize: '0.75rem', fontWeight:'600', letterSpacing:'0.5px'}}>OFFICIAL ADDRESS</small><br/>
                  <strong style={{color:'#334155'}}>{details.display_name}</strong>
                </div>
                <div>
-                 <small style={{color:'#94a3b8'}}>STREET / AREA</small><br/>
+                 <small style={{color:'#94a3b8', fontSize: '0.75rem', fontWeight:'600', letterSpacing:'0.5px'}}>LOCALITY</small><br/>
                  <strong>{details.address.road || details.address.neighbourhood || details.display_name.split(',')[0]}</strong>
                </div>
                <div>
-                 <small style={{color:'#94a3b8'}}>TOWN / VILLAGE</small><br/>
+                 <small style={{color:'#94a3b8', fontSize: '0.75rem', fontWeight:'600', letterSpacing:'0.5px'}}>JURISDICTION</small><br/>
                  <strong>{details.address.village || details.address.town || "Angamali"}</strong>
                </div>
             </div>
           ) : (
-            <div style={{color:'red'}}>Location details not available.</div>
+            <div style={{color:'#ef4444'}}>Location details temporarily unavailable.</div>
           )}
         </div>
       )}
@@ -238,7 +245,7 @@ const FloodMap = () => {
     fetchFloodAnalysis();
   }, [simulatedLevel]);
 
-  if (loading) return <div className="rd-loading"><div className="rd-spinner"></div><p>Scanning Area...</p></div>;
+  if (loading) return <div className="rd-loading"><div className="rd-spinner"></div><p>Calculating Flood Impact...</p></div>;
 
   const severeZones = floodData?.data?.filter(d => d.depth >= 1.5) || [];
   const otherZones = floodData?.data?.filter(d => d.depth < 1.5) || [];
@@ -248,25 +255,56 @@ const FloodMap = () => {
 
   return (
     <div className="rd-container">
-      <nav className="rd-nav-overlay">
-        <div className="rd-wrapper rd-flex-between">
-            <div className="rd-brand">Periyar<span>Watch</span></div>
-            <button onClick={() => navigate('/')} className="nav-btn"><i className="fas fa-arrow-left"></i> Home</button>
+      {/* 1. Header */}
+      <div className="rd-hero" style={{ height: 'auto', paddingBottom: '60px' }}>
+        <nav className="rd-nav-overlay">
+          <div className="rd-wrapper rd-flex-between">
+              <div className="rd-brand"><i className="fas fa-water"></i> Periyar<span>Watch</span></div>
+              <div className="rd-links">
+                <button onClick={() => navigate('/river-dashboard')}>Back to Dashboard</button>
+              </div>
+          </div>
+        </nav>
+        <div className="rd-hero-content rd-wrapper" style={{display:'block', textAlign:'center', paddingTop:'30px'}}>
+            <span className="rd-pill"><i className="fas fa-globe-asia"></i> Geospatial Analysis</span>
+            <h1 style={{marginTop:'15px'}}>Flood Risk Map</h1>
+            <p className="rd-hero-sub" style={{margin:'10px auto'}}>
+              Simulation based on river water level at <strong>{floodData?.current_water_level}m</strong>.
+            </p>
         </div>
-      </nav>
+      </div>
 
-      <main className="rd-main-content rd-wrapper" style={{marginTop: '90px'}}>
-        <div style={{textAlign: 'center', marginBottom: '30px'}}>
-          <h2 style={{fontSize: '2rem', marginBottom:'5px'}}>Flood Impact Map</h2>
-          <p style={{opacity: 0.8}}>Showing areas affected if water reaches <strong>{floodData?.current_water_level}m</strong></p>
+      <main className="rd-main-content rd-wrapper">
+        
+        {/* ✅ NEW: ANALYSIS INDICATION / DISCLAIMER */}
+        <div style={{
+          background: '#eff6ff', 
+          border: '1px solid #bfdbfe', 
+          borderRadius: '8px', 
+          padding: '15px 20px', 
+          marginBottom: '25px', 
+          display: 'flex', 
+          gap: '15px',
+          alignItems: 'flex-start'
+        }}>
+          <i className="fas fa-info-circle" style={{color: '#1e40af', fontSize: '1.2rem', marginTop: '3px'}}></i>
+          <div>
+            <h4 style={{margin: '0 0 5px 0', color: '#1e3a8a', fontSize: '1rem'}}>Analysis Indication</h4>
+            <p style={{margin: 0, color: '#1e40af', fontSize: '0.9rem', lineHeight: '1.5'}}>
+              The areas highlighted below are determined based on <strong>previous analysis</strong> and historical flood data. 
+              This map projects the <strong>probability of water levels affecting chance areas</strong> corresponding to the current simulated river height. 
+              Please verify with local authorities for real-time evacuation orders.
+            </p>
+          </div>
         </div>
 
-        <section className="rd-section glass" style={{height: '500px', marginBottom: '40px', padding:'5px'}}>
-          <MapContainer center={[10.16, 76.43]} zoom={13} style={{ height: "100%", width: "100%", borderRadius: "8px" }}>
+        {/* 2. Map Card */}
+        <section className="rd-card" style={{height: '550px', padding: '0', overflow:'hidden', position:'relative', zIndex:1}}>
+          <MapContainer center={[10.16, 76.43]} zoom={13} style={{ height: "100%", width: "100%" }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
               {floodData?.data?.map((point, idx) => (
                   <CircleMarker 
-                      key={idx} center={[point.lat, point.lon]} radius={6}
+                      key={idx} center={[point.lat, point.lon]} radius={7}
                       pathOptions={{ color: 'white', weight:1, fillColor: point.depth >= 1.5 ? '#ef4444' : '#f59e0b', fillOpacity: 0.8 }}
                   >
                       <Popup><LocationPopup {...point} /></Popup>
@@ -275,14 +313,21 @@ const FloodMap = () => {
           </MapContainer>
         </section>
 
-        {/* 🚨 SEVERE ZONES */}
+        {/* 3. Severe Zones */}
         {severeZones.length > 0 && (
-          <section className="rd-section" style={{ borderTop: 'none' }}>
-            <div style={{ background: '#ef4444', color: 'white', padding: '15px', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <i className="fas fa-bullhorn" style={{fontSize:'1.5rem'}}></i>
-              <div><h3 style={{margin:0, fontSize:'1.2rem'}}>Severe Danger Zones ({severeZones.length})</h3></div>
+          <section className="rd-section" style={{ marginTop: '30px', border: 'none', padding:'0', overflow:'hidden' }}>
+            <div style={{ 
+              background: '#fee2e2', borderLeft: '4px solid #ef4444', color: '#991b1b', 
+              padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', borderRadius: '8px 8px 0 0' 
+            }}>
+              <i className="fas fa-exclamation-circle" style={{fontSize:'1.5rem'}}></i>
+              <div>
+                <h3 style={{margin:0, fontSize:'1.1rem'}}>Critical Impact Zones</h3>
+                <span style={{fontSize:'0.9rem', opacity:0.9}}>{severeZones.length} locations identified with depth {'>'} 1.5m</span>
+              </div>
             </div>
-            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '20px', borderRadius: '0 0 10px 10px' }}>
+            
+            <div style={{ background: '#fff', padding: '25px', border: '1px solid #e2e8f0', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
               {currentSevere.map((item, index) => (
                   <AffectedAreaItem key={index} data={item} index={index} />
               ))}
@@ -291,22 +336,27 @@ const FloodMap = () => {
           </section>
         )}
 
-        {/* 🟡 OTHER ZONES */}
+        {/* 4. Moderate Zones */}
         {otherZones.length > 0 && (
-          <section style={{ marginTop: '30px', marginBottom: '50px' }}>
-            <button 
-              onClick={() => setShowAllAreas(!showAllAreas)}
-              style={{
-                width: '100%', padding: '15px', background: showAllAreas ? '#f59e0b' : 'rgba(255,255,255,0.1)',
-                border: '2px solid #f59e0b', color: showAllAreas ? 'black' : '#f59e0b', borderRadius: '10px',
-                cursor: 'pointer', fontWeight: 'bold'
-              }}
-            >
-              {showAllAreas ? "Hide Moderate Areas" : `View ${otherZones.length} Other Affected Areas`}
-            </button>
+          <section style={{ marginTop: '40px', marginBottom: '60px' }}>
+            <div style={{textAlign:'center', marginBottom:'20px'}}>
+              <button 
+                onClick={() => setShowAllAreas(!showAllAreas)}
+                className="btn-secondary"
+                style={{
+                  padding: '12px 25px', background: showAllAreas ? '#f59e0b' : 'transparent',
+                  border: '2px solid #f59e0b', color: showAllAreas ? 'white' : '#d97706', 
+                  borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize:'0.95rem',
+                  display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
+                }}
+              >
+                {showAllAreas ? <><i className="fas fa-eye-slash"></i> Hide Moderate Areas</> : <><i className="fas fa-eye"></i> View {otherZones.length} Moderate Risk Areas</>}
+              </button>
+            </div>
             
             {showAllAreas && (
-              <div style={{ marginTop: '20px' }}>
+              <div className="rd-card">
+                 <h3 style={{fontSize:'1.1rem', marginBottom:'20px', color:'#d97706'}}>Moderate Impact Zones</h3>
                  {currentOther.map((item, index) => (
                     <AffectedAreaItem key={index} data={item} />
                  ))}
