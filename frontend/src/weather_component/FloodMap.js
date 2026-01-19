@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import "./RiverDashboard.css"; // Uses the new Government CSS
+import "./RiverDashboard.css"; 
 
 const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://aiiot-1.onrender.com'
@@ -12,12 +12,28 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
 const ITEMS_PER_PAGE = 10; 
 
 // ---------------------------------------------------------
-// 🧠 HELPER: Smart Name Generator
+// 🎨 HELPER: Risk Color Logic
 // ---------------------------------------------------------
+const getRiskStatus = (depth, isNormalState) => {
+  // If the overall river state is Normal, force everything to look Safe
+  if (isNormalState) {
+    return { 
+      color: "#10b981", // Green
+      bg: "rgba(16, 185, 129, 0.1)", 
+      label: "Safe / Normal Flow", 
+      icon: "fa-check-circle" 
+    };
+  }
+
+  // Otherwise, use the standard flood thresholds
+  if (depth <= 3) return { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", label: "Low Risk", icon: "fa-check-circle" };
+  if (depth < 8) return { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)", label: "Moderate Risk", icon: "fa-exclamation-circle" };
+  return { color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)", label: "Critical Risk", icon: "fa-exclamation-triangle" };
+};
+
 const generateSmartName = (osmData) => {
   if (!osmData) return "Unknown Location";
   const addr = osmData.address || {};
-  
   const street = addr.road || addr.street || addr.pedestrian || addr.path || addr.lane;
   const area = addr.neighbourhood || addr.suburb || addr.residential || addr.village;
   const town = addr.town || addr.city || addr.county;
@@ -25,20 +41,17 @@ const generateSmartName = (osmData) => {
   if (street && area) return `${street}, ${area}`;
   if (street && town) return `${street}, ${town}`;
   if (area && town) return `${area}, ${town}`;
-
-  if (osmData.display_name) {
-    const parts = osmData.display_name.split(", ");
-    return parts.slice(0, 2).join(", ");
-  }
+  if (osmData.display_name) return osmData.display_name.split(", ").slice(0, 2).join(", ");
   return town || "Flood Point";
 };
 
 // ---------------------------------------------------------
 // 📍 COMPONENT 1: Map Popup
 // ---------------------------------------------------------
-const LocationPopup = ({ lat, lon, depth, explanation }) => {
+const LocationPopup = ({ lat, lon, depth, explanation, isNormalState }) => {
   const [address, setAddress] = useState("Loading details...");
-  const [title, setTitle] = useState("Flood Point");
+  const [title, setTitle] = useState("Location Details");
+  const status = getRiskStatus(depth, isNormalState);
 
   useEffect(() => {
     const fetchAddress = async () => {
@@ -58,8 +71,14 @@ const LocationPopup = ({ lat, lon, depth, explanation }) => {
     <div style={{fontFamily: 'Inter, sans-serif', minWidth: '200px'}}>
       <strong style={{fontSize: '14px', color: '#1e3a8a', display:'block', marginBottom:'4px'}}>{title}</strong>
       <div style={{height:'1px', background:'#e2e8f0', margin:'4px 0'}}></div>
-      <div style={{fontSize:'12px', margin:'4px 0'}}><span style={{color:'#64748b'}}>Depth:</span> <strong style={{color:'#ef4444'}}>{depth}m</strong></div>
-      <div style={{fontSize:'12px', margin:'4px 0'}}><span style={{color:'#64748b'}}>Status:</span> {explanation}</div>
+      {/* Only show depth if NOT in normal state, to avoid confusing users with '10m' depth when river is low */}
+      {!isNormalState && (
+        <div style={{fontSize:'12px', margin:'4px 0'}}>
+          <span style={{color:'#64748b'}}>Est. Inundation:</span> 
+          <strong style={{color: status.color, marginLeft: '5px'}}>{depth}m</strong>
+        </div>
+      )}
+      <div style={{fontSize:'12px', margin:'4px 0'}}><span style={{color:'#64748b'}}>Condition:</span> <span style={{color: status.color, fontWeight:'600'}}>{status.label}</span></div>
       <div style={{fontSize:'11px', marginTop:'8px', color:'#94a3b8', lineHeight:'1.2', borderTop:'1px dashed #e2e8f0', paddingTop:'4px'}}>{address}</div>
     </div>
   );
@@ -116,11 +135,7 @@ const AffectedAreaItem = ({ data, index }) => {
   const [loading, setLoading] = useState(false);
   const [displayName, setDisplayName] = useState(data.place); 
 
-  const isSevere = data.depth >= 1.5;
-  const borderColor = isSevere ? "#ef4444" : "#f59e0b";
-  const bgBadge = isSevere ? "rgba(239, 68, 68, 0.1)" : "rgba(245, 158, 11, 0.1)";
-  const textBadge = isSevere ? "#b91c1c" : "#b45309";
-  const icon = isSevere ? "fa-exclamation-triangle" : "fa-water";
+  const status = getRiskStatus(data.depth, false); // Always show real status in list if list is visible
 
   const fetchDetails = async () => {
     if (details || loading) return; 
@@ -137,26 +152,26 @@ const AffectedAreaItem = ({ data, index }) => {
   };
 
   useEffect(() => {
-    if (isSevere) {
+    if (data.depth >= 8) {
       const timer = setTimeout(() => { fetchDetails(); }, index * 800);
       return () => clearTimeout(timer);
     }
-  }, [isSevere, index]);
+  }, [data.depth, index]);
 
   return (
     <div style={{
       background: '#ffffff', borderRadius: '8px', marginBottom: '16px',
-      border: '1px solid #e2e8f0', borderLeft: `4px solid ${borderColor}`, 
+      border: '1px solid #e2e8f0', borderLeft: `4px solid ${status.color}`, 
       padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       transition: 'transform 0.2s'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div style={{ 
-            background: bgBadge, color: textBadge, width: '45px', height: '45px', 
+            background: status.bg, color: status.color, width: '45px', height: '45px', 
             borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem'
           }}>
-            <i className={`fas ${icon}`}></i>
+            <i className={`fas ${status.icon}`}></i>
           </div>
           <div>
             <h4 style={{ margin: '0 0 5px 0', fontSize: '1.05rem', color: '#1f2937', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -165,7 +180,7 @@ const AffectedAreaItem = ({ data, index }) => {
             </h4>
             
             <span style={{ fontSize: '0.9rem', color: '#64748b' }}>
-              Inundation: <strong style={{color: textBadge}}>{data.depth}m</strong> • {isSevere ? "High Risk Zone" : "Moderate Risk"}
+              Inundation: <strong style={{color: status.color}}>{data.depth}m</strong> • {status.label}
             </span>
           </div>
         </div>
@@ -247,8 +262,16 @@ const FloodMap = () => {
 
   if (loading) return <div className="rd-loading"><div className="rd-spinner"></div><p>Calculating Flood Impact...</p></div>;
 
-  const severeZones = floodData?.data?.filter(d => d.depth >= 1.5) || [];
-  const otherZones = floodData?.data?.filter(d => d.depth < 1.5) || [];
+  const threshold = floodData?.current_water_level || 3.5;
+  
+  // ✅ SMART LOGIC: Is the situation actually dangerous?
+  // If the water level is <= 3.0m, we consider it "Normal" and "Safe".
+  // This prevents showing "Critical" red alerts when the river is actually safe.
+  const isNormalState = threshold <= 3.0;
+
+  // Filters
+  const severeZones = floodData?.data?.filter(d => d.depth >= threshold) || [];
+  const otherZones = floodData?.data?.filter(d => d.depth < threshold) || [];
 
   const currentSevere = severeZones.slice((severePage - 1) * ITEMS_PER_PAGE, severePage * ITEMS_PER_PAGE);
   const currentOther = otherZones.slice((otherPage - 1) * ITEMS_PER_PAGE, otherPage * ITEMS_PER_PAGE);
@@ -276,10 +299,10 @@ const FloodMap = () => {
 
       <main className="rd-main-content rd-wrapper">
         
-        {/* ✅ NEW: ANALYSIS INDICATION / DISCLAIMER */}
+        {/* ✅ UPDATED DISCLAIMER (Based on State) */}
         <div style={{
-          background: '#eff6ff', 
-          border: '1px solid #bfdbfe', 
+          background: isNormalState ? '#ecfdf5' : '#eff6ff', 
+          border: isNormalState ? '1px solid #10b981' : '1px solid #bfdbfe', 
           borderRadius: '8px', 
           padding: '15px 20px', 
           marginBottom: '25px', 
@@ -287,13 +310,40 @@ const FloodMap = () => {
           gap: '15px',
           alignItems: 'flex-start'
         }}>
-          <i className="fas fa-info-circle" style={{color: '#1e40af', fontSize: '1.2rem', marginTop: '3px'}}></i>
+          <i className={`fas ${isNormalState ? 'fa-check-circle' : 'fa-info-circle'}`} 
+             style={{color: isNormalState ? '#059669' : '#1e40af', fontSize: '1.2rem', marginTop: '3px'}}>
+          </i>
           <div>
-            <h4 style={{margin: '0 0 5px 0', color: '#1e3a8a', fontSize: '1rem'}}>Analysis Indication</h4>
-            <p style={{margin: 0, color: '#1e40af', fontSize: '0.9rem', lineHeight: '1.5'}}>
-              The areas highlighted below are determined based on <strong>previous analysis</strong> and historical flood data. 
-              This map projects the <strong>probability of water levels affecting chance areas</strong> corresponding to the current simulated river height. 
-              Please verify with local authorities for real-time evacuation orders.
+            <h4 style={{margin: '0 0 5px 0', color: isNormalState ? '#047857' : '#1e3a8a', fontSize: '1rem'}}>
+              {isNormalState ? "Conditions Normal" : "Analysis Indication"}
+            </h4>
+            <p style={{
+              margin: 0, 
+              // Update color based on specific severity: Green (Normal) / Orange (Caution) / Red (Critical)
+              color: isNormalState ? '#065f46' : (threshold < 8 ? '#c2410c' : '#b91c1c'), 
+              fontSize: '0.9rem', 
+              lineHeight: '1.5'
+            }}>
+              {isNormalState 
+                ? "Current water levels are within safe limits. The map below shows the river channel and potential flood-prone areas. No active flood alerts."
+                : threshold < 8 
+                  ? (
+                    // CAUTION STATE (3m - 8m)
+                    <>
+                      <strong>⚠️ CAUTION:</strong> Water levels are elevated ({threshold}m). 
+                      Moderate flood risk detected in <span style={{color:'#f59e0b', fontWeight:'bold'}}>caution</span>. 
+                      Residents in low-lying areas should stay alert.
+                    </>
+                  )
+                  : (
+                    // CRITICAL STATE (> 8m)
+                    <>
+                      <strong>🚨 CRITICAL WARNING:</strong> Severe flooding imminent. Water level is at <strong style={{textDecoration:'underline'}}>{threshold}m</strong>. 
+                      High danger in <span style={{color:'#ef4444', fontWeight:'bold'}}>Critical Zones</span>. 
+                      Immediate precautions recommended.
+                    </>
+                  )
+              }
             </p>
           </div>
         </div>
@@ -302,68 +352,96 @@ const FloodMap = () => {
         <section className="rd-card" style={{height: '550px', padding: '0', overflow:'hidden', position:'relative', zIndex:1}}>
           <MapContainer center={[10.16, 76.43]} zoom={13} style={{ height: "100%", width: "100%" }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
-              {floodData?.data?.map((point, idx) => (
-                  <CircleMarker 
-                      key={idx} center={[point.lat, point.lon]} radius={7}
-                      pathOptions={{ color: 'white', weight:1, fillColor: point.depth >= 1.5 ? '#ef4444' : '#f59e0b', fillOpacity: 0.8 }}
-                  >
-                      <Popup><LocationPopup {...point} /></Popup>
-                  </CircleMarker>
-              ))}
+              {floodData?.data?.map((point, idx) => {
+                  // ✅ Pass isNormalState to force Green dots if safe
+                  const status = getRiskStatus(point.depth, isNormalState);
+                  return (
+                    <CircleMarker 
+                        key={idx} center={[point.lat, point.lon]} radius={7}
+                        pathOptions={{ 
+                          color: 'white', 
+                          weight: 1, 
+                          fillColor: status.color, 
+                          fillOpacity: 0.8 
+                        }}
+                    >
+                        <Popup><LocationPopup {...point} isNormalState={isNormalState} /></Popup>
+                    </CircleMarker>
+                  );
+              })}
           </MapContainer>
         </section>
 
-        {/* 3. Severe Zones */}
-        {severeZones.length > 0 && (
-          <section className="rd-section" style={{ marginTop: '30px', border: 'none', padding:'0', overflow:'hidden' }}>
-            <div style={{ 
-              background: '#fee2e2', borderLeft: '4px solid #ef4444', color: '#991b1b', 
-              padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', borderRadius: '8px 8px 0 0' 
-            }}>
-              <i className="fas fa-exclamation-circle" style={{fontSize:'1.5rem'}}></i>
-              <div>
-                <h3 style={{margin:0, fontSize:'1.1rem'}}>Critical Impact Zones</h3>
-                <span style={{fontSize:'0.9rem', opacity:0.9}}>{severeZones.length} locations identified with depth {'>'} 1.5m</span>
-              </div>
-            </div>
-            
-            <div style={{ background: '#fff', padding: '25px', border: '1px solid #e2e8f0', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
-              {currentSevere.map((item, index) => (
-                  <AffectedAreaItem key={index} data={item} index={index} />
-              ))}
-              <Pagination currentPage={severePage} totalItems={severeZones.length} onPageChange={setSeverePage} />
-            </div>
-          </section>
-        )}
-
-        {/* 4. Moderate Zones */}
-        {otherZones.length > 0 && (
-          <section style={{ marginTop: '40px', marginBottom: '60px' }}>
-            <div style={{textAlign:'center', marginBottom:'20px'}}>
-              <button 
-                onClick={() => setShowAllAreas(!showAllAreas)}
-                className="btn-secondary"
-                style={{
-                  padding: '12px 25px', background: showAllAreas ? '#f59e0b' : 'transparent',
-                  border: '2px solid #f59e0b', color: showAllAreas ? 'white' : '#d97706', 
-                  borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize:'0.95rem',
-                  display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
-                }}
-              >
-                {showAllAreas ? <><i className="fas fa-eye-slash"></i> Hide Moderate Areas</> : <><i className="fas fa-eye"></i> View {otherZones.length} Moderate Risk Areas</>}
-              </button>
-            </div>
-            
-            {showAllAreas && (
-              <div className="rd-card">
-                 <h3 style={{fontSize:'1.1rem', marginBottom:'20px', color:'#d97706'}}>Moderate Impact Zones</h3>
-                 {currentOther.map((item, index) => (
-                    <AffectedAreaItem key={index} data={item} />
-                 ))}
-                 <Pagination currentPage={otherPage} totalItems={otherZones.length} onPageChange={setOtherPage} />
-              </div>
+        {/* 3. CONDITIONAL LIST DISPLAY */}
+        
+        {/* Case A: NORMAL STATE (Hide confusing lists) */}
+        {isNormalState ? (
+           <div style={{
+             marginTop: '30px', padding: '40px', textAlign: 'center', 
+             background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'
+           }}>
+             <div style={{fontSize: '3rem', color: '#10b981', marginBottom: '15px'}}><i className="fas fa-shield-alt"></i></div>
+             <h3 style={{color: '#064e3b', marginBottom: '10px'}}>Region is currently Safe</h3>
+             <p style={{color: '#64748b', maxWidth: '600px', margin: '0 auto'}}>
+               The Periyar river level at Kalady is currently <strong>{threshold}m</strong>, which is below the flood warning threshold (3.0m). 
+               No inundation detected in residential areas.
+             </p>
+           </div>
+        ) : (
+          /* Case B: ALERT STATE (Show Critical Lists) */
+          <>
+            {severeZones.length > 0 && (
+              <section className="rd-section" style={{ marginTop: '30px', border: 'none', padding:'0', overflow:'hidden' }}>
+                <div style={{ 
+                  background: '#fee2e2', borderLeft: '4px solid #ef4444', color: '#991b1b', 
+                  padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', borderRadius: '8px 8px 0 0' 
+                }}>
+                  <i className="fas fa-exclamation-circle" style={{fontSize:'1.5rem'}}></i>
+                  <div>
+                    <h3 style={{margin:0, fontSize:'1.1rem'}}>Critical Impact Zones</h3>
+                    <span style={{fontSize:'0.9rem', opacity:0.9}}>{severeZones.length} locations identified with depth {'>'} {threshold}m</span>
+                  </div>
+                </div>
+                
+                <div style={{ background: '#fff', padding: '25px', border: '1px solid #e2e8f0', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
+                  {currentSevere.map((item, index) => (
+                      <AffectedAreaItem key={index} data={item} index={index} />
+                  ))}
+                  <Pagination currentPage={severePage} totalItems={severeZones.length} onPageChange={setSeverePage} />
+                </div>
+              </section>
             )}
-          </section>
+
+            {/* Moderate Zones List (Only show in Alert State) */}
+            {otherZones.length > 0 && (
+              <section style={{ marginTop: '40px', marginBottom: '60px' }}>
+                <div style={{textAlign:'center', marginBottom:'20px'}}>
+                  <button 
+                    onClick={() => setShowAllAreas(!showAllAreas)}
+                    className="btn-secondary"
+                    style={{
+                      padding: '12px 25px', background: showAllAreas ? '#f59e0b' : 'transparent',
+                      border: '2px solid #f59e0b', color: showAllAreas ? 'white' : '#d97706', 
+                      borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize:'0.95rem',
+                      display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
+                    }}
+                  >
+                    {showAllAreas ? <><i className="fas fa-eye-slash"></i> Hide Moderate Areas</> : <><i className="fas fa-eye"></i> View {otherZones.length} Moderate Risk Areas</>}
+                  </button>
+                </div>
+                
+                {showAllAreas && (
+                  <div className="rd-card">
+                    <h3 style={{fontSize:'1.1rem', marginBottom:'20px', color:'#d97706'}}>Moderate Impact Zones</h3>
+                    {currentOther.map((item, index) => (
+                        <AffectedAreaItem key={index} data={item} />
+                    ))}
+                    <Pagination currentPage={otherPage} totalItems={otherZones.length} onPageChange={setOtherPage} />
+                  </div>
+                )}
+              </section>
+            )}
+          </>
         )}
       </main>
     </div>

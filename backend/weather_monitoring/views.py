@@ -481,73 +481,88 @@ def debug_read_s3_csv(request):
 @require_GET
 def flood_analysis(request):
     """
-    Returns flood zones. 
-    If 'level' param is provided (e.g. ?level=3.56), it simulates that specific scenario.
-    Otherwise, it fetches the real-time sensor level from S3.
+    Returns flood zones based on the REAL-TIME water level from S3.
     """
-    # LOG: Function Start
-    print("\n" + "="*50)
-    print("🌊 FLOOD ANALYSIS REQUEST STARTED")
-    
-    # 1. Check if frontend requested a simulation
-    simulated_level = request.GET.get('level')
-    print(f"📥 Received 'level' param: {simulated_level}")
-    
-    current_water_level = 3
+    # ... (Keep existing imports if needed) ...
 
-    if simulated_level:
+    # 1. Check if frontend requested a simulation (Manual Override)
+    simulated_level = request.GET.get('level')
+    current_water_level = 0.0
+
+    if simulated_level and simulated_level != "--":
         try:
-            # Use the clicked forecast level
             current_water_level = float(simulated_level)
-            print(f"🔹 MODE: SIMULATION | Level set to: {current_water_level}m")
+            print(f"🧪 SIMULATION MODE: Using simulated water level {current_water_level}m")
         except ValueError:
             current_water_level = 0.0
-            print("❌ ERROR: Invalid simulation level provided. Defaulting to 0.0m")
     else:
-        # --- FALLBACK: GET REAL-TIME LEVEL FROM S3 (Existing Logic) ---
-        print("🔹 MODE: REAL-TIME (Fetching from S3...)")
+        # --- ✅ FIXED S3 FETCHING LOGIC (Matches RiverDashboard.js) ---
         bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
         key = "aqi-training/latest_water_level.csv"
         
         try:
-            # (Your existing S3 code here)
-            if os.getenv('AWS_ACCESS_KEY_ID') and os.getenv('AWS_SECRET_ACCESS_KEY'):
-                s3 = boto3.client(
-                    's3', 
-                    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'), 
-                    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'), 
-                    region_name=os.getenv('AWS_S3_REGION_NAME', 'us-east-1')
-                )
-            else:
-                s3 = boto3.client('s3', region_name=os.getenv('AWS_S3_REGION_NAME', 'us-east-1'))
+            # Initialize S3 (Ensure Region is correct)
+            s3 = boto3.client(
+                's3', 
+                aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'), 
+                aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'), 
+                region_name=os.getenv('AWS_S3_REGION_NAME', 'ap-south-1')
+            )
 
+            # Read File
             obj = s3.get_object(Bucket=bucket, Key=key)
-            content = obj['Body'].read().decode('utf-8').splitlines()
+            content = obj['Body'].read().decode('utf-8').strip().splitlines()
             
-            if len(content) > 1:
-                last_line = content[-1].split(',')
-                val = last_line[-1].strip() 
-                current_water_level = float(val) if val else 0.0
-                print(f"✅ S3 FETCH SUCCESS: Real-time Level is {current_water_level}m")
-            else:
-                print("⚠️ S3 WARNING: File empty or format incorrect.")
-                
-        except Exception as e:
-            print(f"❌ S3 ERROR (using default): {e}")
-            current_water_level = 0.0 
+            # Filter out empty lines
+            valid_lines = [line for line in content if line.strip()]
 
-    # --- 2. CHECK THRESHOLD (Safe Level) ---
-    # Only skip if it's REAL-TIME mode. If it's a SIMULATION, run it anyway.
-    if not simulated_level and current_water_level < 0.0:
-        print("🟢 STATUS: Level Safe (< 0.0m). Skipping heavy processing.")
+            if len(valid_lines) > 1:
+                # 1. Parse Headers (First Line)
+                headers = [h.strip().lower() for h in valid_lines[0].split(',')]
+                
+                # 2. Find "level" column index
+                try:
+                    target_index = headers.index('level')
+                except ValueError:
+                    target_index = -1
+
+                # 3. Get Last Data Line
+                last_line = valid_lines[-1]
+                values = [v.strip() for v in last_line.split(',')]
+
+                # 4. Extract Value Safely
+                if target_index != -1 and len(values) > target_index:
+                    # Best Case: We found the "level" column
+                    val_str = values[target_index]
+                else:
+                    # Fallback: RiverDashboard Logic (Last valid value)
+                    valid_values = [v for v in values if v]
+                    val_str = valid_values[-1] if valid_values else "0"
+
+                # 5. Convert to Float
+                current_water_level = float(val_str)
+                print(f"✅ S3 FETCH SUCCESS: Real-time Level is {current_water_level}m")
+
+            else:
+                print("⚠️ S3 WARNING: File is empty or missing headers.")
+
+        except Exception as e:
+            print(f"❌ S3 ERROR in flood_analysis: {e}")
+            # Do NOT default to 0.0 silently if we want to debug, but for safety we keep it 0.0
+            current_water_level = 0.0
+
+    # --- 2. CHECK THRESHOLD (Optimization) ---
+    # Only skip if it's REAL-TIME mode (not simulation) AND level is very low
+    if not simulated_level and current_water_level < 0.1:
         return JsonResponse({
             "status": "normal",
-            "message": "Water level is safe. No flood analysis needed.",
+            "message": "Water level is safe/low. No flood analysis needed.",
             "current_water_level": current_water_level,
             "data": []
         })
 
-    # --- 3. PROCESS TIFF FILE (Calculates Lat/Lon for Map) ---
+    # --- 3. PROCESS TIFF FILE (Geo-Analysis) ---
+    # (This part of your code was correct, keep it as is)
     try:
         import rasterio
         from rasterio.warp import transform
@@ -555,7 +570,6 @@ def flood_analysis(request):
         from django.conf import settings
 
         tif_path = os.path.join(settings.BASE_DIR, 'weather_monitoring', 'kalady_dem.tif')
-        print(f"📂 Loading GeoTIFF: {tif_path}")
         
         flooded_locations = []
         
@@ -569,30 +583,19 @@ def flood_analysis(request):
             valid_mask = (dem != nodata) & (dem <= current_water_level)
             rows, cols = np.where(valid_mask)
             
-            print(f"⚠️  Potential Flood Pixels Found: {len(rows)}")
-
-            # Optimization: Downsample (adjust step as needed)
+            # Optimization: Downsample
             step = 10 if len(rows) > 5000 else 1 
             rows, cols = rows[::step], cols[::step]
             
-            print(f"⚡ Optimization: Downsampling step={step}. Processing {len(rows)} points.")
-
             if len(rows) > 0:
                 xs, ys = rasterio.transform.xy(transform_affine, rows, cols)
                 lons, lats = transform(crs, "EPSG:4326", xs, ys)
                 ground_levels = dem[rows, cols]
 
-                # --- NEW FAST GEOCODING LOGIC STARTS HERE ---
-                print("🌍 Starting Batch Geocoding (Reverse Geocoder)...")
-                
-                # 1. Prepare all coordinates for batch processing
+                # Batch Geocoding
                 coords_for_geocoding = list(zip(lats, lons))
-
-                # 2. Perform offline batch search (Takes milliseconds)
-                # This returns a list of dictionaries [{'name': 'Kalady', ...}, ...]
                 geo_results = rg.search(coords_for_geocoding)
 
-                # 3. Iterate and build response
                 for i, (lat, lon, ground_h) in enumerate(zip(lats, lons, ground_levels)):
                     depth = current_water_level - ground_h
                     
@@ -601,7 +604,6 @@ def flood_analysis(request):
                     elif depth < 3.0: expl = "Significant Flooding"
                     else: expl = "Severe Flooding"
 
-                    # Get place name from the batch result
                     place = geo_results[i].get('name', 'Unknown Area')
 
                     flooded_locations.append({
@@ -609,17 +611,12 @@ def flood_analysis(request):
                         "lon": round(lon, 6),
                         "depth": round(float(depth), 2),
                         "explanation": expl,
-                        "place": place  # Now contains correct Village/Town name
+                        "place": place 
                     })
-                 # --- NEW LOGIC ENDS HERE ---
-                print("✅ Geocoding Complete.")
 
     except Exception as e:
         print(f"❌ CRITICAL ERROR in Analysis: {e}")
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-    print(f"🚀 RETURNING RESPONSE: {len(flooded_locations)} zones identified.")
-    print("="*50 + "\n")
     
     return JsonResponse({
         "status": "alert",
@@ -627,9 +624,6 @@ def flood_analysis(request):
         "flooded_count": len(flooded_locations),
         "data": flooded_locations
     })
-
-
-
 def get_place(lat, lon):
     try:
         url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
