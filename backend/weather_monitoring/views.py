@@ -45,6 +45,7 @@ except Exception as e:
 try:
     dynamodb = boto3.resource('dynamodb', region_name=os.getenv('AWS_DYNAMODB_REGION', 'us-east-1'))
     weather_table = dynamodb.Table('weather_station_data')
+    weather_table_v2 = dynamodb.Table('Weather_station_data_v2')
     requests_table = dynamodb.Table('data_requests')
 except Exception as e:
     dynamodb = None
@@ -64,100 +65,254 @@ class DecimalEncoder(json.JSONEncoder):
 def get_current_weather(request):
     """
     GET /api/weather/current
-    Returns the latest weather reading
+    Smartly routes requests to V1 (Old) or V2 (New) tables based on station ID.
     """
     try:
-        # Note: Ensure the device_id matches exactly what is in your DynamoDB
-        # Your code used ' weather-v2' (with a leading space). Keep it if that's correct.
-        response = weather_table.query(
-            KeyConditionExpression=Key('device_id').eq(' weather-v2'),
-            ScanIndexForward=False,
-            Limit=1
-        )
-        
-        items = response.get('Items', [])
-        if not items:
-            return JsonResponse({"error": "No data found"}, status=404)
-        
-        # --- FIX IS HERE ---
-        # Access the first item in the list using index [0]
-        latest = items[0]['data']['decoded_payload'] 
-        
-        # Convert Decimal to float
-        result = {k: float(v) if isinstance(v, Decimal) else v for k, v in latest.items()}
-        
-        return JsonResponse(result, encoder=DecimalEncoder)
-        
+        # 1. Get the station ID from URL parameters (default to 'weather-v2' if missing)
+        # Frontend sends ?stationid=aws-asiet-v1 or ?stationid=weather-v2
+        station_id = request.GET.get('stationid', 'weather-v2').strip()
+
+        # =========================================================
+        # SCENARIO 1: NEW STATION (aws-asiet-v1)
+        # Uses 'Weather_station_data_v2' table with flat schema
+        # =========================================================
+        if station_id == 'aws-asiet-v1':
+            # Query the V2 table
+            response = weather_table_v2.query(
+                KeyConditionExpression=Key('device_id').eq(station_id),
+                ScanIndexForward=False, # Latest first
+                Limit=1
+            )
+            
+            items = response.get('Items', [])
+            if not items:
+                return JsonResponse({"error": "No data found for V2 station"}, status=404)
+
+            # Extract the 'payload' directly (Data is flattened in V2)
+            # DynamoDB might wrap numbers in Decimal, so we handle that below
+            latest_item = items[0]
+            payload = latest_item.get('payload', {})
+
+            # Helper to safely clean DynamoDB formats (e.g., {"N": "30"} -> 30.0)
+            def get_val(key, default=0.0):
+                val = payload.get(key, default)
+                
+                # Handle DynamoDB JSON format like {'N': '43'}
+                if isinstance(val, dict):
+                    if 'N' in val: return float(val['N'])
+                    if 'S' in val: return val['S']
+                
+                # Handle standard Decimal or Number types
+                if isinstance(val, (int, float, Decimal)):
+                    return float(val)
+                return default
+
+            # Parse custom time format "17:01:2026:16:49" (DD:MM:YYYY:HH:MM)
+            # Sometimes it comes as a string, sometimes as a dict {"S": "..."}
+            raw_time_obj = payload.get('server_time', '')
+            raw_time = raw_time_obj.get('S', '') if isinstance(raw_time_obj, dict) else raw_time_obj
+            
+            date_str, time_str = "N/A", "N/A"
+            if raw_time and ':' in raw_time:
+                try:
+                    p = raw_time.split(':') # ['17', '01', '2026', '16', '49']
+                    if len(p) >= 5:
+                        date_str = f"{p[2]}-{p[1]}-{p[0]}" # YYYY-MM-DD
+                        time_str = f"{p[3]}:{p[4]}"        # HH:MM
+                except:
+                    pass
+
+            # Map New V2 Fields -> Old Frontend Fields
+            result = {
+                "temperature": get_val('temperature_c'),    # Maps temperature_c -> temperature
+                "humidity": get_val('humidity'),
+                "airPressure": 1013,                        # Default (Sensor missing in V2)
+                "WindSpeedAvg": round(get_val('wind_speed_kph') / 3.6, 2), # Convert kph -> m/s
+                "windDirection": get_val('wind_direction'),
+                "rainfall1h": get_val('rain_1h_mm'),
+                "rainfall24h": get_val('rain_24h_mm'),      # New V2 Feature
+                "date": date_str,
+                "time": time_str
+            }
+            return JsonResponse(result, encoder=DecimalEncoder)
+
+        # =========================================================
+        # SCENARIO 2: OLD STATION (weather-v2)
+        # Uses 'weather_station_data' table with nested 'decoded_payload'
+        # =========================================================
+        else:
+            # Your old database keys have a leading space (e.g., " weather-v2")
+            # We preserve this logic for backward compatibility
+            target_id = ' weather-v2' if station_id == 'weather-v2' else station_id
+            
+            response = weather_table.query(
+                KeyConditionExpression=Key('device_id').eq(target_id),
+                ScanIndexForward=False,
+                Limit=1
+            )
+            
+            items = response.get('Items', [])
+            if not items:
+                return JsonResponse({"error": "No data found for V1 station"}, status=404)
+            
+            # Old data structure is nested inside data -> decoded_payload
+            latest = items[0]['data']['decoded_payload']
+            
+            # Return as is, just converting Decimals to floats
+            result = {k: float(v) if isinstance(v, Decimal) else v for k, v in latest.items()}
+            return JsonResponse(result, encoder=DecimalEncoder)
+
     except Exception as e:
-        # Check your terminal for this print statement to see the exact error
         print(f"Error in get_current_weather: {str(e)}")
         return JsonResponse({"error": "Failed to fetch weather data"}, status=500)
-
 
 @require_GET
 def get_historical_data(request):
     """
     GET /api/weather/historical-data?days=3&station_id=weather-v2
-    Returns historical weather data
+    Returns historical weather data for both V1 (Old) and V2 (New) stations.
     """
     try:
         days = int(request.GET.get('days', 3))
-        station_id_from_request = request.GET.get('station_id', 'weather-v2')
+        station_id_from_request = request.GET.get('station_id', 'weather-v2').strip()
         
-        # Handle device_id with leading space
-        actual_device_id_in_db = ' ' + station_id_from_request.strip()
-        
+        # Calculate Date Range
         end_date = datetime.now().date()
         start_date = end_date - timedelta(days=days - 1)
         start_date_str = start_date.strftime('%Y-%m-%d')
         end_date_str = end_date.strftime('%Y-%m-%d')
-        
-        filter_expression = (
-            Attr('device_id').eq(actual_device_id_in_db) & 
-            Attr('data.decoded_payload.date').between(start_date_str, end_date_str)
-        )
-        
-        response = weather_table.scan(FilterExpression=filter_expression)
-        items = response.get('Items', [])
-        
-        # Handle pagination
-        while 'LastEvaluatedKey' in response:
-            response = weather_table.scan(
-                FilterExpression=filter_expression,
-                ExclusiveStartKey=response['LastEvaluatedKey']
+
+        # =========================================================
+        # SCENARIO 1: NEW STATION (aws-asiet-v1) - Uses V2 Table
+        # =========================================================
+        if station_id_from_request == 'aws-asiet-v1':
+            # V2 uses 'received_at' (ISO 8601) for time filtering
+            # We add time components to ensure we capture the full days
+            start_iso = f"{start_date_str}T00:00:00"
+            end_iso = f"{end_date_str}T23:59:59"
+
+            filter_expression = (
+                Attr('device_id').eq(station_id_from_request) & 
+                Attr('received_at').between(start_iso, end_iso)
             )
-            items.extend(response.get('Items', []))
-        
-        if not items:
-            return JsonResponse({
-                "error": f"No data found for station '{station_id_from_request}' in the last {days} days."
-            }, status=404)
-        
-        # Sort and format items
-        sorted_items = sorted(
-            items,
-            key=lambda x: f"{x.get('data', {}).get('decoded_payload', {}).get('date', '')} {x.get('data', {}).get('decoded_payload', {}).get('time', '')}"
-        )
-        
-        formatted_data = []
-        for item in sorted_items:
-            payload = item.get('data', {}).get('decoded_payload', {})
-            if payload and 'date' in payload and 'time' in payload:
-                timestamp = f"{payload['date']}T{payload['time']}"
-                data_point = {'timestamp': timestamp}
-                for key, value in payload.items():
-                    if isinstance(value, Decimal):
-                        data_point[key] = float(value)
-                    else:
-                        data_point[key] = value
+
+            # Use the V2 Table
+            response = weather_table_v2.scan(FilterExpression=filter_expression)
+            items = response.get('Items', [])
+
+            # Handle Pagination for V2
+            while 'LastEvaluatedKey' in response:
+                response = weather_table_v2.scan(
+                    FilterExpression=filter_expression,
+                    ExclusiveStartKey=response['LastEvaluatedKey']
+                )
+                items.extend(response.get('Items', []))
+
+            if not items:
+                 return JsonResponse({
+                    "error": f"No data found for station '{station_id_from_request}' in the last {days} days."
+                }, status=404)
+
+            # Helper to safely extract numbers from DynamoDB JSON (e.g. {"N": "30"})
+            def get_val(source, key):
+                val = source.get(key, 0)
+                if isinstance(val, dict):
+                    if 'N' in val: return float(val['N'])
+                    if 'S' in val: return val['S']
+                if isinstance(val, (int, float, Decimal)):
+                    return float(val)
+                return 0.0
+
+            formatted_data = []
+            
+            for item in items:
+                payload = item.get('payload', {})
+                
+                # Parse Time: Try 'server_time' (DD:MM:YYYY:HH:MM), fallback to 'received_at'
+                raw_time_obj = payload.get('server_time', '')
+                raw_time = raw_time_obj.get('S', '') if isinstance(raw_time_obj, dict) else raw_time_obj
+                
+                timestamp = item.get('received_at', '') # Default fallback
+                
+                if raw_time and ':' in raw_time:
+                    try:
+                        p = raw_time.split(':') # ['17', '01', '2026', '16', '49']
+                        if len(p) >= 5:
+                            # Reformat to ISO: YYYY-MM-DDTHH:MM:SS
+                            timestamp = f"{p[2]}-{p[1]}-{p[0]}T{p[3]}:{p[4]}:00"
+                    except:
+                        pass
+                
+                # Normalize Data to match Frontend expectations
+                data_point = {
+                    'timestamp': timestamp,
+                    'temperature': get_val(payload, 'temperature_c'),
+                    'humidity': get_val(payload, 'humidity'),
+                    'airPressure': 1013, # Default
+                    'WindSpeedAvg': round(get_val(payload, 'wind_speed_kph') / 3.6, 2), # Convert kph -> m/s
+                    'windDirection': get_val(payload, 'wind_direction'),
+                    'rainfall1h': get_val(payload, 'rain_1h_mm'),
+                    'rainfall24h': get_val(payload, 'rain_24h_mm')
+                }
                 formatted_data.append(data_point)
-        
-        return JsonResponse({'data': formatted_data}, encoder=DecimalEncoder)
+
+            # Sort by timestamp
+            formatted_data.sort(key=lambda x: x['timestamp'])
+
+            return JsonResponse({'data': formatted_data}, encoder=DecimalEncoder)
+
+        # =========================================================
+        # SCENARIO 2: OLD STATION (weather-v2) - Uses Old Table
+        # =========================================================
+        else:
+            # Handle device_id with leading space (Legacy DB requirement)
+            actual_device_id_in_db = ' ' + station_id_from_request.strip()
+            
+            filter_expression = (
+                Attr('device_id').eq(actual_device_id_in_db) & 
+                Attr('data.decoded_payload.date').between(start_date_str, end_date_str)
+            )
+            
+            response = weather_table.scan(FilterExpression=filter_expression)
+            items = response.get('Items', [])
+            
+            # Handle pagination
+            while 'LastEvaluatedKey' in response:
+                response = weather_table.scan(
+                    FilterExpression=filter_expression,
+                    ExclusiveStartKey=response['LastEvaluatedKey']
+                )
+                items.extend(response.get('Items', []))
+            
+            if not items:
+                return JsonResponse({
+                    "error": f"No data found for station '{station_id_from_request}' in the last {days} days."
+                }, status=404)
+            
+            # Sort and format items
+            sorted_items = sorted(
+                items,
+                key=lambda x: f"{x.get('data', {}).get('decoded_payload', {}).get('date', '')} {x.get('data', {}).get('decoded_payload', {}).get('time', '')}"
+            )
+            
+            formatted_data = []
+            for item in sorted_items:
+                payload = item.get('data', {}).get('decoded_payload', {})
+                if payload and 'date' in payload and 'time' in payload:
+                    timestamp = f"{payload['date']}T{payload['time']}"
+                    data_point = {'timestamp': timestamp}
+                    for key, value in payload.items():
+                        if isinstance(value, Decimal):
+                            data_point[key] = float(value)
+                        else:
+                            data_point[key] = value
+                    formatted_data.append(data_point)
+            
+            return JsonResponse({'data': formatted_data}, encoder=DecimalEncoder)
         
     except Exception as e:
         print(f"Error in get_historical_data: {str(e)}")
         return JsonResponse({"error": "An unexpected server error occurred"}, status=500)
-
 
 @csrf_exempt
 @require_POST
@@ -330,28 +485,41 @@ def flood_analysis(request):
     If 'level' param is provided (e.g. ?level=3.56), it simulates that specific scenario.
     Otherwise, it fetches the real-time sensor level from S3.
     """
+    # LOG: Function Start
+    print("\n" + "="*50)
+    print("🌊 FLOOD ANALYSIS REQUEST STARTED")
+    
     # 1. Check if frontend requested a simulation
     simulated_level = request.GET.get('level')
+    print(f"📥 Received 'level' param: {simulated_level}")
     
-    current_water_level = 0.0
+    current_water_level = 3
 
     if simulated_level:
         try:
             # Use the clicked forecast level
             current_water_level = float(simulated_level)
+            print(f"🔹 MODE: SIMULATION | Level set to: {current_water_level}m")
         except ValueError:
             current_water_level = 0.0
+            print("❌ ERROR: Invalid simulation level provided. Defaulting to 0.0m")
     else:
         # --- FALLBACK: GET REAL-TIME LEVEL FROM S3 (Existing Logic) ---
+        print("🔹 MODE: REAL-TIME (Fetching from S3...)")
         bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
         key = "aqi-training/latest_water_level.csv"
         
         try:
             # (Your existing S3 code here)
-            if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-                s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+            if os.getenv('AWS_ACCESS_KEY_ID') and os.getenv('AWS_SECRET_ACCESS_KEY'):
+                s3 = boto3.client(
+                    's3', 
+                    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'), 
+                    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'), 
+                    region_name=os.getenv('AWS_S3_REGION_NAME', 'us-east-1')
+                )
             else:
-                s3 = boto3.client('s3', region_name=AWS_REGION)
+                s3 = boto3.client('s3', region_name=os.getenv('AWS_S3_REGION_NAME', 'us-east-1'))
 
             obj = s3.get_object(Bucket=bucket, Key=key)
             content = obj['Body'].read().decode('utf-8').splitlines()
@@ -360,16 +528,18 @@ def flood_analysis(request):
                 last_line = content[-1].split(',')
                 val = last_line[-1].strip() 
                 current_water_level = float(val) if val else 0.0
+                print(f"✅ S3 FETCH SUCCESS: Real-time Level is {current_water_level}m")
+            else:
+                print("⚠️ S3 WARNING: File empty or format incorrect.")
                 
         except Exception as e:
-            print(f"⚠️ S3 Error (using default): {e}")
+            print(f"❌ S3 ERROR (using default): {e}")
             current_water_level = 0.0 
 
     # --- 2. CHECK THRESHOLD (Safe Level) ---
-    # If level is low (< 3.0), return empty list to save processing power
-    # --- 2. CHECK THRESHOLD (Safe Level) ---
     # Only skip if it's REAL-TIME mode. If it's a SIMULATION, run it anyway.
     if not simulated_level and current_water_level < 0.0:
+        print("🟢 STATUS: Level Safe (< 0.0m). Skipping heavy processing.")
         return JsonResponse({
             "status": "normal",
             "message": "Water level is safe. No flood analysis needed.",
@@ -385,6 +555,8 @@ def flood_analysis(request):
         from django.conf import settings
 
         tif_path = os.path.join(settings.BASE_DIR, 'weather_monitoring', 'kalady_dem.tif')
+        print(f"📂 Loading GeoTIFF: {tif_path}")
+        
         flooded_locations = []
         
         with rasterio.open(tif_path) as src:
@@ -397,16 +569,21 @@ def flood_analysis(request):
             valid_mask = (dem != nodata) & (dem <= current_water_level)
             rows, cols = np.where(valid_mask)
             
+            print(f"⚠️  Potential Flood Pixels Found: {len(rows)}")
+
             # Optimization: Downsample (adjust step as needed)
             step = 10 if len(rows) > 5000 else 1 
             rows, cols = rows[::step], cols[::step]
             
+            print(f"⚡ Optimization: Downsampling step={step}. Processing {len(rows)} points.")
+
             if len(rows) > 0:
                 xs, ys = rasterio.transform.xy(transform_affine, rows, cols)
                 lons, lats = transform(crs, "EPSG:4326", xs, ys)
                 ground_levels = dem[rows, cols]
 
                 # --- NEW FAST GEOCODING LOGIC STARTS HERE ---
+                print("🌍 Starting Batch Geocoding (Reverse Geocoder)...")
                 
                 # 1. Prepare all coordinates for batch processing
                 coords_for_geocoding = list(zip(lats, lons))
@@ -435,18 +612,21 @@ def flood_analysis(request):
                         "place": place  # Now contains correct Village/Town name
                     })
                  # --- NEW LOGIC ENDS HERE ---
+                print("✅ Geocoding Complete.")
 
     except Exception as e:
-        print(f"Error in flood analysis: {e}")
+        print(f"❌ CRITICAL ERROR in Analysis: {e}")
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
+    print(f"🚀 RETURNING RESPONSE: {len(flooded_locations)} zones identified.")
+    print("="*50 + "\n")
+    
     return JsonResponse({
         "status": "alert",
         "current_water_level": current_water_level,
         "flooded_count": len(flooded_locations),
         "data": flooded_locations
     })
-
 
 
 

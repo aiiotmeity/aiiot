@@ -18,23 +18,27 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // --- ENHANCED DATA SOURCE FOR STATIONS ---
+// --- ENHANCED DATA SOURCE FOR STATIONS ---
 const weatherStations = [
+    // 1. EXISTING STATION (Old Table)
     {
         id: 'weather-v2',
         name: 'Adishankara Weather Station',
-        location: 'Kalady, Kerala',
+        location: 'Kalady, Kerala (Campus)',
         coordinates: [10.1699, 76.4312],
         status: 'active',
-        description: 'Primary weather monitoring station with full sensor suite'
+        description: 'Primary weather monitoring station'
     },
+    // 2. NEW STATION (New Table)
     {
-        id: 'station-Airport Road',
-        name: 'Kochi Airport Road Station',
-        location: 'Ernakulam, Kerala',
-        coordinates: [10.15559139488071, 76.39268169730792],
-        status: 'development',
-        description: 'Station under development - Limited functionality'
-    },
+        id: 'aws-asiet-v1', // This ID matches your new DynamoDB key
+        name: 'ASIET Weather Station V2',
+        location: 'Kalady, Kerala (Annex)',
+        // Offset coordinates slightly so both pins are visible
+        coordinates: [10.1725, 76.4350], 
+        status: 'active',
+        description: 'New V2 Station with enhanced rain monitoring'
+    }
 ];
 
 // --- UTILITY FUNCTIONS ---
@@ -270,21 +274,51 @@ const WeatherDisplay = ({ data, loading, error, stationInfo }) => {
 };
 
 // --- COMPACT HISTORICAL CHARTS COMPONENT ---
+// --- OPTIMIZED HISTORICAL CHARTS COMPONENT ---
 const HistoricalCharts = ({ historicalData, historicalLoading, historicalError, onFetchHistoricalData, currentStation }) => {
     const [selectedDays, setSelectedDays] = useState(3);
     const [selectedParameter, setSelectedParameter] = useState('temperature');
 
+    // Fetch data when station or days change
     useEffect(() => {
         if(currentStation?.status === 'active') {
             onFetchHistoricalData(selectedDays);
         }
-    }, [selectedDays, onFetchHistoricalData, currentStation]);
+    }, [selectedDays, currentStation, onFetchHistoricalData]);
+
+    // --- SMART DATA DOWNSAMPLING LOGIC ---
+    // This reduces 7000+ points to ~50-100 readable points for the chart
+    const processChartData = React.useMemo(() => {
+        if (!historicalData || historicalData.length === 0) return [];
+
+        // Target number of points to display (prevents overcrowding)
+        const TARGET_POINTS = 100;
+        const totalPoints = historicalData.length;
+        
+        // If we have fewer points than target, just return all of them
+        if (totalPoints <= TARGET_POINTS) return historicalData;
+
+        const step = Math.ceil(totalPoints / TARGET_POINTS);
+        
+        // Filter: Keep only every Nth point
+        return historicalData.filter((_, index) => index % step === 0);
+    }, [historicalData]);
+
+    // --- CUSTOM AXIS FORMATTER ---
+    const formatXAxis = (tickItem) => {
+        if (!tickItem) return '';
+        const date = new Date(tickItem);
+        // If viewing 1 day, show Time (HH:MM)
+        if (selectedDays === 1) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // If viewing > 1 day, show Date & Month (DD/MM)
+        return date.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+    };
 
     const parameterOptions = [
         { value: 'temperature', label: 'Temperature (°C)', color: '#ef4444', type: 'line' },
         { value: 'humidity', label: 'Humidity (%)', color: '#3b82f6', type: 'line' },
         { value: 'airPressure', label: 'Air Pressure (hPa)', color: '#8b5cf6', type: 'line' },
-        { value: 'WindSpeedAvg', label: 'Avg. Wind Speed (m/s)', color: '#f59e0b', type: 'line' },
+        { value: 'WindSpeedAvg', label: 'Wind Speed (m/s)', color: '#f59e0b', type: 'line' },
         { value: 'rainfall1h', label: 'Rainfall (1h)', color: '#10b981', type: 'bar' },
         { value: 'rainfall24h', label: 'Rainfall (24h)', color: '#06b6d4', type: 'bar' }
     ];
@@ -292,7 +326,7 @@ const HistoricalCharts = ({ historicalData, historicalLoading, historicalError, 
     const selectedParamConfig = parameterOptions.find(p => p.value === selectedParameter);
 
     const renderChart = () => {
-        if (historicalLoading) return <LoadingSpinner message="Loading historical data..." />;
+        if (historicalLoading) return <LoadingSpinner message="Analyzing historical data..." />;
 
         if (historicalError) {
             return (
@@ -303,11 +337,11 @@ const HistoricalCharts = ({ historicalData, historicalLoading, historicalError, 
             );
         }
 
-        if (!historicalData || historicalData.length === 0) {
+        if (!processChartData || processChartData.length === 0) {
             return (
                 <div className="no-data-message">
                     <h4>📊 No Data Available</h4>
-                    <p>No historical data found for the selected time range.</p>
+                    <p>No historical records found for this period.</p>
                 </div>
             );
         }
@@ -318,31 +352,41 @@ const HistoricalCharts = ({ historicalData, historicalLoading, historicalError, 
         return (
             <div className="chart-container">
                 <ResponsiveContainer width="100%" height={280}>
-                    <ChartComponent data={historicalData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                    <ChartComponent data={processChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
                         <XAxis
                             dataKey="timestamp"
+                            tickFormatter={formatXAxis}
                             fontSize={11}
-                            tickFormatter={(ts) => new Date(ts).toLocaleDateString()}
                             stroke="var(--text-secondary)"
+                            minTickGap={30} // Prevents labels from overlapping
                         />
-                        <YAxis stroke="var(--text-secondary)" fontSize={11} />
+                        <YAxis 
+                            stroke="var(--text-secondary)" 
+                            fontSize={11} 
+                            domain={['auto', 'auto']} // Auto-scale Y axis
+                        />
                         <Tooltip
+                            labelFormatter={(label) => new Date(label).toLocaleString()}
                             contentStyle={{
                                 backgroundColor: 'var(--card-bg)',
                                 border: '1px solid var(--border-color)',
                                 borderRadius: '8px',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                                 color: 'var(--text-primary)',
                                 fontSize: '0.8rem'
                             }}
                         />
-                        <Legend />
+                        <Legend wrapperStyle={{ paddingTop: '10px' }}/>
                         <ChartElement
+                            type="monotone" // Smooths the line
                             dataKey={selectedParameter}
                             fill={selectedParamConfig.color}
                             stroke={selectedParamConfig.color}
                             name={selectedParamConfig.label}
-                            strokeWidth={2}
+                            strokeWidth={3}
+                            dot={false} // Removes dots for cleaner look on high-density data
+                            activeDot={{ r: 6 }} // Shows dot only on hover
                         />
                     </ChartComponent>
                 </ResponsiveContainer>
@@ -353,30 +397,34 @@ const HistoricalCharts = ({ historicalData, historicalLoading, historicalError, 
     return (
         <div className="historical-charts">
             <div className="chart-header">
-                <h4>📈 Historical Data Analysis</h4>
-                <p>Station: {currentStation?.name}</p>
+                <div className="header-info">
+                    <h4>📈 Historical Analysis</h4>
+                    <span className="station-badge">{currentStation?.name}</span>
+                </div>
             </div>
 
             <div className="chart-controls">
-                <div className="form-group">
-                    <label>📅 Date Range</label>
-                    <select
-                        value={selectedDays}
-                        onChange={(e) => setSelectedDays(Number(e.target.value))}
-                    >
-                        <option value={1}>Last 24 Hours</option>
-                        <option value={3}>Last 3 Days</option>
-                        <option value={7}>Last 7 Days</option>
-                        <option value={15}>Last 15 Days</option>
-                        <option value={30}>Last 30 Days</option>
-                    </select>
+                <div className="control-group">
+                    <label>Period</label>
+                    <div className="toggle-group">
+                        {[1, 3, 7, 30].map(days => (
+                            <button 
+                                key={days}
+                                className={selectedDays === days ? 'active' : ''}
+                                onClick={() => setSelectedDays(days)}
+                            >
+                                {days === 1 ? '24H' : `${days}D`}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="form-group">
-                    <label>📊 Parameter</label>
+                <div className="control-group">
+                    <label>Metric</label>
                     <select
                         value={selectedParameter}
                         onChange={(e) => setSelectedParameter(e.target.value)}
+                        className="metric-select"
                     >
                         {parameterOptions.map(option => (
                             <option key={option.value} value={option.value}>
@@ -389,16 +437,10 @@ const HistoricalCharts = ({ historicalData, historicalLoading, historicalError, 
 
             {renderChart()}
 
-            {historicalData && historicalData.length > 0 && (
-                <div className="chart-stats">
-                    <div className="stat-item">
-                        <span className="stat-label">Data Points:</span>
-                        <span className="stat-value">{historicalData.length}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Period:</span>
-                        <span className="stat-value">{selectedDays} day{selectedDays > 1 ? 's' : ''}</span>
-                    </div>
+            {processChartData.length > 0 && (
+                <div className="chart-footer">
+                    <span>Showing {processChartData.length} optimized points (from {historicalData.length} raw)</span>
+                    <span className="live-indicator">● {selectedDays === 1 ? 'Hourly Avg' : 'Daily Trend'}</span>
                 </div>
             )}
         </div>
