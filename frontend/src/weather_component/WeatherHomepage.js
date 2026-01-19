@@ -351,7 +351,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
                 </div>
                 <div className="contact-details">
                   <h4>Phone</h4>
-                  <p>+91 484 246 3030</p>
+                  <p>+91 9846900310</p>
                 </div>
               </div>
 
