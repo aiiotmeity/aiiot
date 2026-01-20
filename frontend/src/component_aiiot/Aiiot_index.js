@@ -138,9 +138,15 @@ useEffect(() => {
   ];
 
   return (
-    <div className="aiiot-page-container">
+    // 1. ADD THE CONDITIONAL CLASS HERE so CSS knows to push the header down
+    <div className={`aiiot-page-container ${notifications.length > 0 ? 'has-notification' : ''}`}>
+      
+      
+      {/* --- NOTIFICATION BAR END --- */}
+
       {/* Header Section */}
       <header className="aiiot-header">
+         {/* ... rest of your header content ... */}
         <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem', position: 'relative' }}>
           <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '5rem' }}>
             
@@ -337,15 +343,16 @@ useEffect(() => {
       {/* --- NOTIFICATION BAR START --- */}
       {notifications.length > 0 && (
         <div className="notification-bar-container">
-            <div className="scrolling-content" style={{ animationDuration: `${notifications.length * 15}s` }}>
+            <div className="scrolling-content" style={{ animationDuration: `${notifications.length * 25}s` }}>
                 {notifications.map((note, index) => (
                     <span key={index} className="notif-item">
                         <span className="notif-badge">New</span>
                         {note.message}
                         {note.link && (
                             <Link to={note.link} className="notif-link">
-                                [View Details]
-                            </Link>
+                              Click for more info →
+                          </Link>
+
                         )}
                     </span>
                 ))}
@@ -353,7 +360,6 @@ useEffect(() => {
         </div>
       )}
       
-
       {/* Main Content */}
       <main style={{ flex: 1, paddingTop: '3rem' }}>
         {/* Hero Section */}

@@ -1121,23 +1121,13 @@ a {
 
 /* In Aiiot.css */
 
-.notification-bar-container {
-    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
-    color: #fff;
-    font-size: 0.9rem;
-    height: 40px; /* Fixed height */
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    align-items: center;
-    z-index: 2000; /* Ensure it stays on top of the header */
-    border-bottom: 1px solid #334155;
-}
+
+
 
 .scrolling-content {
     display: inline-block;
     white-space: nowrap;
-    animation: scroll-left 20s linear infinite;
+    animation: scroll-left 10s linear infinite;
     padding-left: 100%; /* Start from right side */
 }
 
@@ -1164,9 +1154,9 @@ a {
 }
 
 .notif-link {
-    color: #60a5fa; /* Light blue link */
+    color: #010a0f; /* Light blue link */
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
     margin-left: 5px;
 }
 
@@ -1184,6 +1174,22 @@ a {
 }
 
 /* Adjust main header position if notification bar is present */
-.has-notification .aiiot-header {
-    top: 40px !important; /* Push header down by 40px */
+/* UPDATE THIS RULE */
+.notification-bar-container {
+    background: linear-gradient(90deg,  #3b82f6 0%, #7e9feb 100%);
+    color: #fff;
+    font-size: 1.2rem;
+    height: 40px; 
+    overflow: hidden;
+    
+    /* NEW POSITIONING */
+    position: fixed;        /* Keep it sticky */
+    top: 5rem;             /* Push it down by the height of the Header (5rem) */
+    width: 100%;
+    z-index: 999;          /* Slightly lower than header (usually 1000) */
+    
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eeeff1;
+    box-shadow: 0 4px 6px -1px rgba(247, 241, 241, 0.1);
 }

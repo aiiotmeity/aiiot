@@ -79,7 +79,7 @@ urlpatterns = [
     
     path('forgot-password-request/', views.forgot_password_request_api, name='forgot_password_request'),
     path('forgot-password-reset/', views.forgot_password_reset_api, name='forgot_password_reset'),
-    path('api/notifications/', views.get_active_notifications, name='get_active_notifications'),
+    path('notifications/', views.get_active_notifications, name='get_active_notifications'),
 
     # ...
 ]

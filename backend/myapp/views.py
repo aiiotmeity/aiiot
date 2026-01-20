@@ -2669,50 +2669,55 @@ def forgot_password_reset_api(request):
 # In myapp/views.py
 
 
+# In myapp/views.py
+
+from .models import Notification
+from django.utils import timezone
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
 @api_view(['GET'])
+@csrf_exempt
 def get_active_notifications(request):
     """
-    Fetches notifications.
-    - If 'is_recurring' is False: Checks exact dates (e.g., Hackathon 2025).
-    - If 'is_recurring' is True: Ignores the year and checks Month/Day (e.g., Independence Day).
+    Returns notifications that are currently active.
+    Handles recurring events (like Independence Day) by ignoring the year.
     """
     today = timezone.now()
     active_messages = []
 
-    # Get all notifications that are marked as active
-    all_notifs = Notification.objects.filter(is_active=True)
+    try:
+        # Get all active notifications
+        all_notifs = Notification.objects.filter(is_active=True)
 
-    for notif in all_notifs:
-        try:
-            # CASE 1: RECURRING EVENTS (Every Year)
+        for notif in all_notifs:
+            # 1. Handle Recurring Events (e.g., Independence Day every year)
             if notif.is_recurring:
-                # We replace the stored year with the CURRENT year
-                # Example: Database has "2024-08-15". We change it to "2026-08-15" (if today is 2026)
-                current_year_start = notif.start_date.replace(year=today.year)
-                current_year_end = notif.end_date.replace(year=today.year)
-                
-                # Check if TODAY falls between these new dates
-                if current_year_start <= today <= current_year_end:
-                    active_messages.append({
-                        'id': notif.id,
-                        'message': notif.message,
-                        'link': notif.link,
-                        'type': 'recurring'
-                    })
+                # Replace the stored year with the current year to check the date range
+                try:
+                    current_year_start = notif.start_date.replace(year=today.year)
+                    current_year_end = notif.end_date.replace(year=today.year)
+                    
+                    if current_year_start <= today <= current_year_end:
+                        active_messages.append({
+                            'id': notif.id,
+                            'message': notif.message,
+                            'link': notif.link
+                        })
+                except ValueError:
+                    continue # Skip invalid dates
 
-            # CASE 2: ONE-TIME EVENTS (Hackathons/Workshops)
+            # 2. Handle One-time Events (e.g., Hackathons)
             else:
-                # Standard check: Is today between start and end?
                 if notif.start_date <= today <= notif.end_date:
                     active_messages.append({
                         'id': notif.id,
                         'message': notif.message,
-                        'link': notif.link,
-                        'type': 'normal'
+                        'link': notif.link
                     })
 
-        except ValueError:
-            # This catches errors like Feb 29th on non-leap years
-            continue
+        return Response(active_messages, status=200)
 
-    return Response(active_messages, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+        return Response([], status=500)
