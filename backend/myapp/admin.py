@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from .models import (
     Signup, UserLogin, HealthAssessment, FamilyMembers, 
     Support, ResourceFile, Resource, Brochure, WorkshopEvent,
-    Product, ProductFeature, ProductSpecification, AdminUserlogin
+    Product, ProductFeature, ProductSpecification, AdminUserlogin ,Notification
 )
 
 admin.site.site_header = "AI-IoT Admin Panel"
@@ -131,3 +131,41 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     prepopulated_fields = {'slug': ('name',)} 
     inlines = [FeatureInline, SpecInline]
+
+# 1. UPDATE THE IMPORT (Add 'Notification' to the list)
+from .models import (
+    Signup, UserLogin, HealthAssessment, FamilyMembers, 
+    Support, ResourceFile, Resource, Brochure, WorkshopEvent,
+    Product, ProductFeature, ProductSpecification, AdminUserlogin,
+    Notification  # <--- ADD THIS
+)
+
+# ... (keep all your existing admin classes) ...
+
+
+# 2. PASTE THIS AT THE BOTTOM OF admin.py
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    # Columns to show in the list
+    list_display = ('message', 'start_date', 'end_date', 'is_active', 'is_recurring')
+    
+    # Sidebar filters
+    list_filter = ('is_active', 'is_recurring', 'start_date')
+    
+    # Search box functionality
+    search_fields = ('message', 'link')
+    
+    # Default ordering (newest first)
+    ordering = ('-start_date',)
+
+    # Help text to make it clear which ones are recurring
+    fieldsets = (
+        (None, {
+            'fields': ('message', 'link', 'is_active')
+        }),
+        ('Timing', {
+            'fields': ('start_date', 'end_date', 'is_recurring'),
+            'description': 'For "Recurring" events (like Independence Day), the year does not matter—it will repeat every year on these Month/Day dates.'
+        }),
+    )

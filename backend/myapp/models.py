@@ -462,3 +462,17 @@ class ProductSpecification(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.spec_key}"
+    
+
+# In myapp/models.py
+
+class Notification(models.Model):
+    message = models.CharField(max_length=255, help_text="The text to display in the scroll bar")
+    start_date = models.DateTimeField(help_text="When to start showing this message")
+    end_date = models.DateTimeField(help_text="When to stop showing this message")
+    is_active = models.BooleanField(default=True)
+    is_recurring = models.BooleanField(default=False, help_text="Check this for annual events (e.g., Independence Day). The year will be ignored.")
+    link = models.CharField(max_length=255, blank=True, null=True, help_text="Optional link to a registration page or brochure")
+
+    def __str__(self):
+        return self.message

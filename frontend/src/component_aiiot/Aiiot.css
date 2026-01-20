@@ -1118,3 +1118,72 @@ a {
     .hero-cta-group { flex-direction: column; width: 100%; padding: 0 2rem; }
     .hero-cta-group a { justify-content: center; }
 }
+
+/* In Aiiot.css */
+
+.notification-bar-container {
+    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+    color: #fff;
+    font-size: 0.9rem;
+    height: 40px; /* Fixed height */
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    z-index: 2000; /* Ensure it stays on top of the header */
+    border-bottom: 1px solid #334155;
+}
+
+.scrolling-content {
+    display: inline-block;
+    white-space: nowrap;
+    animation: scroll-left 20s linear infinite;
+    padding-left: 100%; /* Start from right side */
+}
+
+/* Pause animation on hover so users can click links */
+.scrolling-content:hover {
+    animation-play-state: paused;
+}
+
+.notif-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 4rem; /* Space between messages */
+}
+
+.notif-badge {
+    background: #ef4444; /* Red for 'New' */
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 8px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.notif-link {
+    color: #60a5fa; /* Light blue link */
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 5px;
+}
+
+.notif-link:hover {
+    text-decoration: underline;
+}
+
+@keyframes scroll-left {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+/* Adjust main header position if notification bar is present */
+.has-notification .aiiot-header {
+    top: 40px !important; /* Push header down by 40px */
+}

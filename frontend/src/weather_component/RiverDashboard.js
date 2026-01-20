@@ -239,57 +239,57 @@ const RiverDashboard = () => {
           </section>
 
           <section className="rd-section">
-  <div className="sec-header">
-    <h3><i className="fas fa-robot"></i> AI Explainability (LIME)</h3>
-  </div>
-
-  <div className="lime-card-grid"> 
-    {limeData.length > 0 ? (
-      limeData.slice(0, 6).map((line, index) => {
-        const colorMap = {
-          "[GREEN]": "#10b981",
-          "[ORANGE]": "#f59e0b",
-          "[RED]": "#ef4444",
-          "[WARNING]": "#ef4444"
-        };
-        const match = line.match(/^\[(GREEN|ORANGE|RED|WARNING)\]/);
-        const tag = match ? match[0] : "";
-        const statusColor = colorMap[tag] || "#94a3b8";
-        const cleanText = line.replace(tag, "").trim();
-
-        return (
-          <div
-            key={index}
-            className="lime-card"
-            // Removed onClick handler
-            style={{ 
-              borderTop: `4px solid ${statusColor}`,
-              cursor: 'default' // Enforce default cursor
-            }} 
-          >
-            <div className="lime-card-header">
-              <span 
-                className="lime-hour-badge"
-                style={{ backgroundColor: statusColor + '20', color: statusColor }}
-              >
-                H+{index + 1}
-              </span>
-              {/* Removed Chevron Icon */}
-            </div>
-            
-            <div className="lime-card-body">
-              <p className="lime-text">{cleanText}</p>
-            </div>
+          <div className="sec-header">
+            <h3><i className="fas fa-robot"></i> AI Explainability (LIME)</h3>
           </div>
-        );
-      })
-    ) : (
-      <div className="empty-msg" style={{ color: '#6b7280', textAlign: 'center', marginTop: '20px' }}>
-        System normal. No anomalies detected.
-      </div>
-    )}
-  </div>
-</section>
+
+          <div className="lime-card-grid"> 
+            {limeData.length > 0 ? (
+              limeData.slice(0, 6).map((line, index) => {
+                const colorMap = {
+                  "[GREEN]": "#10b981",
+                  "[ORANGE]": "#f59e0b",
+                  "[RED]": "#ef4444",
+                  "[WARNING]": "#ef4444"
+                };
+                const match = line.match(/^\[(GREEN|ORANGE|RED|WARNING)\]/);
+                const tag = match ? match[0] : "";
+                const statusColor = colorMap[tag] || "#94a3b8";
+                const cleanText = line.replace(tag, "").trim();
+
+                return (
+                  <div
+                    key={index}
+                    className="lime-card"
+                    // Removed onClick handler
+                    style={{ 
+                      borderTop: `4px solid ${statusColor}`,
+                      cursor: 'default' // Enforce default cursor
+                    }} 
+                  >
+                    <div className="lime-card-header">
+                      <span 
+                        className="lime-hour-badge"
+                        style={{ backgroundColor: statusColor + '20', color: statusColor }}
+                      >
+                        H+{index + 1}
+                      </span>
+                      {/* Removed Chevron Icon */}
+                    </div>
+                    
+                    <div className="lime-card-body">
+                      <p className="lime-text">{cleanText}</p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="empty-msg" style={{ color: '#6b7280', textAlign: 'center', marginTop: '20px' }}>
+                System normal. No anomalies detected.
+              </div>
+            )}
+          </div>
+        </section>
 
         </div>
       </main>

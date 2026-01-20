@@ -62,7 +62,15 @@ const AIIOT_INDEX = () => {
     'Digital Water Distribution': 'digital-water',
     'Startup & Skill Development': 'startup-skill',
   };
+  const [notifications, setNotifications] = useState([]);
 
+useEffect(() => {
+    // Fetch notifications
+    fetch(`${API_BASE_URL}/api/notifications/`)
+        .then(res => res.json())
+        .then(data => setNotifications(data))
+        .catch(err => console.error("Notif Error:", err));
+}, []);
   // --- EXISTING LOGIC ---
   useEffect(() => {
     if (window.feather) {
@@ -326,6 +334,25 @@ const AIIOT_INDEX = () => {
                     </div>
         )}
       </header>
+      {/* --- NOTIFICATION BAR START --- */}
+      {notifications.length > 0 && (
+        <div className="notification-bar-container">
+            <div className="scrolling-content" style={{ animationDuration: `${notifications.length * 15}s` }}>
+                {notifications.map((note, index) => (
+                    <span key={index} className="notif-item">
+                        <span className="notif-badge">New</span>
+                        {note.message}
+                        {note.link && (
+                            <Link to={note.link} className="notif-link">
+                                [View Details]
+                            </Link>
+                        )}
+                    </span>
+                ))}
+            </div>
+        </div>
+      )}
+      
 
       {/* Main Content */}
       <main style={{ flex: 1, paddingTop: '3rem' }}>

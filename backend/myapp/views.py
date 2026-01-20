@@ -51,6 +51,8 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
 from .serializers import  BrochureSerializer, WorkshopEventSerializer 
+from .models import Notification
+from django.db.models import Q
 
 
 import rasterio
@@ -2664,3 +2666,53 @@ def forgot_password_reset_api(request):
         return Response({'error': str(e)}, status=500)
 
 
+# In myapp/views.py
+
+
+@api_view(['GET'])
+def get_active_notifications(request):
+    """
+    Fetches notifications.
+    - If 'is_recurring' is False: Checks exact dates (e.g., Hackathon 2025).
+    - If 'is_recurring' is True: Ignores the year and checks Month/Day (e.g., Independence Day).
+    """
+    today = timezone.now()
+    active_messages = []
+
+    # Get all notifications that are marked as active
+    all_notifs = Notification.objects.filter(is_active=True)
+
+    for notif in all_notifs:
+        try:
+            # CASE 1: RECURRING EVENTS (Every Year)
+            if notif.is_recurring:
+                # We replace the stored year with the CURRENT year
+                # Example: Database has "2024-08-15". We change it to "2026-08-15" (if today is 2026)
+                current_year_start = notif.start_date.replace(year=today.year)
+                current_year_end = notif.end_date.replace(year=today.year)
+                
+                # Check if TODAY falls between these new dates
+                if current_year_start <= today <= current_year_end:
+                    active_messages.append({
+                        'id': notif.id,
+                        'message': notif.message,
+                        'link': notif.link,
+                        'type': 'recurring'
+                    })
+
+            # CASE 2: ONE-TIME EVENTS (Hackathons/Workshops)
+            else:
+                # Standard check: Is today between start and end?
+                if notif.start_date <= today <= notif.end_date:
+                    active_messages.append({
+                        'id': notif.id,
+                        'message': notif.message,
+                        'link': notif.link,
+                        'type': 'normal'
+                    })
+
+        except ValueError:
+            # This catches errors like Feb 29th on non-leap years
+            continue
+
+    return Response(active_messages, status=status.HTTP_200_OK)
