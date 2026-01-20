@@ -1,6 +1,6 @@
-/* RiverDashboard.css - Government Style Update */
+/* RiverDashboard.css - Responsive Update */
 
-/* --- SHARED VARIABLES (Matched to WeatherHomepage) --- */
+/* --- SHARED VARIABLES --- */
 :root {
   --primary-blue: #1e40af;
   --secondary-blue: #3b82f6;
@@ -41,11 +41,11 @@ body {
   box-sizing: border-box;
 }
 
-/* --- HERO SECTION (Matches Homepage Header + Hero) --- */
+/* --- HERO SECTION --- */
 .rd-hero {
   background: var(--gradient-primary);
   color: var(--white);
-  padding-bottom: 80px; /* Space for overlap */
+  padding-bottom: 80px;
   position: relative;
   box-shadow: var(--shadow-medium);
 }
@@ -57,7 +57,11 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.rd-flex-between { display: flex; justify-content: space-between; align-items: center; }
+.rd-flex-between { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
 
 .rd-brand { 
   font-family: 'Roboto Slab', serif;
@@ -66,20 +70,26 @@ body {
   display: flex; 
   align-items: center; 
   gap: 12px; 
+  white-space: nowrap;
 }
 .rd-brand span { color: var(--light-blue); font-weight: 300; }
+
+.rd-links {
+  display: flex;
+  gap: 10px;
+}
 
 .rd-links button {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.4);
   color: rgba(255,255,255,0.9);
   padding: 8px 20px;
-  margin-left: 10px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
   font-size: 0.9rem;
   transition: all 0.3s;
+  white-space: nowrap;
 }
 
 .rd-links button:hover, .rd-links button.active {
@@ -95,6 +105,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 40px;
+}
+
+.rd-hero-text {
+  flex: 1;
 }
 
 .rd-hero-text h1 { 
@@ -102,6 +117,7 @@ body {
   font-size: 2.5rem; 
   margin: 15px 0 10px 0; 
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .rd-hero-sub { 
@@ -121,17 +137,21 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: fit-content;
 }
 
-/* Status Badge in Hero */
+/* Status Badge */
 .rd-status-badge {
-  display: flex; align-items: center; gap: 20px;
+  display: flex; 
+  align-items: center; 
+  gap: 20px;
   padding: 20px 30px; 
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   min-width: 250px;
+  flex-shrink: 0; /* Prevents badge from shrinking too small */
 }
 
 .rd-status-badge.status-normal { border-left: 5px solid var(--status-normal); }
@@ -145,19 +165,20 @@ body {
 
 /* --- MAIN CONTENT --- */
 .rd-main-content {
-  margin-top: -50px; /* Overlap effect similar to homepage stats */
+  margin-top: -50px;
   position: relative;
   z-index: 10;
   padding-bottom: 60px;
 }
 
-/* Replaces "Glass" with Clean White Cards */
-.glass, .rd-card, .rd-section {
+/* Cards & Sections */
+.rd-card, .rd-section {
   background: var(--white);
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-light);
   border-radius: 12px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden; /* Keeps content inside rounded corners */
 }
 
 .rd-card:hover, .rd-section:hover {
@@ -187,19 +208,11 @@ body {
 .big-stat { 
   font-size: 3rem; 
   font-weight: 700; 
-  color: var(--primary-blue); /* Government Blue */
+  color: var(--primary-blue); 
   font-family: 'Roboto Slab', serif;
 }
-
 .big-stat.text-sm { font-size: 2.2rem; }
-
-.big-stat small { 
-  font-size: 1.2rem; 
-  color: var(--text-gray); 
-  font-weight: 500; 
-  margin-left: 5px; 
-  font-family: 'Inter', sans-serif;
-}
+.big-stat small { font-size: 1.2rem; color: var(--text-gray); font-weight: 500; margin-left: 5px; font-family: 'Inter', sans-serif;}
 
 .stat-footer { 
   margin-top: 15px; 
@@ -222,7 +235,7 @@ body {
 /* Split Section */
 .rd-content-split {
   display: grid;
-  grid-template-columns: 1.5fr 1fr; /* 60/40 Split */
+  grid-template-columns: 1.5fr 1fr;
   gap: 25px;
 }
 
@@ -245,13 +258,21 @@ body {
 }
 .sec-header h3 i { color: var(--primary-blue); }
 
-/* Timeline Visuals */
+/* Timeline Visuals - Wrapper allows scroll on mobile */
+.rd-timeline-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+  padding-bottom: 10px; /* Space for scrollbar */
+}
+
 .rd-timeline { 
   display: flex; 
   justify-content: space-between; 
   align-items: flex-end; 
   height: 220px; 
   padding-top: 10px; 
+  min-width: 600px; /* Ensures bars don't get crushed on mobile */
 }
 
 .rd-time-slot { 
@@ -266,7 +287,7 @@ body {
 .t-bar-container { 
   height: 140px; 
   width: 24px; 
-  background: rgb(182, 176, 176); /* Light gray track */
+  background: #f1f5f9; 
   border-radius: 4px; 
   position: relative; 
   overflow: hidden; 
@@ -285,52 +306,56 @@ body {
 .t-val { font-size: 0.85rem; font-weight: 700; color: var(--text-dark); margin-top: 5px;}
 .t-status { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; margin-top: 2px;}
 
-/* LIME Grid (AI Insights) */
-.lime-btn-grid {
+/* LIME Grid Cards */
+.lime-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.lime-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  justify-content: space-between;
+  height: 100%;
 }
 
-.lime-btn {
-  background: var(--bg-light);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  padding: 15px 20px;
-  cursor: pointer;
-  text-align: left;
+.lime-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.lime-card-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 15px;
-  transition: all 0.2s ease;
-  width: 100%;
+  margin-bottom: 12px;
 }
 
-.lime-btn:hover {
-  transform: translateX(5px);
-  background: var(--white);
-  border-color: var(--primary-blue);
-  box-shadow: var(--shadow-light);
-}
-
-.lime-hour {
+.lime-hour-badge {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--primary-blue);
-  background: rgba(30, 64, 175, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
-  min-width: 40px;
-  text-align: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
 }
 
-.lime-text {
+.lime-card-body .lime-text {
   font-size: 0.9rem;
-  color: var(--text-dark);
-  line-height: 1.4;
+  color: #334155;
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
-/* --- FOOTER (Matches Homepage) --- */
+/* --- FOOTER --- */
 .rd-footer { 
   margin-top: auto;
   background: #1f2937;
@@ -339,47 +364,107 @@ body {
   border-top: 4px solid var(--primary-blue);
   text-align: center;
 }
+.dashboard-footer { max-width: 800px; margin: 0 auto 20px auto; font-size: 0.9rem; line-height: 1.6; }
 
-.dashboard-footer {
-  max-width: 800px;
-  margin: 0 auto 20px auto;
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
-/* --- UTILITIES --- */
+/* Utilities */
 @keyframes pulse {
   0% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
   70% { opacity: 1; box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
   100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-.rd-loading { 
-  height: 100vh; 
-  display: grid; 
-  place-items: center; 
-  font-family: 'Inter', sans-serif; 
-  color: var(--primary-blue); 
-}
-
+.rd-loading { height: 100vh; display: grid; place-items: center; font-family: 'Inter', sans-serif; color: var(--primary-blue); }
 .rd-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--light-blue);
-  border-top: 4px solid var(--primary-blue);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 15px;
+  width: 40px; height: 40px; border: 4px solid var(--light-blue);
+  border-top: 4px solid var(--primary-blue); border-radius: 50%;
+  animation: spin 1s linear infinite; margin-bottom: 15px;
 }
-
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .rd-stats-grid { grid-template-columns: 1fr; }
-  .rd-content-split { grid-template-columns: 1fr; }
-  .rd-hero { height: auto; padding-bottom: 40px; }
-  .rd-hero-content { flex-direction: column; text-align: center; gap: 30px; }
-  .rd-status-badge { width: 100%; justify-content: center; box-sizing: border-box; }
-  .rd-main-content { margin-top: 0; padding-top: 20px; }
+
+/* --- 📱 RESPONSIVE MEDIA QUERIES --- */
+
+/* Tablet & Mobile Breakpoint (Max width 1024px) */
+@media (max-width: 1024px) {
+  .rd-stats-grid { 
+    gap: 15px; 
+  }
+  .big-stat { font-size: 2.5rem; }
+  .rd-content-split {
+    grid-template-columns: 1fr; /* Stack graph and LIME sections vertically */
+  }
 }
+
+/* Mobile Breakpoint (Max width 768px) */
+@media (max-width: 768px) {
+  /* Header: Stack Logo and Links */
+  .rd-flex-between { 
+    flex-direction: column; 
+    gap: 15px; 
+    align-items: flex-start;
+  }
+  
+  .rd-links { 
+    width: 100%; 
+    justify-content: space-between; 
+    overflow-x: auto; /* Allow horizontal scroll if buttons are too wide */
+  }
+  
+  .rd-links button {
+    flex: 1;
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  /* Hero: Stack text and Badge */
+  .rd-hero-content {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px 0;
+  }
+
+  .rd-hero-text { width: 100%; }
+  .rd-hero-text h1 { font-size: 2rem; }
+  .rd-pill { margin: 0 auto; } /* Center pill */
+  .rd-status-badge { width: 100%; box-sizing: border-box; justify-content: center; }
+
+  /* Main Grid: Stack stats vertically */
+  .rd-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  /* Adjust Main Content overlap */
+  .rd-main-content { margin-top: 0; padding-top: 20px; }
+  
+  /* LIME Cards on Mobile */
+  .lime-card-grid {
+    grid-template-columns: 1fr; /* 1 card per row on small phones */
+  }
+}
+
+/* Small Mobile (Max width 480px) */
+@media (max-width: 480px) {
+  .rd-brand { font-size: 1.2rem; }
+  .rd-links { flex-wrap: wrap; }
+  .rd-links button { width: 100%; margin-bottom: 5px; } /* Stack buttons fully */
+  
+  .rd-hero-text h1 { font-size: 1.75rem; }
+  .rd-card, .rd-section { padding: 20px; } /* Reduce padding */
+}
+
+.lime-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 16px;
+  cursor: default; /* Changed from pointer to default */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  /* Removed transition and transform since it is static now */
+}
+
+/* REMOVED .lime-card:hover style entirely so it doesn't "jump" when hovered */

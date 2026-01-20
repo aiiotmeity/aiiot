@@ -23,21 +23,22 @@ const weatherStations = [
     // 1. EXISTING STATION (Old Table)
     {
         id: 'weather-v2',
-        name: 'Maniyalil HOUSE',
+        name: 'Neeleeswaram Weather Station',
         location: ' Malayattoor, Kerala 683587',
         coordinates: [10.18638769282108, 76.4884866440563],
         status: 'active',
-        description: 'Primary weather monitoring station'
+        description: 'Primary weather monitoring station for real-time atmospheric data collection'
+
     },
     // 2. NEW STATION (New Table)
     {
         id: 'aws-asiet-v1', // This ID matches your new DynamoDB key
-        name: 'ASIET Weather Station V2',
+        name: 'ASIET Weather Station',
         location: 'Kalady, Kerala ',
         // Offset coordinates slightly so both pins are visible
         coordinates: [10.1725, 76.4350], 
         status: 'active',
-        description: 'New V2 Station with enhanced rain monitoring'
+        description: 'Secondary weather monitoring station supporting localized climate observation'
     }
 ];
 
