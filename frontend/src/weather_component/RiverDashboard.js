@@ -155,7 +155,7 @@ const RiverDashboard = () => {
             <div className="rd-links">
               <button onClick={() => navigate('/weather-home')}>Home</button>
               <button className="active">Live Dashboard</button>
-              <button onClick={() => navigate('/weather-map')}>Map View</button>
+              
             </div>
           </div>
         </nav>
@@ -296,7 +296,7 @@ const RiverDashboard = () => {
       
       <footer className="rd-footer">
         <div className="dashboard-footer">⚠️ Disclaimer: Forecasts are derived from observed data patterns and computational analysis. Real-world conditions may vary. Always depend on official alerts.</div>
-        <p>&copy; 2026 Adi Shankara Institute of Engineering & Technology • Ministry of Earth Sciences</p>
+        <p>&copy; 2026 Adi Shankara Institute of Engineering & Technology </p>
       </footer>
     </div>
   );
