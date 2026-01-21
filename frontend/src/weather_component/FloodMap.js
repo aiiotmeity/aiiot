@@ -282,7 +282,7 @@ const FloodMap = () => {
       <div className="rd-hero" style={{ height: 'auto', paddingBottom: '60px' }}>
         <nav className="rd-nav-overlay">
           <div className="rd-wrapper rd-flex-between">
-              <div className="rd-brand"><i className="fas fa-water"></i> Periyar<span>Watch</span></div>
+              <div className="rd-brand"><i className="fas fa-water"></i> Periyar<span>Flood Risk Analysis</span></div>
               <div className="rd-links">
                 <button onClick={() => navigate('/river-dashboard')}>Back to Dashboard</button>
               </div>
