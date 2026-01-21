@@ -296,7 +296,7 @@ const RiverDashboard = () => {
       
       <footer className="rd-footer">
         <div className="dashboard-footer">⚠️ Disclaimer: Forecasts are derived from observed data patterns and computational analysis. Real-world conditions may vary. Always depend on official alerts.</div>
-        <p>&copy; 2026 Adi Shankara Institute of Engineering & Technology </p>
+        <p>&copy; 2026 Adi Shankara Institute of Engineering & Technology,Kalady</p>
       </footer>
     </div>
   );
