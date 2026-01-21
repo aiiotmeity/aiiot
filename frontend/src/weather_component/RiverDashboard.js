@@ -151,7 +151,7 @@ const RiverDashboard = () => {
       <div className="rd-hero">
         <nav className="rd-nav-overlay">
           <div className="rd-wrapper rd-flex-between">
-            <div className="rd-brand"><i className="fas fa-water"></i> Periyar<span>Watch</span></div>
+            <div className="rd-brand"><i className="fas fa-water"></i> Periyar River<span>Flood Monitoring</span></div>
             <div className="rd-links">
               <button onClick={() => navigate('/weather-home')}>Home</button>
               <button className="active">Live Dashboard</button>
