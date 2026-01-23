@@ -599,9 +599,9 @@ def flood_analysis(request):
                 for i, (lat, lon, ground_h) in enumerate(zip(lats, lons, ground_levels)):
                     depth = current_water_level - ground_h
                     
-                    if depth < 0.3: expl = "Minor Waterlogging"
-                    elif depth < 1.0: expl = "Moderate Flooding"
-                    elif depth < 3.0: expl = "Significant Flooding"
+                    if depth < 3: expl = "Minor Waterlogging"
+                    elif depth < 6: expl = "Moderate Flooding"
+                    elif depth < 8.0: expl = "Significant Flooding"
                     else: expl = "Severe Flooding"
 
                     place = geo_results[i].get('name', 'Unknown Area')

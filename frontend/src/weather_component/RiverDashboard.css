@@ -468,3 +468,32 @@ body {
 }
 
 /* REMOVED .lime-card:hover style entirely so it doesn't "jump" when hovered */
+
+/* Compact Leaflet zoom control to save horizontal space beside the search bar */
+.leaflet-control-zoom {
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: none;
+}
+.leaflet-control-zoom a {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  padding: 0;
+  font-size: 14px;
+}
+.leaflet-top.leaflet-left .leaflet-control {
+  margin-left: 8px;
+}
+
+@media (max-width: 768px) {
+  .leaflet-control-zoom a {
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    font-size: 13px !important;
+  }
+  .leaflet-top.leaflet-left .leaflet-control {
+    margin-left: 6px !important;
+  }
+}

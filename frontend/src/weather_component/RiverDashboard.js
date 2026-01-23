@@ -206,7 +206,7 @@ const RiverDashboard = () => {
             <div className="sec-header"><h3><i className="fas fa-chart-line"></i> 6-Hour Projection</h3></div>
             <div className="rd-timeline">
               {forecastData.slice(-7).map((data, index) => {
-                const isRisk = data.level >= 0.5; 
+                const isRisk = data.level >= 0; 
                 return (
                   <div 
                     key={index} 
@@ -294,9 +294,43 @@ const RiverDashboard = () => {
         </div>
       </main>
       
-      <footer className="rd-footer">
-        <div className="dashboard-footer">⚠️ Disclaimer: Forecasts are derived from observed data patterns and computational analysis. Real-world conditions may vary. Always depend on official alerts.</div>
-        <p>&copy; 2026 Adi Shankara Institute of Engineering & Technology,Kalady</p>
+      <footer className="footer">
+        <div className="footer-container">
+          <div className="footer-grid">
+            <div className="footer-section">
+              <h4>Weather Monitoring System</h4>
+              <p>
+                Advanced meteorological monitoring facility providing real-time weather data
+                and historical records for research, education, and public service.
+              </p>
+            </div>
+
+            <div className="footer-section">
+              <h4>Quick Links</h4>
+              <ul className="footer-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About System</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#contact">Contact</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-section">
+              <h4>Institution</h4>
+              <ul className="footer-links">
+                <li>
+                  <a href="https://www.adishankara.ac.in" target="_blank" rel="noopener noreferrer">
+                    Adi Shankara Institute of Engineering & Technology, Kalady
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="footer-bottom">
+            <p>© {new Date().getFullYear()} Adi Shankara Institute of Engineering & Technology Weather Monitoring System. All rights reserved.</p>
+          </div>
+        </div>
       </footer>
     </div>
   );

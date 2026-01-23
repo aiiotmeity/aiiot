@@ -399,7 +399,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
             <div className="footer-section">
               <h4>Weather Monitoring System</h4>
               <p>
-                Advanced meteorological monitoring facility providing real-time weather data 
+                Advanced meteorological monitoring facility providing real-time weather data
                 and historical records for research, education, and public service.
               </p>
             </div>
@@ -417,22 +417,17 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
             <div className="footer-section">
               <h4>Institution</h4>
               <ul className="footer-links">
-                <li><a href="https://www.adishankara.ac.in" target="_blank" rel="noopener noreferrer">Adi Shankara Institute of Engineering & Technology,Kalady</a></li>
-                {/* <li><a href="https://www.india.gov.in" target="_blank" rel="noopener noreferrer">
-                Govt. of India
-              </a></li> */}
+                <li>
+                  <a href="https://www.adishankara.ac.in" target="_blank" rel="noopener noreferrer">
+                    Adi Shankara Institute of Engineering & Technology, Kalady
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
 
           <div className="footer-bottom">
-            <p>
-              © {new Date().getFullYear()} Adi Shankara Institute of Engineering & Technology Weather Monitoring System.
-
-
-
-              All rights reserved.
-            </p>
+            <p>© {new Date().getFullYear()} Adi Shankara Institute of Engineering & Technology Weather Monitoring System. All rights reserved.</p>
           </div>
         </div>
       </footer>
