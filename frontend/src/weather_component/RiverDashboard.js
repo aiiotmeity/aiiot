@@ -40,15 +40,15 @@ const RiverDashboard = () => {
   useEffect(() => {
     const fetchForecast = async () => {
       try {
-        const response = await axios.get(DEBUG_API, { 
+        const response = await fetchWithRetry(DEBUG_API, { 
           params: { file: "forecast_output.csv", _t: new Date().getTime() } 
         });
-        
+
         if (typeof response.data === 'string' && response.data.trim().startsWith("<!DOCTYPE")) {
            throw new Error("SERVER ERROR: The backend returned HTML instead of JSON.");
         }
 
-        if (response.data.status === "success") {
+        if (response.data && response.data.status === "success") {
           const rawLines = response.data.preview;
           // Remove .slice(1) so it reads ALL lines, including the first one
         // 1. Reads ALL lines (removes .slice so no data is lost)
@@ -76,14 +76,14 @@ const RiverDashboard = () => {
         }
       } catch (err) {
         console.error("Forecast Error:", err);
-        setDebugMsg(err.message);
-        setError("API Connection Failed");
+        setDebugMsg(err.message || String(err));
+        setApiErrorBanner(true);
       }
     };
 
     const fetchRealTimeLevel = async () => {
       try {
-        const response = await axios.get(DEBUG_API, { 
+        const response = await fetchWithRetry(DEBUG_API, { 
           params: { file: "latest_water_level.csv", _t: new Date().getTime() } 
         });
 
@@ -106,16 +106,16 @@ const RiverDashboard = () => {
             if (val && !isNaN(val)) setRealTimeLevel(parseFloat(val).toFixed(2));
           }
         }
-      } catch (err) { console.error(err); }
+      } catch (err) { console.error(err); setApiErrorBanner(true); }
     };
 
     const fetchLimeInsights = async () => {
       try {
-        const response = await axios.get(DEBUG_API, { 
+        const response = await fetchWithRetry(DEBUG_API, { 
           params: { file: "lime_short_sentences_and_labels.txt", _t: new Date().getTime() } 
         });
-        if (response.data.status === "success") setLimeData(response.data.preview);
-      } catch (err) { console.error(err); }
+        if (response.data && response.data.status === "success") setLimeData(response.data.preview);
+      } catch (err) { console.error(err); setApiErrorBanner(true); }
     };
 
     const loadAllData = async () => {
@@ -128,6 +128,26 @@ const RiverDashboard = () => {
     return () => clearInterval(intervalId);
 
   }, []);
+
+  // --- API retry helper ---
+  const [apiErrorBanner, setApiErrorBanner] = useState(false);
+
+  async function fetchWithRetry(url, axiosConfig = {}, retries = 3, backoff = 800) {
+    let lastErr;
+    for (let i = 0; i < retries; i++) {
+      try {
+        const resp = await axios.get(url, axiosConfig);
+        // clear banner on success
+        setApiErrorBanner(false);
+        return resp;
+      } catch (err) {
+        lastErr = err;
+        // transient server error -> wait then retry
+        await new Promise((res) => setTimeout(res, backoff * (i + 1)));
+      }
+    }
+    throw lastErr;
+  }
 
   const nextHour = forecastData[0] || { level: "--", status: getStatus(0) };
   const currentStatus = getStatus(realTimeLevel !== "--" ? realTimeLevel : 0);
@@ -294,41 +314,66 @@ const RiverDashboard = () => {
         </div>
       </main>
       
-      <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-grid">
+      <footer className="footer" style={{
+        background: '#1e293b',
+        color: '#f8fafc',
+        paddingTop: '60px',
+        marginTop: '60px',
+        borderTop: '4px solid #1e40af'
+      }}>
+        <div className="footer-container rd-wrapper" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+          <div className="footer-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '40px',
+            paddingBottom: '40px'
+          }}>
             <div className="footer-section">
-              <h4>Weather Monitoring System</h4>
-              <p>
+              <h4 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <i className="fas fa-microchip" style={{ color: '#3b82f6' }}></i> Weather Monitoring System
+              </h4>
+              <p style={{ lineHeight: '1.6', opacity: 0.8, fontSize: '0.95rem' }}>
                 Advanced meteorological monitoring facility providing real-time weather data
                 and historical records for research, education, and public service.
               </p>
             </div>
 
             <div className="footer-section">
-              <h4>Quick Links</h4>
-              <ul className="footer-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#about">About System</a></li>
-                <li><a href="#services">Services</a></li>
-                <li><a href="#contact">Contact</a></li>
+              <h4 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '20px' }}>Quick Links</h4>
+              <ul className="footer-links" style={{ listStyle: 'none', padding: 0 }}>
+                <li style={{ marginBottom: '12px' }}><a href="#home" style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.3s' }}>Home</a></li>
+                <li style={{ marginBottom: '12px' }}><a href="#about" style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.3s' }}>About System</a></li>
+                <li style={{ marginBottom: '12px' }}><a href="#services" style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.3s' }}>Services</a></li>
+                <li style={{ marginBottom: '12px' }}><a href="#contact" style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.3s' }}>Contact</a></li>
               </ul>
             </div>
 
             <div className="footer-section">
-              <h4>Institution</h4>
-              <ul className="footer-links">
-                <li>
-                  <a href="https://www.adishankara.ac.in" target="_blank" rel="noopener noreferrer">
+              <h4 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '20px' }}>Institution</h4>
+              <ul className="footer-links" style={{ listStyle: 'none', padding: 0 }}>
+                <li style={{ lineHeight: '1.5' }}>
+                  <a href="https://www.adishankara.ac.in" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '600', display: 'block' }}>
                     Adi Shankara Institute of Engineering & Technology, Kalady
                   </a>
+                  <span style={{ fontSize: '0.85rem', opacity: 0.7, color: '#94a3b8', display: 'block', marginTop: '4px' }}>
+                    Vidya Bharathi Nagar, Mattoor, Kalady, Kerala 683574
+                  </span>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="footer-bottom">
-            <p>© {new Date().getFullYear()} Adi Shankara Institute of Engineering & Technology Weather Monitoring System. All rights reserved.</p>
+          <div className="footer-bottom" style={{
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            padding: '30px 0',
+            textAlign: 'center',
+            fontSize: '0.9rem',
+            color: '#94a3b8'
+          }}>
+            <p style={{ margin: 0 }}>
+              © {new Date().getFullYear()} <strong>Adi Shankara Institute of Engineering & Technology</strong>.
+              <span style={{ display: 'block', marginTop: '8px', opacity: 0.6 }}>Weather Monitoring System. All rights reserved.</span>
+            </p>
           </div>
         </div>
       </footer>

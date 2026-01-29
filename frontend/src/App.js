@@ -130,7 +130,12 @@ const ProtectedRoute = ({ children, requireHealthAssessment = false }) => {
       try {
         const identifier = user.username || user.name || user.phone_number || '';
         // Update the logic to point to the backend
-const url = new URL(`https://aiiot-1.onrender.com/api/health-assessment-status/`);
+        // Determine API base URL (match other components)
+        const API_BASE_URL = process.env.NODE_ENV === 'production'
+          ? 'https://aiiot-1.onrender.com'
+          : 'http://localhost:8000';
+
+        const url = new URL(`${API_BASE_URL}/api/health-assessment-status/`);
         // Prefer query param 'username' as used elsewhere
         url.searchParams.append('username', identifier);
         const resp = await fetch(url.toString());

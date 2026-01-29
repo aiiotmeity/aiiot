@@ -19,6 +19,7 @@ function Signup() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
   const navigate = useNavigate();
@@ -103,6 +104,7 @@ function Signup() {
       const data = await response.json();
       if (response.ok && data.success) {
         setOtpSent(true);
+        setResendTimer(30); // start 30s countdown for resend
         setSuccess('OTP sent successfully. Check your phone.'); // <--- Use setSuccess
       } else {
         setError(data.error || 'Failed to send OTP.');
@@ -113,6 +115,31 @@ function Signup() {
       setIsSendingOtp(false);
     }
   };
+
+  // Resend helper — only works when timer is 0
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+    await handleSendOtp();
+  };
+
+  // Countdown effect for resend timer
+  useEffect(() => {
+    if (!otpSent) {
+      setResendTimer(0);
+      return;
+    }
+    if (resendTimer <= 0) return;
+    const id = setInterval(() => {
+      setResendTimer((t) => {
+        if (t <= 1) {
+          clearInterval(id);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [otpSent, resendTimer]);
 
   // --- VERIFY OTP FUNCTION ---
   const handleVerifyOtp = async () => {
@@ -307,9 +334,11 @@ function Signup() {
             {otpSent && !otpVerified && (
               <div className="form-group">
                 <label htmlFor="otp">Enter OTP</label>
-                <div className="input-group">
+                <div className="input-group" style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="\d*"
                     id="otp"
                     name="otp"
                     value={formData.otp}
@@ -318,15 +347,41 @@ function Signup() {
                     required
                     disabled={loading || isVerifyingOtp || otpVerified}
                     maxLength="6"
+                    autoFocus
+                    style={{flex: 1, padding: '10px 12px', borderRadius: '8px', fontSize: '1rem'}}
                   />
+
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className={`btn-secondary ${otpVerified ? 'verified' : ''}`}
                     onClick={handleVerifyOtp}
                     disabled={isVerifyingOtp || otpVerified}
                   >
                     {isVerifyingOtp ? 'Verifying...' : (otpVerified ? 'Verified' : 'Verify')}
                   </button>
+                </div>
+
+                <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '8px', alignItems: 'center'}}>
+                  <small style={{color: '#666'}}>
+                    Didn't receive the OTP?
+                    {resendTimer > 0 ? (
+                      <span style={{marginLeft: 6}}> Resend in {resendTimer}s</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={isSendingOtp}
+                        className="btn-link"
+                        style={{marginLeft: 8, padding: '4px 8px', cursor: isSendingOtp ? 'not-allowed' : 'pointer'}}
+                      >
+                        {isSendingOtp ? 'Sending...' : 'Resend OTP'}
+                      </button>
+                    )}
+                  </small>
+
+                  <div style={{minWidth: 120, textAlign: 'right'}}>
+                    {otpVerified && <span style={{color: 'green'}}>✅ Verified</span>}
+                  </div>
                 </div>
               </div>
             )}

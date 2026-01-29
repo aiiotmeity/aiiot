@@ -53,6 +53,7 @@ import time
 from .serializers import  BrochureSerializer, WorkshopEventSerializer 
 from .models import Notification
 from django.db.models import Q
+from django.db import IntegrityError
 
 
 import rasterio
@@ -1436,7 +1437,7 @@ def health_assessment_api(request):
         return Response({'error': 'Invalid JSON format'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.error(f"Unexpected error in health_assessment_api: {e}", exc_info=True)
-       
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # myapp/views.py
 @api_view(['GET'])
@@ -1910,7 +1911,7 @@ def csrf_token_api(request):
 
 
 from django.shortcuts import get_object_or_404
-from .models import User, FamilyMembers # Make sure FamilyMembers is imported
+from .models import Signup, FamilyMembers # Make sure FamilyMembers is imported
 
 @api_view(['GET', 'POST'])
 @csrf_exempt

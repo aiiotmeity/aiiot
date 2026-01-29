@@ -30,17 +30,18 @@ class Signup(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        managed = False  # Tells Django to use the existing table
+        managed = True  # Tells Django to use the existing table
         db_table = 'signup' # Links to your 'signup' table
 
 class UserLogin(models.Model):
     id = models.AutoField(primary_key=True)
-    phone_number = models.CharField(max_length=20, unique=True)   # ✔ for login  # optional
+    # Increase from 20 to 50 to accommodate formatting or temporary strings
+    phone_number = models.CharField(max_length=50, unique=True) 
     password = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        managed = False
+        managed = True # Set to True to allow Django to create tables on Render
         db_table = 'user_login'
  # Links to your 'user_login' table
 
@@ -74,7 +75,6 @@ class HealthAssessment(models.Model):
 
     age_group = models.CharField(max_length=20, null=True, blank=True)
     gender = models.CharField(max_length=20, null=True, blank=True)
-
     respiratory_conditions = models.JSONField(default=list, blank=True)
     smoking_history = models.TextField(null=True, blank=True)
     living_environment = models.JSONField(default=list, blank=True)
@@ -126,7 +126,7 @@ class HealthAssessment(models.Model):
 
     class Meta:
         db_table = 'health_assessment'
-        managed = False
+        managed = True
         constraints = [
             models.UniqueConstraint(fields=['user'], name='health_assessment_user_id_key'),
             models.UniqueConstraint(fields=['phone_number'], name='health_assessment_phone_number_key'),
@@ -186,7 +186,7 @@ class Support(models.Model):
 
     class Meta:
         db_table = 'support'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"Support #{self.sl_no} from {self.email}"
@@ -238,7 +238,7 @@ class Signup(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'signup'
 
 class UserLogin(models.Model):
@@ -248,7 +248,7 @@ class UserLogin(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'user_login'
 
 class AdminUserlogin(models.Model):
@@ -304,7 +304,7 @@ class HealthAssessment(models.Model):
 
     class Meta:
         db_table = 'health_assessment'
-        managed = False
+        managed = True
         constraints = [
             models.UniqueConstraint(fields=['user'], name='health_assessment_user_id_key'),
             models.UniqueConstraint(fields=['phone_number'], name='health_assessment_phone_number_key'),
@@ -344,7 +344,7 @@ class Support(models.Model):
 
     class Meta:
         db_table = 'support'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"Support #{self.sl_no}"
