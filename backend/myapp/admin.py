@@ -133,12 +133,12 @@ class ProductAdmin(admin.ModelAdmin):
     inlines = [FeatureInline, SpecInline]
 
 # 1. UPDATE THE IMPORT (Add 'Notification' to the list)
-from .models import (
-    Signup, UserLogin, HealthAssessment, FamilyMembers, 
-    Support, ResourceFile, Resource, Brochure, WorkshopEvent,
-    Product, ProductFeature, ProductSpecification, AdminUserlogin,
-    Notification  # <--- ADD THIS
-)
+# from .models import (
+#     Signup, UserLogin, HealthAssessment, FamilyMembers, 
+#     Support, ResourceFile, Resource, Brochure, WorkshopEvent,
+#     Product, ProductFeature, ProductSpecification, AdminUserlogin,
+#     Notification  # <--- ADD THIS
+# )
 
 # ... (keep all your existing admin classes) ...
 

@@ -447,13 +447,13 @@ class ProductFeature(models.Model):
     def __str__(self):
         return self.title
 
-class ProductSpecification(models.Model):
-    product = models.ForeignKey(Product, related_name='specifications', on_delete=models.CASCADE)
-    spec_key = models.CharField(max_length=100) # e.g. "Range"
-    spec_value = models.CharField(max_length=100) # e.g. "10 KM"
+# class ProductSpecification(models.Model):
+#     product = models.ForeignKey(Product, related_name='specifications', on_delete=models.CASCADE)
+#     spec_key = models.CharField(max_length=100) # e.g. "Range"
+#     spec_value = models.CharField(max_length=100) # e.g. "10 KM"
 
-    def __str__(self):
-        return f"{self.spec_key}: {self.spec_value}"
+#     def __str__(self):
+#         return f"{self.spec_key}: {self.spec_value}"
 
 class ProductSpecification(models.Model):
     product = models.ForeignKey(Product, related_name='specifications', on_delete=models.CASCADE)
