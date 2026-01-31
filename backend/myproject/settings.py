@@ -25,6 +25,7 @@ ALLOWED_HOSTS = ['*']  # Allows all hosts
 # 2. INSTALLED APPS
 # ==========================================
 INSTALLED_APPS = [
+    'jazzmin',  # Must be at the very top
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,7 +42,7 @@ INSTALLED_APPS = [
     'myapp',
     'weather_monitoring',
 
-    'jazzmin',                  # <--- Add this line at the top
+                    # <--- Add this line at the top
 
 ]
 
@@ -192,6 +193,13 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+# Use a non-manifest staticfiles backend during development to avoid
+# "Missing staticfiles manifest entry" errors when `collectstatic` has
+# not been run. In production (DEBUG=False) you should run
+# `python manage.py collectstatic` and use the manifest storage.
+if DEBUG:
+    STORAGES['staticfiles']['BACKEND'] = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # ==========================================
 # 10. CORS & CSRF SETTINGS
