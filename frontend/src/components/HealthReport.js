@@ -425,8 +425,41 @@ function HealthReport() {
 
     // If all checks pass, then safely render the page
     const { health_assessment = {}, forecasts = {} } = reportData || {};
-    // This is now safe, because nearestStation is set in all scenarios
-    const forecastForNearest = nearestStation ? (forecasts && forecasts[nearestStation.id] ? forecasts[nearestStation.id] : null) : null;
+
+    // Robust forecast extraction:
+    // - handle forecasts as an array (legacy)
+    // - handle forecasts as object with stationId -> array or { data: array }
+    // - coerce station id to string
+    // - fall back to the first available forecast array
+    let forecastForNearest = [];
+    try {
+        if (Array.isArray(forecasts)) {
+            forecastForNearest = forecasts;
+        } else {
+            const stationId = nearestStation ? String(nearestStation.id) : null;
+            const candidate = stationId ? (forecasts?.[stationId] ?? forecasts?.[String(stationId)]) : null;
+
+            if (Array.isArray(candidate)) {
+                forecastForNearest = candidate;
+            } else if (candidate && Array.isArray(candidate.data)) {
+                forecastForNearest = candidate.data;
+            } else {
+                // Fallback: find first forecasts entry that contains an array
+                const firstArray = Object.values(forecasts || {}).find(v => Array.isArray(v) && v.length > 0);
+                if (firstArray) {
+                    forecastForNearest = firstArray;
+                } else {
+                    // Try objects with .data
+                    const firstObjWithData = Object.values(forecasts || {}).find(v => v && Array.isArray(v.data) && v.data.length > 0);
+                    if (firstObjWithData) forecastForNearest = firstObjWithData.data;
+                    else forecastForNearest = [];
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Error extracting forecastForNearest:', e);
+        forecastForNearest = [];
+    }
 
     return (
         <div className="report-page">
@@ -702,7 +735,7 @@ function HealthReport() {
                         <div className="forecast-chart-container">
                             <Suspense fallback={<div className="panel-loader">📊 Loading forecast chart...</div>}>
                                 <LazyChart 
-                                    forecastData={forecastForNearest?.data} 
+                                    forecastData={Array.isArray(forecastForNearest) ? forecastForNearest : (forecastForNearest?.data || [])} 
                                     selectedParameter={'pm25'} 
                                 />
                             </Suspense>

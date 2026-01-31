@@ -53,7 +53,6 @@ import time
 from .serializers import  BrochureSerializer, WorkshopEventSerializer 
 from .models import Notification
 from django.db.models import Q
-from django.db import IntegrityError
 
 
 import rasterio
@@ -1437,7 +1436,7 @@ def health_assessment_api(request):
         return Response({'error': 'Invalid JSON format'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.error(f"Unexpected error in health_assessment_api: {e}", exc_info=True)
-        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+       
 
 # myapp/views.py
 @api_view(['GET'])
@@ -1836,18 +1835,23 @@ def health_report_api(request):
 
             lora_v1_items = get_device_data("lora-v1", limit=24)
             loradev2_items = get_device_data("loradev2", limit=24)
+            lora_v3_items = get_device_data("lora-v3", limit=24)
+
             _, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
             _, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
+            _, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
             
             station_locations = {
                 'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
                 'loradev2': { 'lat': 10.182204, 'lng': 76.428503, 'name': 'Station 2 (Pothiyakkara Road)' },
+                'lora-v3': { 'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Mattoor Junction)' },
                 # ... include your temp stations here as well
             }
 
             all_stations_data = {
                 'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1']},
                 'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2']},
+                'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3']},
                 # ... add simulated data for temp stations if needed
             }
             cache.set('map_realtime_data', all_stations_data, 60)
