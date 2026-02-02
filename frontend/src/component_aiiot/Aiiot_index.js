@@ -345,17 +345,22 @@ useEffect(() => {
         <div className="notification-bar-container">
             <div className="scrolling-content" style={{ animationDuration: `${notifications.length * 25}s` }}>
                 {notifications.map((note, index) => (
-                    <span key={index} className="notif-item">
-                        <span className="notif-badge">New</span>
-                        {note.message}
-                        {note.link && (
-                            <Link to={note.link} className="notif-link">
-                              Click for more info →
-                          </Link>
+                <span key={index} className="notif-item">
+                  <span className="notif-badge">New</span>
+                  {note.message}
 
-                        )}
-                    </span>
-                ))}
+                  {note.link && (
+                    <a
+                      href={note.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="notif-link"
+                    >
+                      Click to view →
+                    </a>
+                  )}
+                </span>
+              ))}
             </div>
         </div>
       )}
