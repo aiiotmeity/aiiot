@@ -20,30 +20,6 @@ from django.db import models
 # --- PASTE THESE TWO MODELS ---
 # (Delete your old 'User' and 'login' models)
 
-class Signup(models.Model):
-    id = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=100)
-    phone_number = models.CharField(unique=True, max_length=15)
-    email = models.CharField(unique=True, max_length=100)
-    password = models.CharField(max_length=255)
-    is_verified = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        managed = True  # Tells Django to use the existing table
-        db_table = 'signup' # Links to your 'signup' table
-
-class UserLogin(models.Model):
-    id = models.AutoField(primary_key=True)
-    # Increase from 20 to 50 to accommodate formatting or temporary strings
-    phone_number = models.CharField(max_length=50, unique=True) 
-    password = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        managed = True # Set to True to allow Django to create tables on Render
-        db_table = 'user_login'
- # Links to your 'user_login' table
 
 # --- KEEP YOUR OTHER MODELS (HealthAssessment, etc.) BELOW ---
 class HealthQuestionnaire(models.Model):
@@ -173,6 +149,10 @@ class FamilyMembers(models.Model):
     name = models.CharField(max_length=100)
     age = models.IntegerField()
     relationship = models.CharField(max_length=50)
+   
+    class Meta:
+        db_table = 'family_members'
+        managed = True
 
     def __str__(self):
         return f"{self.name} ({self.relationship})"
@@ -207,6 +187,9 @@ class ResourceFile(models.Model):
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = "resource_file"
+
     def __str__(self):
         return self.title
 
@@ -217,6 +200,7 @@ class Resource(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "resource"    
         ordering = ['-created_at']
 
     def __str__(self):
@@ -243,7 +227,7 @@ class Signup(models.Model):
 
 class UserLogin(models.Model):
     id = models.AutoField(primary_key=True)
-    phone_number = models.CharField(max_length=20, unique=True)
+    phone_number = models.CharField(max_length=50, unique=True)
     password = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -319,6 +303,9 @@ class FamilyMembers(models.Model):
     age = models.IntegerField()
     relationship = models.CharField(max_length=50)
 
+    class Meta:
+        db_table = 'family_members'
+
     def __str__(self):
         return f"{self.name} ({self.relationship})"
 
@@ -372,6 +359,7 @@ class Brochure(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = "brochure"
         ordering = ['-created_at']
 
     def __str__(self):
@@ -408,6 +396,7 @@ class WorkshopEvent(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = "workshop_event"
         ordering = ['-created_at'] 
 
     def __str__(self):
@@ -434,9 +423,11 @@ class Product(models.Model):
     sub_image = models.ImageField(upload_to='products/sub/', blank=True, null=True)
     brochure = models.FileField(upload_to='products/brochures/', blank=True, null=True)
 
+    class Meta:
+        db_table = "product"
+
     def __str__(self):
         return self.name
-
 # --- NEW MODELS FOR FEATURES & SPECS (Better than JSON) ---
 class ProductFeature(models.Model):
     product = models.ForeignKey(Product, related_name='features', on_delete=models.CASCADE)
@@ -473,6 +464,9 @@ class Notification(models.Model):
     is_active = models.BooleanField(default=True)
     is_recurring = models.BooleanField(default=False, help_text="Check this for annual events (e.g., Independence Day). The year will be ignored.")
     link = models.CharField(max_length=255, blank=True, null=True, help_text="Optional link to a registration page or brochure")
+
+    class Meta:
+        db_table = "notification"   # ✅ ADD THIS
 
     def __str__(self):
         return self.message

@@ -97,7 +97,7 @@ useEffect(() => {
 
   const setupCarousel = () => {
     const localImages = [
-      '/carousel-images/aiiot3.jpg',
+      '/carousel-images/aiiot0.jpeg',
       '/carousel-images/aiiot5.jpeg',
       '/carousel-images/aiiot1.jpg',
       '/carousel-images/aiiot4.jpg',

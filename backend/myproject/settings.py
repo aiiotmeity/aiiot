@@ -272,7 +272,7 @@ JAZZMIN_SETTINGS = {
     "site_header": "AI-IoT Dashboard",
     "site_brand": "AI-IoT System",
     "welcome_sign": "Welcome to the AI-IoT Control Center",
-    "copyright": "Arathy Surendran & Team",
+    "copyright": "Center for AI-IOT Innovation & Team",
     
     # Sidebar Search (searches User model by default)
     "search_model": "auth.User",

@@ -1069,7 +1069,7 @@ a {
 .hero-image-frame-straight {
     width: 100%;
     max-width: 900px; /* INCREASED WIDTH (was 900px) */
-    height: 500px;     /* INCREASED HEIGHT (was 550px) */
+    height: 650px;     /* INCREASED HEIGHT (was 550px) */
     border-radius: 10px;
     padding: 0px;
     background: rgba(255, 255, 255, 0.8);
