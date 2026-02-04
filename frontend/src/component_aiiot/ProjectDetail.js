@@ -105,7 +105,7 @@ const ProjectDetail = () => {
       heroImage: 'https://images.unsplash.com/photo-1454789476662-53eb23ba5907?q=80&w=2000&auto=format&fit=crop',
       subimage: '/sensor_modules/river1.jpg',
       description: 'Using advanced LSTM Deep Learning networks to provide accurate river level forecasting and flood warnings.',
-      fullDescription: `This system addresses the challenge of sudden floods by predicting river levels up to 6 hours in advance. It integrates multi-source data including upstream dam operations, real-time rainfall patterns, and historical river measurements into a comprehensive LSTM Neural Network model.`,
+      fullDescription: `This system addresses the challenge of sudden floods by predicting river levels up to 6 hours in advance. It integrates multi-source data including upstream dam operations, real-time rainfall patterns into a comprehensive  Neural Network model.`,
       innovations: [
         { title: 'LSTM Network', desc: 'Deep learning for 6-hour advance prediction.', icon: '🧠' },
         { title: 'Multi-Source Data', desc: 'Integrates Dam + Rainfall + River levels.', icon: '🌊' },
