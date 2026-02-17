@@ -1311,3 +1311,61 @@
     page-break-inside: avoid;
   }
 }
+.pollutant-alert-card {
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    border-left: 6px solid;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.pollutant-alert-card.moderate-risk {
+    background-color: #fff8e1;
+    border-left-color: #ffb300;
+    color: #856404;
+}
+
+.pollutant-alert-card.high-risk {
+    background-color: #fff5f5;
+    border-left-color: #e53e3e;
+    color: #c53030;
+}
+
+.pollutant-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.pollutant-icon {
+    font-size: 2rem;
+}
+
+.pollutant-risk-type {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-top: 4px;
+}
+
+.pollutant-advice-text {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.pollutant-badge {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: #e53e3e;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}

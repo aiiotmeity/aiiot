@@ -2395,7 +2395,7 @@ def user_aqi_api(request):
 
         # 3. Calculate IDW using the NEW helper
         # This returns both the individual values and the final AQI
-        interpolated_values, final_aqi = idw_interpolate_all(user_lat, user_lon, sensor_data_for_idw)
+        interpolated_values, final_aqi,dominant_p = idw_interpolate_all(user_lat, user_lon, sensor_data_for_idw)
         
         aqi_status = get_aqi_status(final_aqi) if final_aqi is not None else "Unknown"
 
@@ -2404,7 +2404,8 @@ def user_aqi_api(request):
 
         # 5. Return the final, RICH answer
         return Response({
-            "user_aqi": final_aqi, # The main AQI number
+            "user_aqi": final_aqi,
+             "dominant_pollutant": dominant_p, # The main AQI number
             "interpolated_values": interpolated_values, # The fix for metric cards
             "status": aqi_status,
             "source": "idw_interpolation",
@@ -2502,10 +2503,21 @@ def idw_interpolate_all(user_lat, user_lon, sensors, power=2):
 
         # Calculate the final AQI based on the new interpolated pollutant values
         interpolated_sub_indices = calculate_subindices(interpolated_values)
-        valid_indices = [v for v in interpolated_sub_indices.values() if v is not None]
-        final_aqi = round(max(valid_indices)) if valid_indices else None
 
-        return interpolated_values, final_aqi
+
+
+        dominant_pollutant = "None"
+        max_val = -1
+        
+        for p, val in interpolated_sub_indices.items():
+            if val is not None and val > max_val:
+                max_val = val
+                dominant_pollutant = p.upper() # e.g., "PM25"
+                
+        final_aqi = round(max_val) if max_val != -1 else None
+
+        # Return the dominant pollutant name as well
+        return interpolated_values, final_aqi, dominant_pollutant
 
     except Exception as e:
         logger.error(f"Error in idw_interpolate_all: {e}", exc_info=True)

@@ -2,12 +2,17 @@ import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'reac
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../App';
 import './css/HealthReport.css';
-import logoImage from '../assets/aqi.webp'; 
+import logoImage from '../assets/aqi.webp';
+// Add CSS for new pollutant card if not present, or use inline styles for now.
+// We can assume HealthReport.css handles basic flex/grid, but we might need new classes.
+
 import { calculateDistance, formatDistance } from '../utils/distance';
 
 const LazyChart = React.lazy(() => import('./LazyChart'));
 
 // Using shared distance utilities from ../utils/distance
+// Inside HealthReport component
+
 
 const getAQIColor = (aqi) => {
     if (aqi === null || aqi === undefined) return '#6b7280'; // Unknown (Gray)
@@ -38,7 +43,7 @@ const getAQIStatus = (aqi) => {
 // Function to get user-friendly station names
 const getFriendlyStationName = (stationName) => {
     if (!stationName) return 'Local Monitoring Station';
-    
+
     // Handle "Your Exact Location"
     if (stationName === "Your Exact Location") return stationName;
 
@@ -52,17 +57,18 @@ const getFriendlyStationName = (stationName) => {
         .replace(/[_-]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
-    
+
     if (cleanName.length < 3) {
         return 'Local Air Quality Monitor';
     }
-    
+
     return cleanName
         .toLowerCase()
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ') + ' Area';
 };
+
 
 // Health Recommendations based on AQI and Health Risk Level
 const getHealthRecommendations = (aqi, healthRiskLevel) => {
@@ -127,12 +133,12 @@ const getHealthRecommendations = (aqi, healthRiskLevel) => {
     // Determine category
     let category = 'good';
     if (aqi > 150) category = 'hazardous';
-    else if (aqi > 100) category = 'unhealthy'; 
+    else if (aqi > 100) category = 'unhealthy';
     else if (aqi > 50) category = 'moderate';
 
     // Determine if user is sensitive based on health risk level
     const isSensitive = healthRiskLevel === 'High' || healthRiskLevel === 'Critical';
-    
+
     return {
         recommendations: isSensitive ? baseRecommendations[category].sensitive : baseRecommendations[category].general,
         isSensitive,
@@ -144,7 +150,7 @@ const getHealthRecommendations = (aqi, healthRiskLevel) => {
 // Emergency contacts based on AQI level
 const getEmergencyContacts = (aqi) => {
     if (aqi <= 100) return null;
-    
+
     return {
         primary: {
             name: 'Kerala Pollution Control Board',
@@ -164,11 +170,75 @@ const getEmergencyContacts = (aqi) => {
     };
 };
 
-function HealthReport() {
-    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
-    
-    // --- DELETED `calculateInterpolatedAqi` FUNCTION ---
+// Pollutant-specific advice helper
+const getPollutantAdvice = (pollutants) => {
+    if (!pollutants) return null;
 
+    // Define thresholds based on WHO/CPCB limits
+    const thresholds = {
+        pm25: 35,
+        pm10: 45,
+        so2: 40,
+        no2: 25,
+        co: 4,
+        o3: 60,
+        nh3: 100
+    };
+
+    // Find the pollutant that is furthest above its limit
+    let maxRatio = 0;
+    let dominant = null;
+
+    Object.keys(thresholds).forEach(key => {
+        const val = pollutants[key] || 0;
+        const ratio = val / thresholds[key];
+        if (ratio > maxRatio) {
+            maxRatio = ratio;
+            dominant = key;
+        }
+    });
+
+    if (!dominant || maxRatio < 1) return null;
+
+    const pollutantNames = {
+        pm25: 'PM2.5 (Fine Particulates)',
+        pm10: 'PM10 (Coarse Dust)',
+        so2: 'Sulfur Dioxide',
+        no2: 'Nitrogen Dioxide',
+        co: 'Carbon Monoxide',
+        o3: 'Ozone',
+        nh3: 'Ammonia'
+    };
+
+    const specificAdvice = {
+        pm25: "These tiny particles can reach deep into your lungs and bloodstream. Use an N95 mask to filter them out effectively.",
+        pm10: "Large dust particles can irritate your eyes, nose, and throat. Avoid walking near high-traffic construction areas.",
+        no2: "Primarily from vehicle exhaust, NO2 can cause significant airway inflammation. Stay away from main roads during peak hours.",
+        co: "An odorless gas that reduces oxygen delivery to the body's organs. Ensure good ventilation if using gas appliances.",
+        so2: "Can cause throat irritation and aggravate asthma. Limit heavy outdoor exercise while levels are elevated.",
+        o3: "Ground-level ozone is strongest in direct sunlight. Plan outdoor activities for early morning or after sunset.",
+        nh3: "Can cause immediate burning of the eyes and nose. Stay indoors and keep windows closed to avoid exposure."
+    };
+
+    return {
+        pollutant: pollutantNames[dominant],
+        advice: specificAdvice[dominant],
+        risk: `Elevated levels of ${pollutantNames[dominant]} detected at your location.`,
+        isHigh: maxRatio > 2 // Flag as "High Risk" if double the limit
+    };
+};
+
+function HealthReport() {
+    const [currentDataInfo, setCurrentDataInfo] = useState({
+        is_interpolated: false,
+        aqi: 0,
+        dominantPollutant: 'N/A', 
+        station_name: 'Loading...'
+    });
+    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+
+    // --- DELETED `calculateInterpolatedAqi` FUNCTION ---
+    
     const { user, loading: authLoading, logout } = useAuth();
     // Fallback to localStorage user if auth context is not populated yet
     const storedUser = React.useMemo(() => {
@@ -183,18 +253,19 @@ function HealthReport() {
     const [error, setError] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
-    
+
     // --- State for location and interpolation (same as Dashboard) ---
     const [userLocation, setUserLocation] = useState(null);
     const [nearestStation, setNearestStation] = useState(null);
     // This state will now hold the AQI info, whether it's interpolated or default
-    const [currentDataInfo, setCurrentDataInfo] = useState(null);
+    // const [currentDataInfo, setCurrentDataInfo] = useState(null);
+    
 
     const navigate = useNavigate();
     const API_BASE_URL = process.env.NODE_ENV === 'production'
         ? 'https://aiiot-1.onrender.com'
         : 'http://localhost:8000';
-                  // Your local backend URL
+    // Your local backend URL
 
     // Update time every minute
     useEffect(() => {
@@ -204,11 +275,11 @@ function HealthReport() {
 
     // Fetch main report data (health assessment, stations, forecasts)
     const fetchReportData = useCallback(async () => {
-                // Allow fetch when we have any identifier from auth or localStorage
-                if (!effectiveUser || (!effectiveUser.phone_number && !effectiveUser.username && !effectiveUser.name)) {
-                    console.log("Health Report fetch blocked: user identifier not available yet.");
-                    return;
-                }
+        // Allow fetch when we have any identifier from auth or localStorage
+        if (!effectiveUser || (!effectiveUser.phone_number && !effectiveUser.username && !effectiveUser.name)) {
+            console.log("Health Report fetch blocked: user identifier not available yet.");
+            return;
+        }
 
         setLoading(true);
         setError(null);
@@ -234,7 +305,7 @@ function HealthReport() {
 
             const data = await response.json();
             setReportData(data);
-            
+
             // --- SET DEFAULT AQI DATA FIRST ---
             // This runs before location is fetched, so the page loads fast
             if (data.stations) {
@@ -274,26 +345,26 @@ function HealthReport() {
         fetchReportData();
     }, [authLoading, user, fetchReportData, navigate]);
 
-   
+
     // --- THIS IS THE NEW LOGIC ---
     // This useEffect runs separately to get location
     useEffect(() => {
         // Try to get the user's GPS location
         if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              // If successful, update the userLocation state
-              setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-            },
-            (err) => {
-              console.warn("Geolocation failed. Using default station data.");
-              // If GPS fails, set location to null
-              setUserLocation(null);
-            }
-          );
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    // If successful, update the userLocation state
+                    setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                },
+                (err) => {
+                    console.warn("Geolocation failed. Using default station data.");
+                    // If GPS fails, set location to null
+                    setUserLocation(null);
+                }
+            );
         } else {
-          // If the browser doesn't support geolocation, set location to null
-          setUserLocation(null);
+            // If the browser doesn't support geolocation, set location to null
+            setUserLocation(null);
         }
     }, []); // Runs once on mount
 
@@ -319,23 +390,25 @@ function HealthReport() {
                     setCurrentDataInfo({
                         is_interpolated: true,
                         aqi: aqiData.user_aqi,
+                        dominantPollutant: aqiData.dominant_pollutant, // Save it here
                         distance: aqiData.closest_sensor.distance_km,
-                        station_name: "Your Exact Location"
+                        station_name: "Your Exact Location",
+                        pollutants: aqiData.interpolated_values
                     });
-                    
+
                     // --- UPDATE FORECAST ---
                     // This fixes the forecast chart
-                    setNearestStation({ 
-                        id: aqiData.closest_sensor.sensor_id, 
-                        distance: aqiData.closest_sensor.distance_km 
+                    setNearestStation({
+                        id: aqiData.closest_sensor.sensor_id,
+                        distance: aqiData.closest_sensor.distance_km
                     });
-                    
+
                 } catch (err) {
                     console.warn("Failed to fetch user-specific AQI, using default station.", err);
                     // If this fails, the default data set in fetchReportData() is used, so the page still works.
                 }
             };
-            
+
             fetchUserAqi();
         }
         // If userLocation is null, we just keep the default data that was set in fetchReportData
@@ -399,7 +472,7 @@ function HealthReport() {
             <div className="panel-loader">
                 <h2>🏥 Generating Your Health Report...</h2>
                 <div className="loading-spinner"></div>
-                
+
             </div>
         );
     }
@@ -465,7 +538,7 @@ function HealthReport() {
         <div className="report-page">
             {/* Real-time Status Bar */}
             <div className="realtime-status">
-                🔴 LIVE HEALTH REPORT • Updated: {currentTime.toLocaleTimeString('en-IN')} • 
+                🔴 LIVE HEALTH REPORT • Updated: {currentTime.toLocaleTimeString('en-IN')} •
                 {currentDataInfo.is_interpolated ? ' Location-Based Analysis' : ' Nearest Station Data'}
             </div>
 
@@ -496,7 +569,7 @@ function HealthReport() {
             {/* Health Alert Banner */}
             {healthRecommendations?.isEmergency && (
                 <div className="emergency-alert-banner">
-                    🚨 <strong>HEALTH EMERGENCY ALERT:</strong> 
+                    🚨 <strong>HEALTH EMERGENCY ALERT:</strong>
                     AQI {Math.round(displayAqi)} - {aqiStatus.status} conditions detected.
                     {healthRecommendations.isSensitive && ' High-risk individual - immediate action required!'}
                 </div>
@@ -505,7 +578,7 @@ function HealthReport() {
             {/* AQI Alert Banner */}
             <div className={`alert-banner ${aqiStatus.status.toLowerCase()}`} style={{ backgroundColor: getAQIColor(displayAqi) + '20', borderBottom: `3px solid ${getAQIColor(displayAqi)}` }}>
                 ℹ️ <span>
-                    <strong>CURRENT AIR QUALITY:</strong> 
+                    <strong>CURRENT AIR QUALITY:</strong>
                     {currentDataInfo.is_interpolated ? ' Your Location' : ' Nearest Monitor'} AQI is {Math.round(displayAqi)} - {aqiStatus.status}
                     {nearestStation && nearestStation.distance !== null && nearestStation.distance !== undefined && ` • Distance: ${formatDistance(nearestStation.distance)} from nearest monitor`}
                 </span>
@@ -556,7 +629,7 @@ function HealthReport() {
                                 {health_assessment.risk_level === 'Critical' && 'You are at critical risk and need immediate precautions'}
                             </div>
                         </div>
-                        
+
                         <div className="overview-card aqi-card">
                             <h4>🌬️ Current Air Quality</h4>
                             <div className="station-name">
@@ -570,8 +643,8 @@ function HealthReport() {
                             <div className="station-aqi" style={{ color: aqiStatus.color }}>
                                 {Math.round(displayAqi)}
                             </div>
-                            <div className="aqi-status-badge" style={{ 
-                                backgroundColor: aqiStatus.color + '20', 
+                            <div className="aqi-status-badge" style={{
+                                backgroundColor: aqiStatus.color + '20',
                                 color: aqiStatus.color,
                                 border: `2px solid ${aqiStatus.color}`
                             }}>
@@ -634,15 +707,42 @@ function HealthReport() {
                 {/* Health Recommendations Section */}
                 <div className="recommendations-section">
                     <h2 className="section-title">
-                        💡 Personalized Health Recommendations
-                        {healthRecommendations?.isSensitive && <span className="sensitive-badge">Sensitive Group</span>}
-                    </h2>
-                    
+        💡 Personalized Health Recommendations
+        {healthRecommendations?.isSensitive && <span className="sensitive-badge">Sensitive Group</span>}
+    </h2>
+
+    {/* Dynamic Pollutant Specific Advice */}
+    {(() => {
+        // Accesses interpolated pollutant data from your state
+        const pollutantAdvice = getPollutantAdvice(currentDataInfo?.pollutants);
+        
+        if (pollutantAdvice) {
+            return (
+                <div className={`pollutant-alert-card ${pollutantAdvice.isHigh ? 'high-risk' : 'moderate-risk'}`}>
+                    <div className="pollutant-header">
+                        <span className="pollutant-icon">{pollutantAdvice.isHigh ? '🚨' : '🌫️'}</span>
+                        <div>
+                            <strong>Primary Pollutant Concern: {pollutantAdvice.pollutant}</strong>
+                            <div className="pollutant-risk-type">{pollutantAdvice.risk}</div>
+                        </div>
+                    </div>
+                    <div className="pollutant-advice-text">
+                        {pollutantAdvice.advice}
+                    </div>
+                    {pollutantAdvice.isHigh && (
+                        <div className="pollutant-badge">Exceeds Safety Limits</div>
+                    )}
+                </div>
+            );
+        }
+        return null;
+    })()}
+
                     {/* Government Guidelines */}
                     <div className="guidelines-banner">
                         <div className="guidelines-icon">🏛️</div>
                         <div className="guidelines-text">
-                            <strong>Official Government Guidelines:</strong> Based on Central Pollution Control Board (CPCB) standards 
+                            <strong>Official Government Guidelines:</strong> Based on Central Pollution Control Board (CPCB) standards
                             and Kerala State Health Department recommendations for air quality health protection.
                         </div>
                     </div>
@@ -696,7 +796,7 @@ function HealthReport() {
                                     <div className="contact-desc">{emergencyContacts.primary.description}</div>
                                 </div>
                             </div>
-                            
+
                             <div className="emergency-contact-card medical">
                                 <div className="contact-icon">🏥</div>
                                 <div className="contact-info">
@@ -719,7 +819,7 @@ function HealthReport() {
                         </div>
                     </div>
                 )}
-                
+
                 {/* Dashboard Grid - Mobile Optimized */}
                 <div className="dashboard-grid">
                     <div className="dashboard-card forecast-card">
@@ -734,17 +834,17 @@ function HealthReport() {
                         </div>
                         <div className="forecast-chart-container">
                             <Suspense fallback={<div className="panel-loader">📊 Loading forecast chart...</div>}>
-                                <LazyChart 
-                                    forecastData={Array.isArray(forecastForNearest) ? forecastForNearest : (forecastForNearest?.data || [])} 
-                                    selectedParameter={'pm25'} 
+                                <LazyChart
+                                    forecastData={Array.isArray(forecastForNearest) ? forecastForNearest : (forecastForNearest?.data || [])}
+                                    selectedParameter={'pm25'}
                                 />
                             </Suspense>
                         </div>
                     </div>
-                    
+
                     <div className="dashboard-card health-details-card">
                         <h3>📋 Your Health Profile Details</h3>
-                       
+
                         <div className="health-details-list">
                             {/* This check ensures .details exists before we try to use it */}
                             {health_assessment.details && Object.entries(health_assessment.details).map(([key, value]) => (
@@ -756,7 +856,7 @@ function HealthReport() {
                                 </div>
                             ))}
                         </div>
-                        
+
                         {/* Health Improvement Tips */}
                         <div className="health-tips">
                             <h4>💡 Health Improvement Tips</h4>
@@ -776,92 +876,92 @@ function HealthReport() {
                     <button onClick={handlePrint} className="action-btn primary">
                         🖨️ Print Report
                     </button>
-                    
+
                 </div>
 
                 {/* Data Source Information */}
-                
+
                 {/* Government Disclaimer */}
                 <div className="disclaimer-section">
-                <h3>📄 Official Disclaimer</h3>
-                <div className="disclaimer-content">
-                    <p><strong>🏛️ Data Authority:</strong> Air quality data is collected and analyzed using IoT-based sensors developed by the Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology (ASIET). This data is independent of government monitoring networks.</p>
-                    
-                    <p><strong>⚕️ Health Advisory:</strong> Recommendations are generated using our AI-powered analysis of real-time sensor data. For personal medical advice, please consult a healthcare professional.</p>
-                    
-                    <p><strong>📞 Emergency:</strong> If you experience severe symptoms related to air pollution, seek immediate medical help (108) or visit the nearest healthcare facility.</p>
+                    <h3>📄 Official Disclaimer</h3>
+                    <div className="disclaimer-content">
+                        <p><strong>🏛️ Data Authority:</strong> Air quality data is collected and analyzed using IoT-based sensors developed by the Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology (ASIET). This data is independent of government monitoring networks.</p>
+
+                        <p><strong>⚕️ Health Advisory:</strong> Recommendations are generated using our AI-powered analysis of real-time sensor data. For personal medical advice, please consult a healthcare professional.</p>
+
+                        <p><strong>📞 Emergency:</strong> If you experience severe symptoms related to air pollution, seek immediate medical help (108) or visit the nearest healthcare facility.</p>
+                    </div>
                 </div>
+
+            </div>
+
+            {/* Footer */}
+            <footer className="footer">
+                <div className="footer-container">
+                    <div className="footer-content">
+                        <div className="footer-section">
+                            <h4>AirAware Kerala</h4>
+                            <p>Smart Air Quality Monitoring System</p>
+
+                            <div className="social-links">
+                                <a href="https://www.linkedin.com/in/aiiot-asiet-b22302308"
+                                    className="social-link"
+                                    target="_blank"
+                                    rel="noopener noreferrer">
+                                    <i className="fab fa-linkedin-in"></i>
+                                </a>
+
+                                <a href="https://www.instagram.com/aiiot_adishankara?igsh=aXY4bXQ2cjVhYWM2"
+                                    className="social-link"
+                                    target="_blank"
+                                    rel="noopener noreferrer">
+                                    <i className="fab fa-instagram"></i>
+                                </a>
+
+                                <a href="#" className="social-link">
+                                    <i className="fab fa-facebook-f"></i>
+                                </a>
+                                <a href="#" className="social-link">
+                                    <i className="fab fa-twitter"></i>
+                                </a>
+
+                            </div>
+                        </div>
+                        <div className="footer-section">
+                            <h4>Quick Links</h4>
+                            <ul>
+                                <li><a href="/homepage"> Home</a></li>
+                                <li><a href="/health-report"> Health Report</a></li>
+                                <li><a href="/add-family"> Add Family</a></li>
+                                <li><a href="/map" >Live Map</a></li>
+                            </ul>
+                        </div>
+                        <div className="footer-section">
+                            <h4>Data Sources</h4>
+                            <ul>
+                                <li>ASIET Campus Station </li>
+                                <li>Mattoor Junction Station</li>
+                            </ul>
+                        </div>
+                        <div className="footer-section">
+                            <h4>Contact Information</h4>
+                            <p>
+                                Adi Shankara Institute of Engineering and Technology<br />
+                                Kalady 683574, Ernakulam<br />
+                                Kerala, India
+                            </p>
+                            <p>
+                                <strong>Email:</strong> aiiot@adishankara.ac.in<br />
+                                <strong>Phone:</strong> 9846900310
+                            </p>
+                        </div>
+                    </div>
+                    <div className="footer-bottom">
+                        <p>&copy;  2025 AirAware kalady. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
+                    </div>
                 </div>
-
-            </div>
-
-             {/* Footer */}
-      <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-content">
-            <div className="footer-section">
-              <h4>AirAware Kerala</h4>
-              <p>Smart Air Quality Monitoring System</p>
-              
-              <div className="social-links">
-                <a href="https://www.linkedin.com/in/aiiot-asiet-b22302308" 
-                    className="social-link" 
-                    target="_blank" 
-                    rel="noopener noreferrer">
-                    <i className="fab fa-linkedin-in"></i>
-                  </a>
-
-                <a href="https://www.instagram.com/aiiot_adishankara?igsh=aXY4bXQ2cjVhYWM2"
-                    className="social-link"
-                    target="_blank"
-                    rel="noopener noreferrer">
-                    <i className="fab fa-instagram"></i>
-                </a>
-
-                <a href="#" className="social-link">
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a href="#" className="social-link">
-                  <i className="fab fa-twitter"></i>
-                </a>
-                
-              </div>
-            </div>
-            <div className="footer-section">
-              <h4>Quick Links</h4>
-              <ul>
-                <li><a href="/homepage"> Home</a></li>
-                <li><a href="/health-report"> Health Report</a></li>
-                <li><a href="/add-family"> Add Family</a></li>
-                <li><a href="/map" >Live Map</a></li>
-              </ul>
-            </div>
-            <div className="footer-section">
-              <h4>Data Sources</h4>
-              <ul>
-                <li>ASIET Campus Station </li>
-                <li>Mattoor Junction Station</li>
-              </ul>
-            </div>
-            <div className="footer-section">
-              <h4>Contact Information</h4>
-              <p>
-                Adi Shankara Institute of Engineering and Technology<br/>
-                Kalady 683574, Ernakulam<br/>
-                Kerala, India
-              </p>
-              <p>
-                <strong>Email:</strong> aiiot@adishankara.ac.in<br/>
-                <strong>Phone:</strong> 9846900310
-              </p>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <p>&copy;  2025 AirAware kalady. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
-          </div>
+            </footer>
         </div>
-      </footer>
-    </div>
-  );
+    );
 }
 export default HealthReport;
