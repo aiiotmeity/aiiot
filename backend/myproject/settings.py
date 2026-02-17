@@ -157,10 +157,13 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Only keep this if you have a /static/ folder in your project root
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+# ADD THIS LINE to prevent the build crash
+WHITENOISE_MANIFEST_STRICT = False
 
 # ==========================================
 # 9. AWS S3 & STORAGE CONFIGURATION (FIXED)
