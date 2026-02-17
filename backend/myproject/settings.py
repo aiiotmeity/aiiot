@@ -193,9 +193,10 @@ STORAGES = {
         "BACKEND": "storages.backends.s3.S3Storage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
+
 
 # Use a non-manifest staticfiles backend during development to avoid
 # "Missing staticfiles manifest entry" errors when `collectstatic` has
@@ -338,4 +339,5 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+
+
