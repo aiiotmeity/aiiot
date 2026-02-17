@@ -338,3 +338,4 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
