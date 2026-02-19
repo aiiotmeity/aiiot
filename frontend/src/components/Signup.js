@@ -6,8 +6,8 @@ import logoImage from '../assets/aqi.webp';
 function Signup() {
   const [formData, setFormData] = useState({
     name: '',
-    phone_number: '',
-    email: '',
+    phone_number: '+91', // Start with the prefix
+    email: '',           // Make sure this is an empty string
     password: '',
     otp: ''
   });
@@ -21,6 +21,7 @@ function Signup() {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -66,19 +67,15 @@ function Signup() {
     let value = e.target.value;
 
     if (e.target.name === 'phone_number') {
-      value = value.replace(/[^\d+]/g, '');
-      if (value.length > 0 && !value.startsWith('+91')) {
-        if (value.match(/^\d/)) {
-          value = '+91' + value;
-        }
-      }
-      if (!value.startsWith('+91') && value.length > 0) {
-        value = '+91';
-      }
-      if (value.length > 13) {
-        value = value.substring(0, 13);
-      }
-    }
+  // 1. Remove everything that isn't a number
+  const digits = value.replace(/\D/g, '');
+  
+  // 2. Remove '91' if it's already at the start so we don't double it
+  const numberPart = digits.startsWith('91') ? digits.substring(2, 12) : digits.substring(0, 10);
+  
+  // 3. Force the final value to always be +91 followed by the 10 digits
+  value = '+91' + numberPart;
+}
 
     setFormData({ ...formData, [e.target.name]: value });
     if (error) setError('');
@@ -275,40 +272,63 @@ function Signup() {
                 onChange={handleChange}
                 placeholder="Enter your email"
                 required
+                autoComplete="email" // Helps the browser distinguish it from a phone field
                 disabled={loading || otpVerified}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Min. 8 characters"
-                required
-                disabled={loading || otpVerified}
-              />
-            </div>
+  <label htmlFor="password">Password</label>
+  <div className="password-wrapper" style={{ position: 'relative' }}>
+    <input
+      type={showPassword ? "text" : "password"}
+      id="password"
+      name="password"
+      value={formData.password}
+      onChange={handleChange}
+      placeholder="Min. 8 characters"
+      required
+      disabled={loading || otpVerified}
+      style={{ width: '100%', paddingRight: '40px' }}
+    />
+    <span 
+      className="password-toggle-icon"
+      onClick={() => setShowPassword(!showPassword)}
+      style={{
+        position: 'absolute',
+        right: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        cursor: 'pointer',
+        color: '#666'
+      }}
+    >
+      {showPassword ? '👁️' : '👁️‍🗨️'} 
+    </span>
+  </div>
+</div>
 
             <div className="form-group">
             <label htmlFor="phone_number">Phone Number</label>
             
             {/* Input Field */}
-            <div className="input-group">
+            <div className="input-group" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+              <span style={{
+                position: 'absolute',
+                left: '12px',
+                color: '#555',
+                fontWeight: '500'
+              }}>+91</span>
               <input
                 type="tel"
-                id="phone_number"
                 name="phone_number"
-                value={formData.phone_number}
+                // Extract only the 10 digits for display if you go this route
+                value={formData.phone_number.replace('+91', '')} 
                 onChange={handleChange}
-                placeholder="+919876543210"
+                placeholder="9876543210"
+                style={{ paddingLeft: '45px' }} // Push text to the right of +91
                 required
-                disabled={loading || otpSent}
-                maxLength="13"
-                style={{ borderRadius: '12px' }} /* Round corners since button is gone */
+                maxLength="10"
               />
             </div>
 
