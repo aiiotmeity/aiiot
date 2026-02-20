@@ -933,16 +933,50 @@ function Dashboard() {
     try {
       // Use centralized logout so we don't accidentally clear unrelated localStorage keys
       logout();
-      navigate('/login');
+      navigate('/homepage'); // <-- Change this from '/login' to '/homepage'
     } catch (error) {
       console.error('Logout error:', error);
-      navigate('/login');
+      navigate('/homepage'); // <-- Change this from '/login' to '/homepage'
     }
   }, [navigate, isMobileView, closeMenu, logout]);
 
 
 
+// ===== MEMOIZED VALUES =====
+  // ... existing currentValues, currentAQI, and aqiStatus memos ...
 
+  // ADD THIS NEW BLOCK: Calculate the dominant pollutant driving the risk
+  const dominantPollutantInfo = useMemo(() => {
+    if (!currentValues || Object.keys(currentValues).length === 0) return null;
+    
+    // CPCB/WHO standard limits for 24-hr/8-hr averages
+    const thresholds = { pm25: 60, pm10: 100, so2: 80, no2: 80, co: 2, o3: 100, nh3: 200 };
+    let maxRatio = 0;
+    let dominant = null;
+
+    Object.keys(thresholds).forEach(key => {
+      const val = parseFloat(currentValues[key]) || 0;
+      const ratio = val / thresholds[key];
+      if (ratio > maxRatio) {
+        maxRatio = ratio;
+        dominant = key;
+      }
+    });
+
+    if (!dominant || maxRatio < 0.2) return null; // Only show if there's notable pollution
+
+    const pollutantNames = {
+      pm25: 'PM2.5 (Fine Particulates)', pm10: 'PM10 (Coarse Dust)', 
+      so2: 'Sulfur Dioxide (SO₂)', no2: 'Nitrogen Dioxide (NO₂)',
+      co: 'Carbon Monoxide (CO)', o3: 'Ozone (O₃)', nh3: 'Ammonia (NH₃)'
+    };
+
+    return {
+      name: pollutantNames[dominant],
+      value: currentValues[dominant],
+      isHighRisk: maxRatio >= 1
+    };
+  }, [currentValues]);
 
 
   const handleRefreshData = useCallback(async () => {
@@ -1108,7 +1142,11 @@ function Dashboard() {
                 <span className="status-indicator">🔴 LIVE • {Object.keys(dashboardData?.stations || {}).length} stations active</span>
                 {currentDataInfo?.is_interpolated && <span className="smart-badge">🎯 Smart Interpolation Active</span>}
               </div>
-              <div className="map-description">Blue marker shows your location • Tower markers show monitoring stations • Click any marker for detailed readings</div>
+              <div className="map-description">Blue marker shows your location • Tower markers show monitoring stations 
+                <Link to="/map" className="map-button">
+  🗺️ Explore Detailed Air Quality Map
+</Link>
+              </div>
             </div>
           </div>
 
@@ -1177,6 +1215,28 @@ function Dashboard() {
               </div>
               <div className="health-advisory">
                 <h3><i className="fas fa-shield-alt"></i> Health Advisory</h3>
+                
+                {/* --- NEW POLLUTANT RISK DISPLAY --- */}
+                {dominantPollutantInfo && (
+                  <div style={{
+                    margin: '10px 0 15px 0',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: dominantPollutantInfo.isHighRisk ? '#fee2e2' : '#fef9c3',
+                    borderLeft: `4px solid ${dominantPollutantInfo.isHighRisk ? '#ef4444' : '#eab308'}`
+                  }}>
+                    <strong style={{ color: dominantPollutantInfo.isHighRisk ? '#991b1b' : '#854d0e' }}>
+                      ⚠️ Primary Pollutant Concern: {dominantPollutantInfo.name}
+                    </strong>
+                    <p style={{ margin: '5px 0 0 0', fontSize: '0.9em', color: '#374151' }}>
+                      {dominantPollutantInfo.isHighRisk
+                        ? `Levels are currently exceeding safe limits, directly increasing your respiratory risk level.`
+                        : `Elevated levels are currently the main contributor to the air quality risk in your area.`}
+                    </p>
+                  </div>
+                )}
+                {/* ---------------------------------- */}
+
                 <p>People with asthma, heart disease, older adults, and young children are more susceptible to air pollution. Please follow health advisories closely and seek medical attention if you experience any adverse symptoms.</p>
                 {healthData.risk_level === 'High' && <div className="emergency-contact"><strong>Emergency Contact:</strong> Kerala Pollution Control Board – 0471-2418566</div>}
               </div>

@@ -176,14 +176,14 @@ const getPollutantAdvice = (pollutants) => {
 
     // Define thresholds based on WHO/CPCB limits
     const thresholds = {
-        pm25: 35,
-        pm10: 45,
-        so2: 40,
-        no2: 25,
-        co: 4,
-        o3: 60,
-        nh3: 100
-    };
+    pm25: 60,    // µg/m³ (24-hr Moderate upper limit)
+    pm10: 100,   // µg/m³
+    so2: 80,     // µg/m³
+    no2: 80,     // µg/m³
+    co: 2,       // mg/m³ (8-hr average)
+    o3: 100,     // µg/m³ (8-hr average)
+    nh3: 200     // µg/m³
+};
 
     // Find the pollutant that is furthest above its limit
     let maxRatio = 0;
@@ -450,10 +450,10 @@ function HealthReport() {
     const handleLogout = useCallback(() => {
         try {
             logout();
-            navigate('/login');
+            navigate('/homepage'); // <-- Change this from '/login' to '/homepage'
         } catch (e) {
             console.error('Logout failed:', e);
-            navigate('/login');
+            navigate('/homepage'); // <-- Change this from '/login' to '/homepage'
         }
     }, [logout, navigate]);
 

@@ -17,6 +17,7 @@ function Login() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -210,25 +211,43 @@ function Login() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter password"
-                  required
-                />
-                <div style={{ textAlign: 'right', marginTop: '5px' }}>
-                    <button 
-                        type="button" 
-                        className="forgot-password-link"
-                        onClick={() => { setError(''); setSuccess(''); setView('forgot_request'); }}
-                    >
-                        Forgot Password?
-                    </button>
-                </div>
-              </div>
+  <label htmlFor="password">Password</label>
+  <div className="password-wrapper" style={{ position: 'relative' }}>
+    <input
+      type={showPassword ? "text" : "password"}
+      name="password"
+      value={formData.password}
+      onChange={handleChange}
+      placeholder="Enter password"
+      required
+      style={{ width: '100%', paddingRight: '40px' }}
+    />
+    <span 
+      className="password-toggle-icon"
+      onClick={() => setShowPassword(!showPassword)}
+      style={{
+        position: 'absolute',
+        right: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        cursor: 'pointer',
+        color: '#666',
+        fontSize: '1.2rem'
+      }}
+    >
+      {showPassword ? '👁️' : '👁️‍🗨️'} 
+    </span>
+  </div>
+  <div style={{ textAlign: 'right', marginTop: '5px' }}>
+    <button 
+      type="button" 
+      className="forgot-password-link"
+      onClick={() => { setError(''); setSuccess(''); setView('forgot_request'); }}
+    >
+      Forgot Password?
+    </button>
+  </div>
+</div>
 
               <button type="submit" className="btn-primary" disabled={loading}>
                 {loading ? 'Logging in...' : 'Login'}
