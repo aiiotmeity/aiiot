@@ -407,17 +407,16 @@ const HistoricalCharts = ({ historicalData, historicalLoading, historicalError, 
             <div className="chart-controls">
                 <div className="control-group">
                     <label>Period</label>
-                    <div className="toggle-group">
-                        {[1, 3, 7, 30].map(days => (
-                            <button 
-                                key={days}
-                                className={selectedDays === days ? 'active' : ''}
-                                onClick={() => setSelectedDays(days)}
-                            >
-                                {days === 1 ? '24H' : `${days}D`}
-                            </button>
-                        ))}
-                    </div>
+                    <select
+                        value={selectedDays}
+                        onChange={e => setSelectedDays(Number(e.target.value))}
+                        className="period-select"
+                    >
+                        <option value={1}>Last 24 Hours</option>
+                        <option value={3}>Last 3 Days</option>
+                        <option value={7}>Last 7 Days</option>
+                        <option value={30}>Last 30 Days</option>
+                    </select>
                 </div>
 
                 <div className="control-group">
