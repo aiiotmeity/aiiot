@@ -176,14 +176,14 @@ const getPollutantAdvice = (pollutants) => {
 
     // Define thresholds based on WHO/CPCB limits
     const thresholds = {
-    pm25: 60,    // µg/m³ (24-hr Moderate upper limit)
-    pm10: 100,   // µg/m³
-    so2: 80,     // µg/m³
-    no2: 80,     // µg/m³
-    co: 2,       // mg/m³ (8-hr average)
-    o3: 100,     // µg/m³ (8-hr average)
-    nh3: 200     // µg/m³
-};
+        pm25: 60,    // µg/m³ (24-hr Moderate upper limit)
+        pm10: 100,   // µg/m³
+        so2: 80,     // µg/m³
+        no2: 80,     // µg/m³
+        co: 2,       // mg/m³ (8-hr average)
+        o3: 100,     // µg/m³ (8-hr average)
+        nh3: 200     // µg/m³
+    };
 
     // Find the pollutant that is furthest above its limit
     let maxRatio = 0;
@@ -232,13 +232,13 @@ function HealthReport() {
     const [currentDataInfo, setCurrentDataInfo] = useState({
         is_interpolated: false,
         aqi: 0,
-        dominantPollutant: 'N/A', 
+        dominantPollutant: 'N/A',
         station_name: 'Loading...'
     });
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
     // --- DELETED `calculateInterpolatedAqi` FUNCTION ---
-    
+
     const { user, loading: authLoading, logout } = useAuth();
     // Fallback to localStorage user if auth context is not populated yet
     const storedUser = React.useMemo(() => {
@@ -259,7 +259,7 @@ function HealthReport() {
     const [nearestStation, setNearestStation] = useState(null);
     // This state will now hold the AQI info, whether it's interpolated or default
     // const [currentDataInfo, setCurrentDataInfo] = useState(null);
-    
+
 
     const navigate = useNavigate();
     const API_BASE_URL = process.env.NODE_ENV === 'production'
@@ -509,9 +509,14 @@ function HealthReport() {
         if (Array.isArray(forecasts)) {
             forecastForNearest = forecasts;
         } else {
-            const stationId = nearestStation ? String(nearestStation.id) : null;
+            const rawStationId = nearestStation ? String(nearestStation.id) : null;
+            
+            // FIX: Handle the backend naming mismatch between lora-v4 and aqm-v4
+            const stationId = (rawStationId === 'lora-v4' && !forecasts['lora-v4']) 
+                ? 'aqm-v4' 
+                : rawStationId;
+                
             const candidate = stationId ? (forecasts?.[stationId] ?? forecasts?.[String(stationId)]) : null;
-
             if (Array.isArray(candidate)) {
                 forecastForNearest = candidate;
             } else if (candidate && Array.isArray(candidate.data)) {
@@ -707,36 +712,36 @@ function HealthReport() {
                 {/* Health Recommendations Section */}
                 <div className="recommendations-section">
                     <h2 className="section-title">
-        💡 Personalized Health Recommendations
-        {healthRecommendations?.isSensitive && <span className="sensitive-badge">Sensitive Group</span>}
-    </h2>
+                        💡 Personalized Health Recommendations
+                        {healthRecommendations?.isSensitive && <span className="sensitive-badge">Sensitive Group</span>}
+                    </h2>
 
-    {/* Dynamic Pollutant Specific Advice */}
-    {(() => {
-        // Accesses interpolated pollutant data from your state
-        const pollutantAdvice = getPollutantAdvice(currentDataInfo?.pollutants);
-        
-        if (pollutantAdvice) {
-            return (
-                <div className={`pollutant-alert-card ${pollutantAdvice.isHigh ? 'high-risk' : 'moderate-risk'}`}>
-                    <div className="pollutant-header">
-                        <span className="pollutant-icon">{pollutantAdvice.isHigh ? '🚨' : '🌫️'}</span>
-                        <div>
-                            <strong>Primary Pollutant Concern: {pollutantAdvice.pollutant}</strong>
-                            <div className="pollutant-risk-type">{pollutantAdvice.risk}</div>
-                        </div>
-                    </div>
-                    <div className="pollutant-advice-text">
-                        {pollutantAdvice.advice}
-                    </div>
-                    {pollutantAdvice.isHigh && (
-                        <div className="pollutant-badge">Exceeds Safety Limits</div>
-                    )}
-                </div>
-            );
-        }
-        return null;
-    })()}
+                    {/* Dynamic Pollutant Specific Advice */}
+                    {(() => {
+                        // Accesses interpolated pollutant data from your state
+                        const pollutantAdvice = getPollutantAdvice(currentDataInfo?.pollutants);
+
+                        if (pollutantAdvice) {
+                            return (
+                                <div className={`pollutant-alert-card ${pollutantAdvice.isHigh ? 'high-risk' : 'moderate-risk'}`}>
+                                    <div className="pollutant-header">
+                                        <span className="pollutant-icon">{pollutantAdvice.isHigh ? '🚨' : '🌫️'}</span>
+                                        <div>
+                                            <strong>Primary Pollutant Concern: {pollutantAdvice.pollutant}</strong>
+                                            <div className="pollutant-risk-type">{pollutantAdvice.risk}</div>
+                                        </div>
+                                    </div>
+                                    <div className="pollutant-advice-text">
+                                        {pollutantAdvice.advice}
+                                    </div>
+                                    {pollutantAdvice.isHigh && (
+                                        <div className="pollutant-badge">Exceeds Safety Limits</div>
+                                    )}
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
 
                     {/* Government Guidelines */}
                     <div className="guidelines-banner">
@@ -783,42 +788,7 @@ function HealthReport() {
                     )}
                 </div>
 
-                {/* Emergency Contacts */}
-                {emergencyContacts && (
-                    <div className="emergency-contacts-section">
-                        <h2 className="section-title">🆘 Emergency Health Contacts</h2>
-                        <div className="emergency-contacts-grid">
-                            <div className="emergency-contact-card primary">
-                                <div className="contact-icon">📞</div>
-                                <div className="contact-info">
-                                    <div className="contact-name">{emergencyContacts.primary.name}</div>
-                                    <div className="contact-number">{emergencyContacts.primary.number}</div>
-                                    <div className="contact-desc">{emergencyContacts.primary.description}</div>
-                                </div>
-                            </div>
-
-                            <div className="emergency-contact-card medical">
-                                <div className="contact-icon">🏥</div>
-                                <div className="contact-info">
-                                    <div className="contact-name">{emergencyContacts.medical.name}</div>
-                                    <div className="contact-number">{emergencyContacts.medical.number}</div>
-                                    <div className="contact-desc">{emergencyContacts.medical.description}</div>
-                                </div>
-                            </div>
-
-                            {emergencyContacts.poison && (
-                                <div className="emergency-contact-card poison">
-                                    <div className="contact-icon">☢️</div>
-                                    <div className="contact-info">
-                                        <div className="contact-name">{emergencyContacts.poison.name}</div>
-                                        <div className="contact-number">{emergencyContacts.poison.number}</div>
-                                        <div className="contact-desc">{emergencyContacts.poison.description}</div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                
 
                 {/* Dashboard Grid - Mobile Optimized */}
                 <div className="dashboard-grid">

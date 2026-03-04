@@ -151,8 +151,8 @@ WHO_LIMITS = {
 STATION_LOCATIONS = {
     "lora-v1": {"lat":10.178385739668958,"lon": 76.43052237497399},
     "loradev2": {"lat": 10.182204721868617, "lon": 76.42850343115732},
-    "lora-v3":{"lat": 10.173254902926303, "lng": 76.42755590382993}
-    
+    "lora-v3":{"lat": 10.173254902926303, "lng": 76.42755590382993},  # Example for Station 4
+    "lora-v4": {"lat": 10.1729013391553, "lon": 76.43259601451521}
 }
 
 
@@ -568,15 +568,18 @@ class HomeAPI(APIView):
                 lora_v1_items = get_device_data("lora-v1", limit=24)
                 loradev2_items = get_device_data("loradev2", limit=24)
                 lora_v3_items = get_device_data("lora-v3", limit=24)
+                lora_v4_items = get_device_data("aqm-v4", limit=24)
                 
                 latest_v1, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
                 latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
                 latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
+                latest_v4, avg_lora_v4, _, high_index_lora_v4 = process_device_items(lora_v4_items)
                 
                 station_locations = {
                     'lora-v1': { 'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)' },
                     'loradev2': { 'lat': 10.182204721868617, 'lng': 76.42850343115732, 'name': 'Station 2 (Pothiyakkara Road)' },
                     'lora-v3': { 'lat': 10.173254902926303, 'lng': 76.42755590382993, 'name': 'Station 3 (Mattoor Junction)' },
+                    'lora-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)' },
                 }
 
                 # --- START: THE FIX ---
@@ -585,7 +588,9 @@ class HomeAPI(APIView):
                 all_stations_data = {
                     'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1'], 'last_updated_on': latest_v1.get('last_updated_on') if latest_v1 else 'N/A', 'latest_readings': latest_v1},
                     'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'last_updated_on': latest_v2.get('last_updated_on') if latest_v2 else 'N/A', 'latest_readings': latest_v2},
-                    'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'last_updated_on': latest_v3.get('last_updated_on') if latest_v3 else 'N/A', 'latest_readings': latest_v3}
+                    'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'last_updated_on': latest_v3.get('last_updated_on') if latest_v3 else 'N/A', 'latest_readings': latest_v3},
+                    'lora-v4': {'averages': avg_lora_v4, 'highest_sub_index': high_index_lora_v4, 'station_info': station_locations['lora-v4'], 'last_updated_on': latest_v4.get('last_updated_on') if latest_v4 else 'N/A', 'latest_readings': latest_v4}
+                
                 }
                 # --- END: THE FIX ---
                 
@@ -805,12 +810,13 @@ def map_realtimedata_api(request):
         latest_v1, avg_lora_v1, _, high_index_lora_v1 = process_device_items(get_device_data("lora-v1", limit=24))
         latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(get_device_data("loradev2", limit=24))
         latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(get_device_data("lora-v3", limit=24))
+        latest_v4, avg_lora_v4, _, high_index_lora_v4 = process_device_items(get_device_data("aqm-v4", limit=24))
         
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': { 'lat': 10.18220, 'lng': 76.4285, 'name': 'Station 2 (Pothiyakkara Road)' },
             'lora-v3': { 'lat': 10.17325, 'lng': 76.42755, 'name': 'Station 3 (Mattoor Junction)'},
-            'temp-2': { 'lat': 10.175, 'lng': 76.445, 'name': 'Station 4 (Malayattoor Rd)'},
+            'lora-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)'},
             'temp-3': { 'lat': 10.185, 'lng': 76.425, 'name':  'Station 5 (Kalady Town)'},
         }
 
@@ -819,7 +825,7 @@ def map_realtimedata_api(request):
                 'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1'], 'latest_readings': latest_v1},
                 'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'latest_readings': latest_v2},
                 'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'latest_readings': latest_v3},
-                'temp-2': { 'averages': None, 'highest_sub_index': None, 'station_info': station_locations['temp-2'], 'latest_readings': None },
+                'lora-v4': {'averages': avg_lora_v4, 'highest_sub_index': high_index_lora_v4, 'station_info': station_locations['lora-v4'], 'latest_readings': latest_v4},
                 'temp-3': { 'averages': None, 'highest_sub_index': None, 'station_info': station_locations['temp-3'], 'latest_readings': None }
             }
         }
@@ -856,7 +862,11 @@ def map_realtimedata_api(request):
                     'station_info': {'lat': 10.173, 'lng': 76.427, 'name': 'Station 3'},
                     'latest_readings': {'temp': 29.5, 'pre': 1011.5}
                 },
-                'temp-2': {'station_info': {'lat': 10.175, 'lng': 76.445, 'name': 'Station 4 (Coming Soon)'}},
+                'lora-v4': {
+                    'averages': {'pm25': 10.8, 'pm10': 22.4}, 'highest_sub_index': 40,
+                    'station_info': {'lat': 10.1729, 'lng': 76.4325, 'name': 'Station 4'},
+                    'latest_readings': {'temp': 28.7, 'hum': 22.3}
+                },
                 'temp-3': {'station_info': {'lat': 10.185, 'lng': 76.425, 'name': 'Station 5 (Coming Soon)'}}
             }
         }
@@ -870,7 +880,7 @@ def station_forecast_api(request, station_id):
     Corrected: Fetches forecast data, providing a real forecast for temporary stations.
     """
     try:
-        if station_id not in ['lora-v1', 'loradev2', 'lora-v3', 'temp-2', 'temp-3']:
+        if station_id not in ['lora-v1', 'loradev2', 'lora-v3', 'aqm-v4', 'temp-3']:
             return Response({'error': 'Invalid station ID'}, status=400)
 
         source_station_id = 'lora-v1' if station_id.startswith('temp-') else station_id
@@ -918,17 +928,20 @@ def all_devices_api(request):
         # Get data for all three devices
         lora_v1_items = get_device_data("lora-v1")
         loradev2_items = get_device_data("loradev2")
-        lora_v3_items = get_device_data("lora-v3") # <-- Fetching lora-v3
+        lora_v3_items = get_device_data("lora-v3") 
+        lora_v4_items = get_device_data("aqm-v4") # <-- Fetching aqm-v4
 
         # Process all three datasets
         latest_lora_v1, avg_lora_v1, subindices_lora_v1, high_index_lora_v1 = process_device_items(lora_v1_items)
         latest_loradev2, avg_loradev2, subindices_loradev2, high_index_loradev2 = process_device_items(loradev2_items)
         latest_lora_v3, avg_lora_v3, subindices_lora_v3, high_index_lora_v3 = process_device_items(lora_v3_items) # <-- Processing lora-v3
+        latest_lora_v4, avg_lora_v4, subindices_lora_v4, high_index_lora_v4 = process_device_items(lora_v4_items) # <-- Processing aqm-v4
 
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Pothiyakkara Road)' },
             'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Mattoor Junction)'},
+            'aqm-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)'},
         }
 
         return Response({
@@ -956,7 +969,15 @@ def all_devices_api(request):
                 'highest_sub_index': high_index_lora_v3,
                 'station_name': 'Station 3 (Airport Rd)',
                 'station_info': station_locations.get("lora-v3", {})
-            }
+            },
+            'aqm-v4': {
+                'latest_item': latest_lora_v4,
+                'averages': avg_lora_v4,
+                'sub_indices': {k: round(v, 2) if v is not None else None for k, v in subindices_lora_v4.items()},
+                'highest_sub_index': high_index_lora_v4,
+                'station_name': 'Station 4 (Apple One BHK Apartment)',
+                'station_info': station_locations.get("aqm-v4", {})
+            },
             # --- END FIX ---
         })
 
@@ -1479,16 +1500,19 @@ def dashboard_api(request):
         v1 = get_device_data("lora-v1", limit=24)
         v2 = get_device_data("loradev2", limit=24)
         v3 = get_device_data("lora-v3", limit=24)
+        v4 = get_device_data("aqm-v4", limit=24) # <-- Fetching aqm-v4 data for dashboard
 
         # Process data
         l1, a1, s1, h1 = process_device_items(v1)
         l2, a2, s2, h2 = process_device_items(v2)
         l3, a3, s3, h3 = process_device_items(v3)
+        l4, a4, s4, h4 = process_device_items(v4)
 
         station_locations = {
             'lora-v1': {'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': {'lat': 10.1822047218, 'lng': 76.4285034311, 'name': 'Station 2 (Pothiyakkara Road)'},
             'lora-v3': {'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Mattoor Junction)'},
+            'aqm-v4': {'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor )'},
         }
 
         realtime_data = {
@@ -1512,7 +1536,15 @@ def dashboard_api(request):
                 "sub_indices": s3,
                 "station_info": station_locations["lora-v3"],
                 "latest_readings": l3,
+            },
+            'aqm-v4': {
+                "averages": a4,
+                "highest_sub_index": h4,
+                "sub_indices": s4,
+                "station_info": station_locations["aqm-v4"],
+                "latest_readings": l4,
             }
+            
         }
 
     except Exception as e:
@@ -1759,7 +1791,7 @@ def station_forecast_api(request, station_id):
     Provides forecast data for all 5 stations.
     """
     try:
-        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'temp-2', 'temp-3']
+        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'aqm-v4', 'temp-3']
         if station_id not in valid_ids:
             return Response({'error': 'Invalid station ID'}, status=400)
 
@@ -1836,15 +1868,18 @@ def health_report_api(request):
             lora_v1_items = get_device_data("lora-v1", limit=24)
             loradev2_items = get_device_data("loradev2", limit=24)
             lora_v3_items = get_device_data("lora-v3", limit=24)
+            lora_v4_items = get_device_data("aqm-v4", limit=24) # <-- Fetching aqm-v4 data for health report as well
 
             _, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
             _, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
             _, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
+            _, avg_lora_v4, _, high_index_lora_v4 = process_device_items(lora_v4_items)
             
             station_locations = {
                 'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
                 'loradev2': { 'lat': 10.182204, 'lng': 76.428503, 'name': 'Station 2 (Pothiyakkara Road)' },
                 'lora-v3': { 'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Mattoor Junction)' },
+                'aqm-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor )' },
                 # ... include your temp stations here as well
             }
 
@@ -1852,6 +1887,7 @@ def health_report_api(request):
                 'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1']},
                 'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2']},
                 'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3']},
+                'aqm-v4': {'averages': avg_lora_v4, 'highest_sub_index': high_index_lora_v4, 'station_info': station_locations['aqm-v4']},
                 # ... add simulated data for temp stations if needed
             }
             cache.set('map_realtime_data', all_stations_data, 60)
@@ -1920,33 +1956,32 @@ from .models import Signup, FamilyMembers # Make sure FamilyMembers is imported
 @api_view(['GET', 'POST'])
 @csrf_exempt
 def family_members_api(request):
-    """
-    API to get a user's family members or add a new one.
-    """
-    username = request.GET.get('username') if request.method == 'GET' else request.data.get('username')
-    if not username:
-        return Response({'error': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
-
+    import traceback # <-- Added this to trace the error
+    
     try:
-        parent_user = Signup.objects.get(username=username)
-    except Signup.DoesNotExist:
-        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        username = request.GET.get('username') if request.method == 'GET' else request.data.get('username')
+        if not username:
+            return Response({'error': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if request.method == 'GET':
-        family_members = parent_user.family_members.all().order_by('name')
-        data = [{'id': member.id, 'name': member.name, 'age': member.age, 'relationship': member.relationship} for member in family_members]
-        return Response(data, status=status.HTTP_200_OK)
-
-    if request.method == 'POST':
-        data = request.data
-        name = data.get('name', '').strip()
-        age = data.get('age')
-        relationship = data.get('relationship', '').strip()
-
-        if not name or not age or not relationship:
-            return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        parent_user = Signup.objects.filter(username=username).first()
         
-        try:
+        if not parent_user:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'GET':
+            family_members = parent_user.family_members.all().order_by('name')
+            data = [{'id': member.id, 'name': member.name, 'age': member.age, 'relationship': member.relationship} for member in family_members]
+            return Response(data, status=status.HTTP_200_OK)
+
+        if request.method == 'POST':
+            data = request.data
+            name = data.get('name', '').strip()
+            age = data.get('age')
+            relationship = data.get('relationship', '').strip()
+
+            if not name or not age or not relationship:
+                return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
             member = FamilyMembers.objects.create(
                 parent_user=parent_user,
                 name=name,
@@ -1954,10 +1989,15 @@ def family_members_api(request):
                 relationship=relationship
             )
             return Response({'id': member.id, 'name': member.name, 'age': member.age, 'relationship': member.relationship}, status=status.HTTP_201_CREATED)
-        except ValueError:
-            return Response({'error': 'Please enter a valid age.'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    except Exception as e:
+        # 🔥 THIS WILL PRINT THE EXACT ERROR IN YOUR TERMINAL 🔥
+        print("\n" + "="*50)
+        print("🔥 EXACT BACKEND ERROR: 🔥")
+        traceback.print_exc()
+        print("="*50 + "\n")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 
 @api_view(['DELETE'])
 @csrf_exempt
@@ -2090,7 +2130,9 @@ def admin_dashboard_api(request):
 
         lora_v1_items = get_items_safe("lora-v1")
         loradev2_items = get_items_safe("loradev2")
-        lora_v3_items = get_items_safe("lora-v3")  # <--- Added Station 3
+        lora_v3_items = get_items_safe("lora-v3") 
+        lora_v4_items = get_items_safe("aqm-v4")
+        # <--- Added Station 4
 
         # 3. Calculate AQI (High Index)
         def get_aqi_safe(items):
@@ -2103,6 +2145,7 @@ def admin_dashboard_api(request):
         aqi_v1 = get_aqi_safe(lora_v1_items)
         aqi_v2 = get_aqi_safe(loradev2_items)
         aqi_v3 = get_aqi_safe(lora_v3_items) # <--- Added Station 3 AQI
+        aqi_v4 = get_aqi_safe(lora_v4_items) # <--- Added Station 4 AQI
 
         # 4. Extract COMPLETE Sensor Data
         def get_complete_sensor_data(items):

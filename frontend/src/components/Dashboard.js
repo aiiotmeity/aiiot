@@ -539,43 +539,63 @@ function Dashboard() {
   }, [userLocationName]);
 
   // ===== IDW INTERPOLATION CALCULATION =====
+  // ===== IDW INTERPOLATION CALCULATION =====
   const calculateIDWInterpolation = useCallback((locationData, stations) => {
-    const stationIds = Object.keys(stations);
-    let totalWeight = 0;
-    const weightedValues = {
-      pm25: 0, pm10: 0, so2: 0, no2: 0,
-      co: 0, o3: 0, nh3: 0, temp: 0, hum: 0, pre: 0
-    };
+    // Only use real stations, ignore "temp-" coming soon stations
+    const stationIds = Object.keys(stations).filter(id => !id.startsWith('temp-'));
+    
+    const numerators = {};
+    const denominators = {};
     let weightedAqi = 0;
+    let aqiWeightTotal = 0;
+
     stationIds.forEach(stationId => {
       const station = stations[stationId];
+      if (!station || !station.station_info) return;
+
       const distance = calculateDistance(
-        locationData.lat,
-        locationData.lng,
-        station.station_info.lat,
-        station.station_info.lng
+        locationData.lat, locationData.lng,
+        station.station_info.lat, station.station_info.lng
       );
+      
       const safeDistance = Math.max(distance, 0.001);
       const weight = 1.0 / (safeDistance ** 2);
-      totalWeight += weight;
+
       const averages = station.averages || {};
-      Object.keys(weightedValues).forEach(param => {
-        if (averages[param] !== undefined) {
-          weightedValues[param] += averages[param] * weight;
+      const latest = station.latest_readings || {};
+
+      // Combine pollutants and weather
+      const allParams = { 
+        ...averages, 
+        temp: latest.temp ?? latest.temperature, 
+        hum: latest.hum ?? latest.humidity, 
+        pre: latest.pre ?? latest.pressure 
+      };
+
+      // Apply weights ONLY if the station actually has that reading
+      Object.keys(allParams).forEach(param => {
+        if (allParams[param] !== undefined && allParams[param] !== null) {
+          numerators[param] = (numerators[param] || 0) + (allParams[param] * weight);
+          denominators[param] = (denominators[param] || 0) + weight;
         }
       });
-      weightedAqi += (station.highest_sub_index || 0) * weight;
+
+      if (station.highest_sub_index) {
+        weightedAqi += station.highest_sub_index * weight;
+        aqiWeightTotal += weight;
+      }
     });
+
     const interpolated_values = {};
-    Object.keys(weightedValues).forEach(param => {
-      interpolated_values[param] = totalWeight > 0 ?
-        Math.round((weightedValues[param] / totalWeight) * 100) / 100 : 0;
+    Object.keys(numerators).forEach(param => {
+      interpolated_values[param] = denominators[param] > 0 
+        ? Math.round((numerators[param] / denominators[param]) * 100) / 100 
+        : 0;
     });
-    const interpolated_aqi = totalWeight > 0 ?
-      Math.round(weightedAqi / totalWeight) : 50;
+
     return {
       interpolated_values,
-      interpolated_aqi,
+      interpolated_aqi: aqiWeightTotal > 0 ? Math.round(weightedAqi / aqiWeightTotal) : 50,
       stations_used: stationIds.length,
       method: 'idw'
     };
@@ -752,12 +772,20 @@ function Dashboard() {
             console.log('✅ Personalized AQI received:', aqiData);
 
             // This is the IDEAL state
-            const nearestStationId = aqiData.closest_sensor.sensor_id;
-            const nearestStation = baseData.stations[nearestStationId];
+           // This is the IDEAL state
+            const rawNearestId = aqiData.closest_sensor.sensor_id;
+            
+            // Handle the backend naming mismatch between lora-v4 and aqm-v4
+            const nearestStationId = (rawNearestId === 'lora-v4' && !baseData.stations['lora-v4']) 
+                ? 'aqm-v4' 
+                : rawNearestId;
+
+            // Safely grab the station, or fallback to the first available if it's missing
+            const nearestStation = baseData.stations[nearestStationId] || Object.values(baseData.stations)[0];
 
             setNearestStationInfo({
               id: nearestStationId,
-              name: nearestStation.station_info.name,
+              name: nearestStation?.station_info?.name || 'Local Station', // Added safe chaining
               distance: aqiData.closest_sensor.distance_km,
               aqi: aqiData.user_aqi
             });
@@ -904,22 +932,43 @@ function Dashboard() {
   }), []);
 
   // ===== METRIC CARDS =====
+  // ===== METRIC CARDS =====
   const MetricCards = useMemo(() => {
-    const parameters = ['pm25', 'pm10', 'so2', 'no2', 'co', 'o3', 'nh3'];
-    return parameters.map((key) => {
-      const value = currentValues[key] || 0;
+    // 1. Create a master list of all possible pollutants (including PM1.0)
+    const masterPollutants = [
+      { key: 'pm25', label: 'PM2.5', unit: 'µg/m³', icon: '🌱' },
+      { key: 'pm10', label: 'PM10', unit: 'µg/m³', icon: '🍃' }, // Added PM1
+      { key: 'so2', label: 'SO₂', unit: 'µg/m³', icon: '🏭' },
+      { key: 'no2', label: 'NO₂', unit: 'µg/m³', icon: '💨' },
+      { key: 'co', label: 'CO', unit: 'mg/m³', icon: '☁️' },
+      { key: 'o3', label: 'O₃', unit: 'µg/m³', icon: '☀️' },
+      { key: 'nh3', label: 'NH₃', unit: 'µg/m³', icon: '⚗️' }
+    ];
+
+    // 2. Filter out any pollutants that don't exist in the current data
+    const activePollutants = masterPollutants.filter(p => 
+      currentValues[p.key] !== undefined && currentValues[p.key] !== null
+    );
+
+    if (activePollutants.length === 0) {
+      return <div style={{gridColumn: '1 / -1', textAlign: 'center', color: '#6b7280'}}>Waiting for sensor data...</div>;
+    }
+
+    // 3. Render only the active cards
+    return activePollutants.map((p) => {
+      const value = currentValues[p.key];
       return (
-        <div key={key} className="metric-card">
-          <div className="metric-icon">{metricIcons[key] || '📊'}</div>
-          <div className="metric-value">{formatValue(value, key)}</div>
-          <div className="metric-label">{key.toUpperCase()}</div>
-          <div className="metric-unit">{key === 'co' ? 'mg/m³' : 'µg/m³'}</div>
+        <div key={p.key} className="metric-card">
+          <div className="metric-icon">{p.icon}</div>
+          <div className="metric-value">{formatValue(value, p.key)}</div>
+          <div className="metric-label">{p.label}</div>
+          <div className="metric-unit">{p.unit}</div>
           {currentDataInfo?.is_interpolated && (<div className="metric-badge interpolated-badge">🎯 Your Location</div>)}
           {!currentDataInfo?.is_interpolated && (<div className="metric-badge nearest-badge">📍 Nearest Station</div>)}
         </div>
       );
     });
-  }, [currentValues, metricIcons, formatValue, currentDataInfo]);
+  }, [currentValues, formatValue, currentDataInfo]);
 
   // ===== EVENT HANDLERS =====
   const handleNavLinkClick = useCallback(() => { 
@@ -1247,9 +1296,33 @@ function Dashboard() {
         <div className="weather-section">
           <h2 className="section-title">🌤️ Weather Conditions</h2>
           <div className="weather-grid">
-            <div className="weather-card"><div className="weather-icon">🌡️</div><div className="weather-content"><div className="weather-value">{formatValue(currentValues.temp || 28, 'temp')}°C</div><div className="weather-label">Temperature</div></div></div>
-            <div className="weather-card"><div className="weather-icon">💧</div><div className="weather-content"><div className="weather-value">{formatValue(currentValues.hum || 65, 'hum')}%</div><div className="weather-label">Humidity</div></div></div>
-            <div className="weather-card"><div className="weather-icon">📏</div><div className="weather-content"><div className="weather-value">{formatValue(currentValues.pre || 1013, 'pre')} hPa</div><div className="weather-label">Atmospheric Pressure</div></div></div>
+            <div className="weather-card">
+              <div className="weather-icon">🌡️</div>
+              <div className="weather-content">
+                <div className="weather-value">
+                  {formatValue(currentValues.temp ?? currentValues.temperature ?? 28, 'temp')}°C
+                </div>
+                <div className="weather-label">Temperature</div>
+              </div>
+            </div>
+            <div className="weather-card">
+              <div className="weather-icon">💧</div>
+              <div className="weather-content">
+                <div className="weather-value">
+                  {formatValue(currentValues.hum ?? currentValues.humidity ?? 65, 'hum')}%
+                </div>
+                <div className="weather-label">Humidity</div>
+              </div>
+            </div>
+            <div className="weather-card">
+              <div className="weather-icon">📏</div>
+              <div className="weather-content">
+                <div className="weather-value">
+                  {formatValue(currentValues.pre ?? currentValues.pressure ?? 1013, 'pre')} hPa
+                </div>
+                <div className="weather-label">Atmospheric Pressure</div>
+              </div>
+            </div>
           </div>
         </div>               
       </div>

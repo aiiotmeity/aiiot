@@ -139,23 +139,23 @@ class AdminUserlogin(models.Model):
 
 
 
-class FamilyMembers(models.Model):
-    # class FamilyMembers(models.Model):
+# class FamilyMembers(models.Model):
+#     # class FamilyMembers(models.Model):
     
-    # THIS IS THE FIXED LINE:
-    parent_user = models.ForeignKey('Signup', on_delete=models.CASCADE, related_name='family_members')
+#     # THIS IS THE FIXED LINE:
+#     parent_user = models.ForeignKey('Signup', on_delete=models.CASCADE, related_name='family_members')
     
-    # ... other fields
-    name = models.CharField(max_length=100)
-    age = models.IntegerField()
-    relationship = models.CharField(max_length=50)
+#     # ... other fields
+#     name = models.CharField(max_length=100)
+#     age = models.IntegerField()
+#     relationship = models.CharField(max_length=50)
    
-    class Meta:
-        db_table = 'family_members'
-        managed = True
+#     class Meta:
+#         db_table = 'family_members'
+#         managed = True
 
-    def __str__(self):
-        return f"{self.name} ({self.relationship})"
+#     def __str__(self):
+#         return f"{self.name} ({self.relationship})"
 
 
 class Support(models.Model):

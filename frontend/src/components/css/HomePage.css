@@ -921,6 +921,7 @@
 .airaware-homepage-container .stats-section {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
   position: relative;
+  padding: 6rem 2rem; /* ✅ FIX 1: Added generous top and bottom padding */
 }
 
 .airaware-homepage-container .stats-section::before {
@@ -1031,9 +1032,9 @@
 /* HomePage.css */
 
 .airaware-homepage-container .cities-grid { 
-  /* This is the main fix: we specify 5 columns */
-  grid-template-columns: repeat(5, 1fr); 
-  gap: 1.5rem; /* Reduced the gap slightly to help them fit */
+  /* Responsive: Fits as many as possible, moving to next row when space runs out */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+  gap: 1.5rem; 
 }
 .airaware-homepage-container .services-grid { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
 
@@ -2161,6 +2162,7 @@
   from this file as they were the source of the conflict.
   This file is now fully scoped to '.airaware-homepage-container'.
 */
+
 html {
   scroll-behavior: smooth;
 }

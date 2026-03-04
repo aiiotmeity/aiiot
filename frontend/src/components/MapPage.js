@@ -337,7 +337,7 @@ const MapPage = () => {
             handleStationSelect: (stationId, fromPopup = false) => {
                 // Only allow selection of real stations
                 
-                if (['lora-v1', 'loradev2', 'lora-v3'].includes(stationId)) {
+                if (['lora-v1', 'loradev2', 'lora-v3', 'lora-v4'].includes(stationId)) {
                     setSelectedStationId(stationId);
                     if (isMobile) {
                         setActiveTab('details');
@@ -417,8 +417,11 @@ const MapPage = () => {
             if (data.stations['lora-v3']) {
                 processedStations['lora-v3'] = data.stations['lora-v3'];
             }
+            if (data.stations['lora-v4']) {
+                processedStations['lora-v4'] = data.stations['lora-v4'];
+            }
             // Add coming soon stations (location only)
-            ['temp-2', 'temp-3'].forEach(id => {
+            ['temp-3'].forEach(id => {
                 if (data.stations[id]) {
                     processedStations[id] = {
                         station_info: data.stations[id].station_info,
@@ -628,7 +631,7 @@ const MapPage = () => {
     const handleStationSelect = useCallback((stationId) => {
         // Only allow selection of real stations
         // AFTER
-        if (['lora-v1', 'loradev2', 'lora-v3'].includes(stationId)) {
+        if (['lora-v1', 'loradev2', 'lora-v3', 'lora-v4'].includes(stationId)) {
             setSelectedStationId(stationId);
             if (isMobile) {
                 setActiveTab('details');
@@ -667,10 +670,36 @@ const MapPage = () => {
         { key: 'co', name: 'CO', unit: 'µg/m³' },
         { key: 'o3', name: 'O₃', unit: 'µg/m³' },
         { key: 'nh3', name: 'NH₃', unit: 'µg/m³' },
-        // --- ADD THESE TWO LINES ---
         { key: 'temp', name: 'Temperature', unit: '°C' },
+        { key: 'humidity', name: 'Humidity', unit: '%' }, // New
         { key: 'pre', name: 'Pressure', unit: 'hPa' },
     ];
+
+    // 2. Dynamically filter to only show cards for data the sensor actually sends
+    const activePollutants = selectedStationData && selectedStationData.latest_readings
+        ? pollutants.filter(p => {
+            const raw = selectedStationData.latest_readings;
+            // Handle naming variations from different sensors
+            if (p.key === 'temp') return raw.temp !== undefined || raw.temperature !== undefined;
+            if (p.key === 'humidity') return raw.hum !== undefined || raw.humidity !== undefined;
+            if (p.key === 'pre') return raw.pre !== undefined || raw.pressure !== undefined;
+            // Otherwise, check if the exact key exists in the database payload
+            return raw[p.key] !== undefined;
+        })
+        : [];
+
+    // 3. Helper function to safely get the correct display value
+    const getDisplayValue = (key) => {
+        if (!selectedStationData) return 'N/A';
+        const raw = selectedStationData.latest_readings || {};
+        const avg = selectedStationData.averages || {};
+
+        if (key === 'temp') return raw.temp ?? raw.temperature ?? 'N/A';
+        if (key === 'humidity') return raw.hum ?? raw.humidity ?? 'N/A';
+        if (key === 'pre') return raw.pre ?? raw.pressure ?? 'N/A';
+
+        return avg[key] !== undefined ? avg[key].toFixed(2) : 'N/A';
+    };
 
     // === FORECAST CHART CONFIGURATION ===
     const forecastChartData = useMemo(() => {
@@ -834,21 +863,16 @@ const MapPage = () => {
                                 <div className="mobile-readings-section">
                                     <h4><i className="fas fa-thermometer-half"></i> Current Readings</h4>
                                     <div className="mobile-readings-grid">
-                                        {pollutants.map(p => (
-                                            <div className="mobile-reading-card" key={p.key}>
-                                                <div className="reading-label">{p.name}</div>
-                                                <div className="reading-value">
-                                                {
-                                                    // Use latest_readings for temp/pressure, otherwise use averages
-                                                    (p.key === 'temp' || p.key === 'pre')
-                                                        ? (selectedStationData.latest_readings?.[p.key] ?? 'N/A')
-                                                        : (selectedStationData.averages?.[p.key]?.toFixed(2) ?? 'N/A')
-                                                }
+                                    {activePollutants.map(p => (
+                                        <div className="mobile-reading-card" key={p.key}>
+                                            <div className="reading-label">{p.name}</div>
+                                            <div className="reading-value">
+                                                {getDisplayValue(p.key)}
                                                 <span>{p.unit}</span>
                                             </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    ))}
+                                </div>
                                 </div>
 
                                 {/* Forecast */}
@@ -950,10 +974,11 @@ const MapPage = () => {
                                     <div className="mobile-readings-section">
                                         <h4><i className="fas fa-user-circle"></i> Your Air Quality</h4>
                                         <div className="mobile-readings-grid">
+                                            // Filter out temp, pressure, AND humidity
                                             {pollutants
-                                                .filter(p => p.key !== 'temp' && p.key !== 'pre') // Filter out temp/pressure
-                                                .map(p => (
-                                                <div className="mobile-reading-card user-reading" key={p.key}>
+                                            .filter(p => p.key !== 'temp' && p.key !== 'pre' && p.key !== 'humidity') 
+                                            .map(p => (
+                                            <div className="mobile-reading-card user-reading" key={p.key}>
                                                     <div className="reading-label">{p.name}</div>
                                                     <div className="reading-value">
                                                         {(userLocationData.values?.[p.key]?.toFixed(2)) ?? 'N/A'}
@@ -1280,21 +1305,16 @@ const MapPage = () => {
                                         <div className="readings-section">
                                             <h3><i className="fas fa-thermometer-half"></i> Current Readings</h3>
                                             <div className="readings-grid">
-                                                {pollutants.map(p => (
-                                                    <div className="reading-card" key={p.key}>
-                                                        <div className="reading-label">{p.name}</div>
-                                                        <div className="reading-value">
-                                                        {
-                                                            // Use latest_readings for temp/pressure, otherwise use averages
-                                                            (p.key === 'temp' || p.key === 'pre')
-                                                                ? (selectedStationData.latest_readings?.[p.key] ?? 'N/A')
-                                                                : (selectedStationData.averages?.[p.key]?.toFixed(2) ?? 'N/A')
-                                                        }
+                                            {activePollutants.map(p => (
+                                                <div className="reading-card" key={p.key}>
+                                                    <div className="reading-label">{p.name}</div>
+                                                    <div className="reading-value">
+                                                        {getDisplayValue(p.key)}
                                                         <span className="reading-unit">{p.unit}</span>
                                                     </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                         </div>
 
                                         {/* Forecast Section - Compact */}

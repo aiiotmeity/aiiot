@@ -360,49 +360,74 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
       </section>
 
       {/* --- AQI Scale Section --- */}
+      {/* --- AQI Scale Section --- */}
       <section className="section aqi-scale-section">
         <div className="section-container">
           <div className="section-header">
             <h2 className="section-title">Understanding Air Quality Index</h2>
-            
           </div>
           <div className="aqi-scale-grid">
+            
             <div className="aqi-scale-item">
               <div className="aqi-range">
-                <div className="aqi-color-indicator aqi-good"></div>
+                <div className="aqi-color-indicator" style={{ backgroundColor: '#10b981' }}></div>
                 <div className="aqi-range-text">Good (0-50)</div>
               </div>
               <div className="aqi-description">
-                Air quality is satisfactory. Air pollution poses little or no risk for everyone.
+                Minimal impact. Air quality is satisfactory, and air pollution poses little or no risk for everyone.
               </div>
             </div>
+
             <div className="aqi-scale-item">
               <div className="aqi-range">
-                <div className="aqi-color-indicator aqi-moderate"></div>
-                <div className="aqi-range-text">Moderate (51-100)</div>
+                <div className="aqi-color-indicator" style={{ backgroundColor: '#84cc16' }}></div>
+                <div className="aqi-range-text">Satisfactory (51-100)</div>
               </div>
               <div className="aqi-description">
-                Air quality is acceptable. However, sensitive individuals may experience minor issues.
+                Minor breathing discomfort to sensitive people. Air quality is acceptable.
               </div>
             </div>
+
             <div className="aqi-scale-item">
               <div className="aqi-range">
-                <div className="aqi-color-indicator aqi-unhealthy"></div>
-                <div className="aqi-range-text">Unhealthy (101-200)</div>
+                <div className="aqi-color-indicator" style={{ backgroundColor: '#f59e0b' }}></div>
+                <div className="aqi-range-text">Moderate (101-200)</div>
               </div>
               <div className="aqi-description">
-                Members of sensitive groups may experience health effects. Limit outdoor activities.
+                Breathing discomfort to the people with lungs, asthma and heart diseases.
               </div>
             </div>
+
             <div className="aqi-scale-item">
               <div className="aqi-range">
-                <div className="aqi-color-indicator aqi-hazardous"></div>
-                <div className="aqi-range-text">Hazardous (201+)</div>
+                <div className="aqi-color-indicator" style={{ backgroundColor: '#f97316' }}></div>
+                <div className="aqi-range-text">Poor (201-300)</div>
               </div>
               <div className="aqi-description">
-                Health alert: The risk of health effects is increased for everyone. Avoid outdoor activities.
+                Breathing discomfort to most people on prolonged exposure.
               </div>
             </div>
+
+            <div className="aqi-scale-item">
+              <div className="aqi-range">
+                <div className="aqi-color-indicator" style={{ backgroundColor: '#dc2626' }}></div>
+                <div className="aqi-range-text">Very Poor (301-400)</div>
+              </div>
+              <div className="aqi-description">
+                Respiratory illness on prolonged exposure. May affect healthy people too.
+              </div>
+            </div>
+
+            <div className="aqi-scale-item">
+              <div className="aqi-range">
+                <div className="aqi-color-indicator" style={{ backgroundColor: '#7c2d12' }}></div>
+                <div className="aqi-range-text">Severe (401+)</div>
+              </div>
+              <div className="aqi-description">
+                Health alert: Affects healthy people and seriously impacts those with existing diseases.
+              </div>
+            </div>
+
           </div>
         </div>
       </section>

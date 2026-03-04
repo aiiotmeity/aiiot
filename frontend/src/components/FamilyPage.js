@@ -6,12 +6,14 @@ import logoImage from '../assets/aqi.webp';
 
 function FamilyPage() {
     const { user, logout } = useAuth();
+    
+    // FIX 1: Safely extract 'username' or 'name' from user data context
     const [username] = useState(() => {
         try {
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
-            return userData.name || user?.name || null;
+            return userData.username || userData.name || user?.username || user?.name || null;
         } catch {
-            return user?.name || null;
+            return user?.username || user?.name || null;
         }
     });
     
@@ -22,10 +24,13 @@ function FamilyPage() {
     const [editingMember, setEditingMember] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     
-    // Unified form state for both adding and editing
     const [formState, setFormState] = useState({ name: '', age: '', relationship: '' });
     const [formError, setFormError] = useState('');
     const [formLoading, setFormLoading] = useState(false);
+
+    // --- NEW STATE FOR LOCATION AND AQI ---
+    const [currentAQI, setCurrentAQI] = useState(null);
+    const [locationStatus, setLocationStatus] = useState('Detecting location...');
 
     const navigate = useNavigate();
     const API_BASE_URL = process.env.NODE_ENV === 'production'
@@ -64,6 +69,39 @@ function FamilyPage() {
         }
     }, [username, navigate, API_BASE_URL]);
 
+    // --- NEW LOGIC: Fetch User Location & AQI ---
+    const fetchLocationAndAQI = useCallback(() => {
+        if (!navigator.geolocation) {
+            setLocationStatus('Geolocation is not supported by your browser.');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    setLocationStatus('Fetching local air quality...');
+                    const { latitude, longitude } = position.coords;
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/user-aqi/?lat=${latitude}&lng=${longitude}`);
+                    if (!response.ok) throw new Error('Failed to fetch AQI');
+                    
+                    const data = await response.json();
+                    setCurrentAQI(data.user_aqi);
+                    setLocationStatus(`Local AQI: ${data.user_aqi} (${data.status})`);
+                } catch (err) {
+                    console.error('Error fetching AQI for family page:', err);
+                    setLocationStatus('Failed to load local AQI. Using default risk profiles.');
+                    setCurrentAQI(null); // Fallback to null
+                }
+            },
+            (err) => {
+                console.warn('Location access denied or failed.', err);
+                setLocationStatus('Location access needed for dynamic health scoring.');
+            },
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+    }, [API_BASE_URL]);
+
     useEffect(() => {
         const handleResize = () => {
             setIsMobileView(window.innerWidth <= 768);
@@ -72,10 +110,34 @@ function FamilyPage() {
         return () => {
             window.removeEventListener('resize', handleResize);
         };
-        }, []);
+    }, []);
+
     useEffect(() => {
         fetchFamilyMembers();
-    }, [fetchFamilyMembers]);
+        fetchLocationAndAQI(); // Fetch AQI on load
+    }, [fetchFamilyMembers, fetchLocationAndAQI]);
+
+    // --- NEW LOGIC: Dynamic Risk Matrix ---
+    const getDynamicRisk = (age, aqi) => {
+        // Fallback to static logic if we don't have location/AQI yet
+        if (aqi === null) {
+            return (age < 18 || age > 65) 
+                ? { label: 'High Risk (Static)', class: 'high-risk' } 
+                : { label: 'Normal Risk (Static)', class: 'normal' };
+        }
+
+        const isVulnerable = age < 18 || age > 65;
+
+        if (aqi <= 50) {
+            return { label: 'Low Risk', class: 'normal' };
+        } else if (aqi <= 100) {
+            return isVulnerable ? { label: 'Moderate Risk', class: 'moderate' } : { label: 'Low Risk', class: 'normal' };
+        } else if (aqi <= 200) {
+            return isVulnerable ? { label: 'High Risk', class: 'high-risk' } : { label: 'Moderate Risk', class: 'moderate' };
+        } else {
+            return { label: 'Critical Risk', class: 'high-risk' };
+        }
+    };
 
     // Event Handlers
     const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
@@ -202,7 +264,6 @@ function FamilyPage() {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormState(prev => ({ ...prev, [name]: value }));
-        // Clear error when user starts typing
         if (formError) setFormError('');
     };
 
@@ -261,27 +322,29 @@ function FamilyPage() {
         );
     }
 
+    // Determine total high risk members dynamically based on current AQI
+    const highRiskCount = familyMembers.filter(m => {
+        const risk = getDynamicRisk(m.age, currentAQI);
+        return risk.label.includes('High') || risk.label.includes('Critical');
+    }).length;
+
     return (
         <div className="family-page">
-            {/* Real-time Status */}
             <div className="realtime-status">
                 👨‍👩‍👧‍👦 FAMILY MANAGEMENT • {familyMembers.length} Members • Health Monitoring Active
             </div>
 
-            {/* Navigation */}
             <nav className="navbar">
                 <div className="navbar-content">
                     <Link to="/" className="navbar-brand">
-                                {/* 2. USE THE IMPORTED VARIABLE */}
-                                <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
-                                AirAware
-                              </Link>
+                        <img src={logoImage} alt="AQM Logo" width={isMobileView ? "32" : "40"} height={isMobileView ? "32" : "40"} />
+                        AirAware
+                    </Link>
 
                     <div className="menu-toggle" onClick={toggleMenu}>☰</div>
 
                     <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
                         <li><Link to="/dashboard" className="nav-link">👤 Profile</Link></li>
-                        
                         <li><Link to="/health-assessment" className="nav-link">📋 Health Update</Link></li>
                         <li><Link to="/health-report" className="nav-link">📄 Health Report</Link></li>
                         <li><Link to="/add-family" className="nav-link active">👥 Add Family</Link></li>
@@ -293,9 +356,7 @@ function FamilyPage() {
                 </div>
             </nav>
 
-            {/* Main Container */}
             <div className="main-container">
-                {/* Page Header */}
                 <div className="page-header">
                     <div className="header-content">
                         <div className="header-text">
@@ -303,21 +364,21 @@ function FamilyPage() {
                             <p className="subtitle">
                                 Manage your family's health profiles and monitor air quality impact on each member
                             </p>
-                            
+                            {/* AQI Status Banner */}
+                            <div style={{ backgroundColor: '#f3f4f6', padding: '10px 15px', borderRadius: '8px', marginTop: '15px', fontSize: '0.9rem', color: '#4b5563', borderLeft: '4px solid #3b82f6' }}>
+                                📍 <strong>Location Status:</strong> {locationStatus}
+                            </div>
                         </div>
                         <div className="header-actions">
                             <button className="add-member-btn primary" onClick={handleAddMemberClick}>
                                 <span className="btn-icon">➕</span>
                                 <span>Add Family Member</span>
                             </button>
-                            
                         </div>
                     </div>
                 </div>
 
-                {/* Dashboard Grid */}
                 <div className="dashboard-grid">
-                    {/* Profile Overview Card */}
                     <div className="dashboard-card profile-overview">
                         <div className="card-header">
                             <h3>👤 Your Profile</h3>
@@ -340,10 +401,8 @@ function FamilyPage() {
                                     <div className="profile-stat">
                                         <div className="stat-icon">🏥</div>
                                         <div className="stat-content">
-                                            <div className="stat-value">
-                                                {familyMembers.filter(m => m.age < 18 || m.age > 65).length}
-                                            </div>
-                                            <div className="stat-label">High Risk</div>
+                                            <div className="stat-value">{highRiskCount}</div>
+                                            <div className="stat-label">High Risk Currently</div>
                                         </div>
                                     </div>
                                 </div>
@@ -351,7 +410,6 @@ function FamilyPage() {
                         </div>
                     </div>
 
-                    {/* Family Overview Card */}
                     <div className="dashboard-card family-overview">
                         <div className="card-header">
                             <h3>📊 Family Health Overview</h3>
@@ -394,19 +452,17 @@ function FamilyPage() {
                     </div>
                 </div>
 
-                {/* Family Members Section */}
                 <div className="members-section">
                     <div className="section-header">
                         <h2 className="section-title">👨‍👩‍👧‍👦 Family Members</h2>
-                        <div className="section-actions">
-                            
-                        </div>
                     </div>
 
                     {familyMembers.length > 0 ? (
                         <div className="members-grid">
                             {familyMembers.map(member => {
                                 const ageCategory = getAgeCategory(member.age);
+                                const riskInfo = getDynamicRisk(member.age, currentAQI);
+                                
                                 return (
                                     <div className="member-card" key={member.id}>
                                         <div className="member-card-header">
@@ -428,14 +484,14 @@ function FamilyPage() {
                                                 </div>
                                                 <div className="detail-item">
                                                     <span className="detail-icon">🏥</span>
-                                                    <span className={`health-status ${(member.age < 18 || member.age > 65) ? 'high-risk' : 'normal'}`}>
-                                                        {(member.age < 18 || member.age > 65) ? 'High Risk' : 'Normal Risk'}
+                                                    {/* Dynamic Risk Calculation applied here */}
+                                                    <span className={`health-status ${riskInfo.class}`}>
+                                                        {riskInfo.label}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="member-actions">
-                                            
                                             <button 
                                                 className="action-btn edit-btn" 
                                                 onClick={() => handleEditMemberClick(member)}
@@ -470,7 +526,6 @@ function FamilyPage() {
                     )}
                 </div>
 
-                {/* Health Tips Section */}
                 <div className="health-tips-section">
                     <h2 className="section-title">💡 Family Health Tips</h2>
                     <div className="tips-grid">
@@ -506,7 +561,6 @@ function FamilyPage() {
                 </div>
             </div>
 
-            {/* Enhanced Modal */}
             {isModalOpen && (
                 <div className="modal-overlay" onClick={handleModalClose}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -626,59 +680,72 @@ function FamilyPage() {
                 </div>
             )}
 
-            {/* Footer */}
             <footer className="footer">
-                <div className="footer-container">
-                    <div className="footer-content">
+                    <div className="footer-container">
+                      <div className="footer-content">
                         <div className="footer-section">
-                            <h4>AirAware Kerala</h4>
-                            <p>Family Health Management System</p>
-                            <p>Real-time air quality monitoring • Family health tracking • Government approved</p>
-                            <div className="social-links">
-                                <a href="#" className="social-link">📘</a>
-                                <a href="#" className="social-link">🐦</a>
-                                <a href="#" className="social-link">💼</a>
-                                <a href="#" className="social-link">📷</a>
-                            </div>
+                          <h4>AirAware Kerala</h4>
+                          <p>Smart Air Quality Monitoring System</p>
+                          
+                          <div className="social-links">
+                            <a href="https://www.linkedin.com/in/aiiot-asiet-b22302308" 
+                                className="social-link" 
+                                target="_blank" 
+                                rel="noopener noreferrer">
+                                <i className="fab fa-linkedin-in"></i>
+                              </a>
+            
+                            <a href="https://www.instagram.com/aiiot_adishankara?igsh=aXY4bXQ2cjVhYWM2"
+                                className="social-link"
+                                target="_blank"
+                                rel="noopener noreferrer">
+                                <i className="fab fa-instagram"></i>
+                            </a>
+                            <a href="#" className="social-link">
+                              <i className="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" className="social-link">
+                              <i className="fab fa-twitter"></i>
+                            </a>
+                            
+                          </div>
                         </div>
                         <div className="footer-section">
-                            <h4>Quick Links</h4>
-                            <ul>
-                                <li><Link to="/dashboard">👤 Profile</Link></li>
-                              
-                                <li><Link to="/health-assessment">📋 Health Assessment</Link></li>
-                                
-                            </ul>
+                          <h4>Quick Links</h4>
+                          <ul>
+                            <li><Link to="/homepage"> Home</Link></li>
+                            <li><Link to="/health-report">Health Report</Link></li>
+                            <li><Link to="/add-family">Add Family</Link></li>
+                            <li><Link to="/map">Live map</Link></li>
+                          </ul>
                         </div>
                         <div className="footer-section">
-                            <h4>Family Health Features</h4>
-                            <ul>
-                                <li>Individual health assessments</li>
-                                <li>Age-specific recommendations</li>
-                                <li>Vulnerable group monitoring</li>
-                                <li>Real-time air quality alerts</li>
-                            </ul>
+                          <h4>Data Sources</h4>
+                          <ul>
+                            <li>ASIET Campus Station </li>
+                            <li>Mattoor Junction Station</li>
+                            
+                          </ul>
                         </div>
                         <div className="footer-section">
-                            <h4>Support & Contact</h4>
-                            <p>
-                                Adi Shankara Institute of Engineering and Technology<br/>
-                                Kalady 683574, Ernakulam<br/>
-                                Kerala, India
-                            </p>
-                            <p>
-                                <strong>Emergency:</strong> 0471-2418566<br/>
-                                <strong>Email:</strong> aiiot@adishankara.ac.in<br/>
-                                <strong>Phone:</strong> 0484 246 3825
-                            </p>
+                          <h4>Contact Information</h4>
+                          <p>
+                            Adi Shankara Institute of Engineering and Technology<br/>
+                            Kalady 683574, Ernakulam<br/>
+                            Kerala, India
+                          </p>
+                          <p>
+                            <strong>Email:</strong> aiiot@adishankara.ac.in<br/>
+                            <strong>Phone:</strong> 9846900310
+                          </p>
                         </div>
+                      </div>
+                      <div className="footer-bottom">
+                        <p>&copy;  2025 AirAware kalady. All rights reserved. Developed and managed by Center for AI & IoT Innovation, Adi Shankara Institute of Engineering and Technology.</p>
+                        
+                      </div>
                     </div>
-                    <div className="footer-bottom">
-                        <p>&copy; 2025 AirAware Kerala - Complete Family Health Monitoring</p>
-                        <p>Protecting every family member • Powered by real sensor data • Government standards</p>
-                    </div>
-                </div>
-            </footer>
+                  </footer>
         </div>
     );
 }
