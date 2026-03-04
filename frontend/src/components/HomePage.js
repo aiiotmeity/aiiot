@@ -477,9 +477,9 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
           <i className="fas fa-building-columns"></i>
         </div>
         <div className="city-content">
-          <div className="city-name">Kalady Grama Panchayath Karyalayam</div>
+          <div className="city-name">Pothiyakkara Road</div>
           {/* Added city-type */}
-          <div className="city-type">Civic Center</div>
+          <div className="city-type">Commercial</div>
           <div className="city-description">Monitoring station</div>
         </div>
         <div className="city-action">
@@ -492,7 +492,7 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
           <i className="fas fa-road"></i>
         </div>
         <div className="city-content">
-          <div className="city-name">Malayattoor road</div>
+          <div className="city-name">Apple One BHK Apartment, Mattoor</div>
           {/* Added city-type */}
           <div className="city-type">Residential Area</div>
           <div className="city-description">Monitoring station</div>

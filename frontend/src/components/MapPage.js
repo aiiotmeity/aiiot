@@ -95,20 +95,53 @@ const createStationPopupContent = (station, stationId) => {
         `;
     }
 
-    const { station_info, averages, highest_sub_index } = station;
-    const pollutants = [
+    const { station_info, averages, latest_readings, highest_sub_index } = station; // Added latest_readings
+    
+    // 1. Master list including PM1 and Weather
+    const masterPollutants = [
         { key: 'pm25', name: 'PM2.5', unit: 'µg/m³' },
         { key: 'pm10', name: 'PM10', unit: 'µg/m³' },
+        { key: 'pm1', name: 'PM1.0', unit: 'µg/m³' },
         { key: 'so2', name: 'SO₂', unit: 'µg/m³' },
         { key: 'no2', name: 'NO₂', unit: 'µg/m³' },
         { key: 'co', name: 'CO', unit: 'µg/m³' },
         { key: 'o3', name: 'O₃', unit: 'µg/m³' },
-        { key: 'nh3', name: 'NH₃', unit: 'µg/m³' }
+        { key: 'nh3', name: 'NH₃', unit: 'µg/m³' },
+        { key: 'temp', name: 'Temp', unit: '°C' },
+        { key: 'humidity', name: 'Humidity', unit: '%' },
+        { key: 'pre', name: 'Pressure', unit: 'hPa' }
     ];
 
-    const readingsHtml = pollutants.map(p => {
-        const value = averages?.[p.key];
-        const displayValue = value ? value.toFixed(2) : 'N/A';
+    // 2. Dynamically filter out missing sensors
+    // 2. Dynamically filter out missing sensors using ONLY the raw payload (matching the sidebar)
+    const activePollutants = masterPollutants.filter(p => {
+        const raw = latest_readings || {};
+        
+        if (p.key === 'temp') return raw.temp !== undefined || raw.temperature !== undefined;
+        if (p.key === 'humidity') return raw.hum !== undefined || raw.humidity !== undefined;
+        if (p.key === 'pre') return raw.pre !== undefined || raw.pressure !== undefined;
+        
+        // For pollutants, check if the sensor physically sent data in the latest reading
+        return raw[p.key] !== undefined && raw[p.key] !== null;
+    });
+
+    // 3. Generate HTML only for active sensors
+    const readingsHtml = activePollutants.map(p => {
+        let displayValue = 'N/A';
+        const raw = latest_readings || {};
+        const avg = averages || {};
+
+        if (p.key === 'temp') {
+            displayValue = raw.temp ?? raw.temperature ?? 'N/A';
+        } else if (p.key === 'humidity') {
+            displayValue = raw.hum ?? raw.humidity ?? 'N/A';
+        } else if (p.key === 'pre') {
+            displayValue = raw.pre ?? raw.pressure ?? 'N/A';
+        } else {
+            const value = avg[p.key];
+            displayValue = value !== undefined && value !== null ? value.toFixed(2) : 'N/A';
+        }
+
         return `
             <div class="popup-reading-item">
                 <div class="popup-reading-label">${p.name}</div>
@@ -974,7 +1007,7 @@ const MapPage = () => {
                                     <div className="mobile-readings-section">
                                         <h4><i className="fas fa-user-circle"></i> Your Air Quality</h4>
                                         <div className="mobile-readings-grid">
-                                            // Filter out temp, pressure, AND humidity
+                                           
                                             {pollutants
                                             .filter(p => p.key !== 'temp' && p.key !== 'pre' && p.key !== 'humidity') 
                                             .map(p => (
