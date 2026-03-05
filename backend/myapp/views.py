@@ -201,7 +201,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 def get_s3_forecast_data(device_type=None):
     """
     CORRECTED: Fetches and processes the 4-day forecast from S3.
-    This version uses the correct filename logic for qstations, including lora-v3.
+    This version uses the correct filename logic for qstations, including lora-v4/aqm-v4.
     """
     if not s3_client:
         logger.warning("S3 client not available, cannot fetch forecast.")
@@ -209,9 +209,10 @@ def get_s3_forecast_data(device_type=None):
 
     try:
         # --- START: THE FIX ---
-        # This logic handles the different naming conventions in your S3 bucket.
         if device_type == 'lora-v1':
             file_suffix = 'lora_v1'  # Uses underscore for Station 1
+        elif device_type in ['lora-v4', 'aqm-v4']:
+            file_suffix = 'aqm_v4'   # Maps to latest_forecast_aqm_v4.json (from your S3 screenshot)
         else:
             file_suffix = device_type  # Directly uses 'lora-v3' and 'loradev2'
 
@@ -877,10 +878,14 @@ def map_realtimedata_api(request):
 @csrf_exempt
 def station_forecast_api(request, station_id):
     """
-    Corrected: Fetches forecast data, providing a real forecast for temporary stations.
+    Provides forecast data for all 5 stations.
     """
     try:
-        if station_id not in ['lora-v1', 'loradev2', 'lora-v3', 'aqm-v4', 'temp-3']:
+        # --- START: THE FIX --- Added 'lora-v4' to the allowed list
+        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'lora-v4', 'aqm-v4', 'temp-3']
+        # --- END: THE FIX ---
+        
+        if station_id not in valid_ids:
             return Response({'error': 'Invalid station ID'}, status=400)
 
         source_station_id = 'lora-v1' if station_id.startswith('temp-') else station_id
@@ -1791,7 +1796,7 @@ def station_forecast_api(request, station_id):
     Provides forecast data for all 5 stations.
     """
     try:
-        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'aqm-v4', 'temp-3']
+        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'lora-v4', 'aqm-v4', 'temp-3']
         if station_id not in valid_ids:
             return Response({'error': 'Invalid station ID'}, status=400)
 
