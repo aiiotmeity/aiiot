@@ -1,4 +1,4 @@
-{% extends "admin/index.html" %}
+{% extends "admin/base_site.html" %}
 {% load i18n static %}
 
 {% block content %}
@@ -162,6 +162,31 @@
     /* RESPONSIVENESS: Stack on mobile, grid on desktop */
     @media (max-width: 900px) {
         .dashboard-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Smooth scrolling and hide scrollbars for dashboard and modal panels */
+    html, body {
+        scroll-behavior: smooth;
+    }
+
+    .dashboard-wrapper, .modal, .modal-body {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+
+    /* hide scrollbar for WebKit browsers */
+    .dashboard-wrapper::-webkit-scrollbar,
+    .modal::-webkit-scrollbar,
+    .modal-body::-webkit-scrollbar {
+        width: 0px;
+        height: 0px;
+        background: transparent;
+    }
+
+    /* hide scrollbar for Firefox / IE */
+    .dashboard-wrapper, .modal, .modal-body {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
     }
 </style>
 
@@ -389,10 +414,6 @@
             
             <div id="alert-v3" class="alert-banner">⚠️ OFFLINE</div>
         </div>
-
-    </div>
-</div>
-
         <div id="card-v4" class="sensor-card">
             <div class="card-header">
                 <div>
@@ -464,6 +485,11 @@
             
             <div id="alert-v4" class="alert-banner">⚠️ OFFLINE</div>
         </div>
+
+    </div>
+</div>
+
+        
 
 <script>
     const API_URL = "{% url 'admin_dashboard_api' %}";
