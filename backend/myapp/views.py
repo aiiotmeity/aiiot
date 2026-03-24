@@ -575,7 +575,7 @@ class HomeAPI(APIView):
                 latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
                 latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
                 latest_v4, avg_lora_v4, _, high_index_lora_v4 = process_device_items(lora_v4_items)
-                
+                 
                 station_locations = {
                     'lora-v1': { 'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)' },
                     'loradev2': { 'lat': 10.182204721868617, 'lng': 76.42850343115732, 'name': 'Station 2 (Pothiyakkara Road)' },
@@ -2210,7 +2210,13 @@ def admin_dashboard_api(request):
                     'latest_item': latest_complete_v3,
                     'aqi': aqi_v3,
                     'health': {'status': latest_complete_v3['device_status']}
-                }
+                },
+                # Station 4 (aqm-v4)
+                'aqm-v4': {
+                    'latest_item': get_complete_sensor_data(lora_v4_items),
+                    'aqi': aqi_v4,
+                    'health': {'status': get_complete_sensor_data(lora_v4_items).get('device_status')}
+                },
             },
             # ... keep your users/analytics sections same as before ...
             'timestamp': datetime.now().isoformat()
