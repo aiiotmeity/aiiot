@@ -149,6 +149,7 @@ function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone_number: formData.phone_number,
+          otp_code: formData.otp_code,     // <--- ADD THIS LINE
           new_password: formData.new_password
         })
       });
@@ -285,16 +286,49 @@ function Login() {
           {/* === VIEW 3: VERIFY & RESET === */}
           {view === 'forgot_verify' && (
             <form onSubmit={handleForgotReset}>
+              
+              {/* ---> ADD THIS NEW OTP GROUP <--- */}
               <div className="form-group">
-                  <label>New Password</label>
+                  <label>Enter 6-digit OTP</label>
                   <input
-                    type="password"
-                    name="new_password"
-                    value={formData.new_password}
+                    type="text"
+                    name="otp_code"
+                    value={formData.otp_code}
                     onChange={handleChange}
-                    placeholder="Enter new password"
+                    placeholder="123456"
+                    maxLength="6"
                     required
                   />
+              </div>
+
+              <div className="form-group">
+                  <label>New Password</label>
+                  <div className="password-wrapper" style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="new_password"
+                      value={formData.new_password}
+                      onChange={handleChange}
+                      placeholder="Enter new password"
+                      required
+                      style={{ width: '100%', paddingRight: '40px' }}
+                    />
+                    <span 
+                      className="password-toggle-icon"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        cursor: 'pointer',
+                        color: '#666',
+                        fontSize: '1.2rem'
+                      }}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'} 
+                    </span>
+                  </div>
               </div>
 
               <button type="submit" className="btn-primary otp-verify" disabled={loading}>
