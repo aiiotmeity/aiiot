@@ -328,6 +328,11 @@ const ResourcesPage = () => {
                         <div className="research-section">
                             <h3 className="section-title">📜 Intellectual Property (Patents)</h3>
                             <ul className="research-list">
+                              <li style={{marginBottom: '1.5rem'}}>
+                                    <strong>Patent Filed:</strong> "Artificial Intelligence Integrated Water Distribution and Monitoring System"
+                                    <br />
+                                    <span className="text-muted">Application Number: 202641030093 | Filed: March 13, 2026 (INDIA Patent Office)</span>
+                                </li>
                                 <li>
                                     <strong>Patent Filed:</strong> "Artificial Intelligence Integrated Water Level Monitoring Solution with an Associated Alert for Floods"
                                     <br />
@@ -342,23 +347,32 @@ const ResourcesPage = () => {
                             <h3 className="section-title">📚 Research Publications & Submissions</h3>
                             <ul className="research-list">
                                 <li>
-                                    <span className="badge-status published">Published</span>
-                                    <strong> "Comparative Analysis of RNN models for Air Pollution Forecasting"</strong>
-                                    <br />
-                                    <span className="text-muted">Presented in ICICDS-2025</span>
-                                </li>
-                                <li>
-                                    <span className="badge-status accepted">Accepted</span>
-                                    <strong> "AI-Based Environmental Pollution Monitoring with Personalized Health Risk Assessment"</strong>
-                                    <br />
-                                    <span className="text-muted">Accepted for presentation at the Second International Conference on Security, Surveillance and Artificial Intelligence (ICSSAI-2025), Kolkata.</span>
-                                </li>
-                                <li>
-                                    <span className="badge-status communicated">Communicated</span>
-                                    <strong> "A Comparative Analysis of Conventional Methods for Sensor-Driven Spatial Interpolation for Air Quality Monitoring"</strong>
-                                    <br />
-                                    <span className="text-muted">Communicated to Engineering, Technology & Applied Science Research.</span>
-                                </li>
+                                <span className="badge-status accepted">Accepted</span>
+                                <strong> "Comparative Analysis of RNN models for Air Pollution Forecasting"</strong>
+                                <br />
+                                <span className="text-muted">
+                                    Accepted in the Springer Nature series: Innovations in Cybersecurity and Data Science 
+                                    (Proceedings of ICICDS 2025). Scheduled for publication in May 2026.
+                                </span>
+                            </li>
+                            <li>
+                                <span className="badge-status accepted">Accepted</span>
+                                <strong> "AI-Based Environmental Pollution Monitoring with Personalized Health Risk Assessment"</strong>
+                                <br />
+                                <span className="text-muted">
+                                    Accepted for presentation at the Second International Conference on Security, 
+                                    Surveillance and Artificial Intelligence (ICSSAI-2025), Kolkata.
+                                </span>
+                            </li>
+                            <li>
+                                <span className="badge-status communicated">Communicated</span>
+                                <strong> "A Comparative Analysis of Conventional Methods for Sensor-Driven Spatial Interpolation for Air Quality Monitoring"</strong>
+                                <br />
+                                <span className="text-muted">
+                                    Communicated to International Journal of Intelligent Systems and Research (IJISR) 
+                                    | Manuscript No. PAPER020357-1.
+                                </span>
+                            </li>
                             </ul>
                         </div>
                     </div>
