@@ -378,6 +378,10 @@ class WorkshopEvent(models.Model):
         ('Value Added Course', 'Value Added Course'),
         ('Workshop', 'Workshop'),
         ('Research', 'Research'),
+        ('Winter Internship', 'Winter Internship'),
+        ('Internship', 'Internship'),
+        ('Hackathon', 'Hackathon'),
+        ('Idea pitching', 'Idea Pitching'),
     ]
 
     title = models.CharField(max_length=255) 
