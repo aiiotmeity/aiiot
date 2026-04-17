@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Riverdata.css';
 
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://aiiot-1.onrender.com'
+  : 'http://localhost:8000';
+
 const BUCKET = process.env.REACT_APP_AWS_STORAGE_BUCKET_NAME_FORECAST || 'aqi-training';
 const REGION = process.env.REACT_APP_AWS_S3_REGION_NAME_BUCKET        || 'ap-south-1';
 const S3_CSV = `https://${BUCKET}.s3.${REGION}.amazonaws.com/hourly_averages/STA_01_MASTER_LOG.csv`;
