@@ -6,19 +6,8 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://aiiot-1.onrender.com'
   : 'http://localhost:8000';
 
-const BUCKET = process.env.REACT_APP_AWS_STORAGE_BUCKET_NAME_FORECAST || 'aqi-training';
-const REGION = process.env.REACT_APP_AWS_S3_REGION_NAME_BUCKET        || 'ap-south-1';
-const S3_CSV = `https://${BUCKET}.s3.${REGION}.amazonaws.com/hourly_averages/STA_01_MASTER_LOG.csv`;
+const WATER_LEVEL_FILE = 'hourly_averages/STA_01_MASTER_LOG.csv';
 const POLL_MS = 30_000;
-
-function parseLatestRow(text) {
-  const lines = text.trim().split('\n').filter(Boolean);
-  if (lines.length < 2) return null;
-  const headers = lines[0].split(',').map(h => h.trim());
-  const lastLine = lines[lines.length - 1];
-  const vals = lastLine.split(',').map(v => v.trim());
-  return headers.reduce((o, h, i) => { o[h] = vals[i] ?? ''; return o; }, {});
-}
 
 export default function Riverdata() {
   const navigate = useNavigate();
@@ -35,9 +24,13 @@ export default function Riverdata() {
     setStatus('loading');
     setError(null);
     try {
-      const res = await fetch(`${S3_CSV}?_t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(
+        `${API_BASE_URL}/api/weather/debug-read-s3?file=${encodeURIComponent(WATER_LEVEL_FILE)}`,
+        { cache: 'no-store' }
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const row = parseLatestRow(await res.text());
+      const data = await res.json();
+      const row = data.latest || null;
       if (row) {
         if (row['Update_Timestamp'] !== prevKey.current) {
           prevKey.current = row['Update_Timestamp'];
@@ -45,6 +38,8 @@ export default function Riverdata() {
           setTimeout(() => setUpdated(false), 1800);
         }
         setLatest(row);
+      } else {
+        throw new Error(data.error || 'No latest data available');
       }
       setLastFetch(new Date());
       setStatus('ok');
@@ -77,8 +72,6 @@ export default function Riverdata() {
 
   const syncPct = ((POLL_MS / 1000 - countdown) / (POLL_MS / 1000)) * 100;
   const wl  = latest ? parseFloat(latest['WL(m)'])  : null;
-  const alt = latest ? parseFloat(latest['ALT(m)']) : null;
-  const lon = latest ? parseFloat(latest['LON(D)']) : null;
 
   return (
     <div className="rdb-root">
@@ -199,7 +192,7 @@ export default function Riverdata() {
 
       {/* FOOTER */}
       <div className="rdb-footer">
-        <span>S3 · {BUCKET} · {REGION}</span>
+        <span>Latest river data • refreshed every 30s</span>
         {lastFetch && (
           <span>Last synced: {lastFetch.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
         )}
