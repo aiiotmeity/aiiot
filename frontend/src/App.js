@@ -22,6 +22,7 @@ import ResourcesPage from './component_aiiot/Resources';
 import ProductOverview from './component_aiiot/ProductOverview';
 import PrivacyPolicy from './component_aiiot/PrivacyPolicy';
 import FloodMap from './weather_component/FloodMap';
+import Riverdata from './weather_component/Riverdata';
 
 // Session Manager
 const SessionManager = {
@@ -268,6 +269,7 @@ function App() {
           <Route path="/weather-map" element={<MapComponent />} />
           <Route path="/river-forecast" element={<RiverDashboard />} />
           <Route path="/flood-analysis" element={<FloodMap />} />
+          <Route path="/realtime-riverforecast" element={<Riverdata />} />
 
           {/* Protected Routes with Health Assessment Check */}
           <Route 

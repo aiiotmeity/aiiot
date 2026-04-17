@@ -55,6 +55,10 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
     navigate('/river-forecast');
   };
 
+  const handleOpenRiverData = () => {
+    navigate('/realtime-riverforecast');
+  };
+
   const handleDataRequest = () => {
     navigate('/weather-map', { state: { openTab: 'request' } });
   }
@@ -146,6 +150,13 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
             <li className="nav-item">
               <a href="#contact" className="nav-link">Contact</a>
             </li>
+            
+            <li className="nav-item">
+              <button type="button" className="nav-link nav-button" onClick={handleOpenRiverData}>
+                River Data
+              </button>
+            </li>
+            
             {/* <li className="nav-item">
               <a href="/" className="nav-link">Aiiot</a>
             </li> */}
