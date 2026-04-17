@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Riverdata.css';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://aiiot-1.onrender.com'
-  : 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL ||
+  (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8000');
 
 const WATER_LEVEL_FILE = 'hourly_averages/STA_01_MASTER_LOG.csv';
 const POLL_MS = 30_000;
