@@ -432,11 +432,11 @@ class S3PresignView(APIView):
 
 @require_GET
 def debug_read_s3_csv(request):
-    file_name = request.GET.get('file', 'latest_water_level.csv')
+    file_name = request.GET.get('file', 'forecast_output.csv')
 
     bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
     region = os.getenv('AWS_S3_REGION_NAME_BUCKET', 'ap-south-1')
-    key = file_name
+    key = f"aqi-training/{file_name}"
 
     try:
         s3 = boto3.client(
@@ -448,34 +448,29 @@ def debug_read_s3_csv(request):
 
         obj = s3.get_object(Bucket=bucket, Key=key)
         content = obj['Body'].read().decode('utf-8')
-        lines = [line for line in content.splitlines() if line.strip()]
+        lines = content.splitlines()
 
-        # Ensure we can safely parse the latest row from CSV
-        csv_header = lines[0] if lines else ""
-        csv_latest = lines[-1] if len(lines) > 1 else ""
-
-        latest_record = {}
-        if csv_header and csv_latest:
-            headers = [h.strip() for h in csv_header.split(',')]
-            values = [v.strip() for v in csv_latest.split(',')]
-            latest_record = {headers[i]: values[i] if i < len(values) else '' for i in range(len(headers))}
-
-        # Build a small preview for debugging, not the full file
-        preview_data = []
+        # ✅ CRITICAL FIX FOR LIME DATA
         if file_name.endswith('.txt'):
+            # For text files
             preview_data = lines[-6:]
         else:
-            if len(lines) > 6:
-                preview_data = [csv_header] + lines[-5:]
+            # For CSV files (Water Level & Forecast)
+            header = lines[0] if lines else ""
+            
+            # ✅ FIX: Change [-5:] to [-12:] to ensure we have enough data for all 6 cards
+            recent_lines = lines[-6:]
+            
+            if len(lines) > 12 and header not in recent_lines:
+                preview_data = [header] + recent_lines
             else:
-                preview_data = lines
+                preview_data = recent_lines
 
         return JsonResponse({
             "status": "success",
             "bucket": bucket,
             "key": key,
-            "preview": preview_data,
-            "latest": latest_record
+            "preview": preview_data 
         })
 
     except Exception as e:
