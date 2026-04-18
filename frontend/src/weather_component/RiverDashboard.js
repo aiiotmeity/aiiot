@@ -84,7 +84,7 @@ const RiverDashboard = () => {
     const fetchRealTimeLevel = async () => {
       try {
         const response = await fetchWithRetry(DEBUG_API, { 
-          params: { file: "latest_water_level.csv", _t: new Date().getTime() } 
+          params: { file: "hourly_averages/STA_01_MASTER_LOG.csv", _t: new Date().getTime() } 
         });
 
         if (typeof response.data === 'string' && response.data.trim().startsWith("<!DOCTYPE")) return; 
@@ -92,10 +92,10 @@ const RiverDashboard = () => {
         if (response.data.status === "success" && response.data.preview.length > 0) {
           const rawLines = response.data.preview;
           if (rawLines.length > 0) {
-            const lastLine = rawLines[rawLines.length - 1]; 
+            const lastLine = rawLines[rawLines.length - 1];
             const values = lastLine.split(",");
             const headers = rawLines[0].split(",").map(h => h.trim().toLowerCase());
-            const targetIndex = headers.indexOf("level");
+            const targetIndex = headers.findIndex(h => h.replace(/[^a-z0-9]/g, '') === 'wlm');
             let val;
             if (targetIndex !== -1 && values[targetIndex]) {
               val = values[targetIndex].trim();

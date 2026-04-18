@@ -436,7 +436,8 @@ def debug_read_s3_csv(request):
 
     bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
     region = os.getenv('AWS_S3_REGION_NAME_BUCKET', 'ap-south-1')
-    key = f"aqi-training/{file_name}"
+    key = file_name.lstrip('/')
+    tried_keys = [key]
 
     try:
         s3 = boto3.client(
@@ -446,7 +447,16 @@ def debug_read_s3_csv(request):
             region_name=region
         )
 
-        obj = s3.get_object(Bucket=bucket, Key=key)
+        try:
+            obj = s3.get_object(Bucket=bucket, Key=key)
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                fallback_key = f"{bucket}/{key}"
+                tried_keys.append(fallback_key)
+                obj = s3.get_object(Bucket=bucket, Key=fallback_key)
+            else:
+                raise
+
         content = obj['Body'].read().decode('utf-8')
         lines = content.splitlines()
 
