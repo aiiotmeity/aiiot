@@ -278,36 +278,7 @@ const RiverDashboard = () => {
 
       {/* 2. QUICK LINKS */}
       <div className="footer-section">
-        <h5 style={{ fontWeight: 700, color: 'white', marginBottom: '1rem', fontSize: '1.1rem' }}>Quick Links</h5>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {['About', 'Dashboard'].map((link, idx) => (
-            <li key={idx} style={{ marginBottom: '0.5rem' }}>
-              <a 
-                href={`#${link.toLowerCase()}`} 
-                style={{ 
-                  fontSize: '0.875rem', 
-                  color: '#cbd5e1', 
-                  textDecoration: 'none', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem', 
-                  transition: 'all 0.3s ease' 
-                }} 
-                onMouseEnter={(e) => { 
-                  e.currentTarget.style.color = '#3b82f6'; 
-                  e.currentTarget.style.transform = 'translateX(8px)'; 
-                }} 
-                onMouseLeave={(e) => { 
-                  e.currentTarget.style.color = '#cbd5e1'; 
-                  e.currentTarget.style.transform = 'translateX(0)'; 
-                }}
-              >
-                <span style={{ width: '6px', height: '6px', background: '#3b82f6', borderRadius: '50%' }}></span>
-                {link}
-              </a>
-            </li>
-          ))}
-        </ul>
+        
       </div>
 
       {/* 3. CONTACT INFORMATION */}
