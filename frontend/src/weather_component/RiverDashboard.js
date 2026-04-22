@@ -200,38 +200,48 @@ const RiverDashboard = () => {
             <div className="rd-timeline-scroll">
               <div className="rd-timeline-flex">
                 {forecastData.slice(-7).map((data, index) => {
-                  const levelNumber = parseFloat(data.level);
-                  return (
-                    <div 
-                      key={index} 
-                      className="rd-time-node clickable-node" 
-                      onClick={() => !isNaN(levelNumber) && navigate(`/flood-analysis?level=${data.level}`)}
-                      title={`View analysis for ${data.level}m`}
-                    >
-                      <span className="time-label">H+{index + 1}</span>
-                      <div className="bar-track">
-                        <div 
-                          className="bar-fill" 
-                          style={{ 
-                            height: `${Math.min((levelNumber / 8) * 100, 100)}%`, 
-                            backgroundColor: data.status.color 
-                          }}
-                        >
-                          <div className="bar-glow"></div>
-                        </div>
-                      </div>
-                      <span className="val-label">{data.level}m</span>
-                      <div className="impact-chip" style={{background: data.status.color + '20', color: data.status.color}}>
-                        {data.status.label}
-                      </div>
-                      
-                      {/* Explicit Action Button for User Understanding */}
-                      <button className="node-analysis-btn">
-                        Details <i className="fas fa-chevron-right"></i>
-                      </button>
-                    </div>
-                  );
-                })}
+  const levelNumber = parseFloat(data.level);
+  const maxExpectedLevel = 8.0; 
+  const fillPercentage = Math.min((levelNumber / maxExpectedLevel) * 100, 100);
+
+  return (
+    <div 
+      key={index} 
+      className="rd-time-node clickable-node" 
+      onClick={() => !isNaN(levelNumber) && navigate(`/flood-analysis?level=${data.level}`)}
+      title="Click to view detailed impact analysis" /* Visual hint on hover */
+    >
+      <span className="time-label">H+{index + 1}</span>
+      
+      <div className="bar-track">
+        <div 
+          className="bar-fill" 
+          style={{ 
+            height: `${fillPercentage}%`, 
+            backgroundColor: data.status.color 
+          }}
+        >
+          <div className="bar-glow"></div>
+        </div>
+      </div>
+      
+      <span className="val-label">{data.level}m</span>
+      
+      <div className="impact-chip" style={{ background: data.status.color + '20', color: data.status.color }}>
+        {data.status.label}
+      </div>
+      
+      {/* Enhanced CTA Button */}
+      <div className="node-analysis-cta">
+  {/* Using a more descriptive word like 'Analyze Impact' */}
+  <span>Analyze Impact</span> 
+  <div className="cta-icon-wrapper">
+    <i className="fas fa-chevron-right"></i>
+  </div>
+</div>
+    </div>
+  );
+})}
               </div>
             </div>
             
