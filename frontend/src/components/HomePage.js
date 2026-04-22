@@ -602,9 +602,9 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
               <a href="#services" className="footer-link">Services</a>
               <Link to="/map" className="footer-link">Live Map</Link>
               <Link to="/support" className="footer-link">Support</Link>
-              <button onClick={handleAdminPortalClick} className="footer-link footer-button">
+              {/* <button onClick={handleAdminPortalClick} className="footer-link footer-button">
                 Admin Portal
-              </button>
+              </button> */}
 
               {user && (
                 <button onClick={handleLogout} className="footer-link footer-button">
