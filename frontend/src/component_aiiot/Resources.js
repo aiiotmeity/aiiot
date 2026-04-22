@@ -329,12 +329,12 @@ const ResourcesPage = () => {
                             <h3 className="section-title">📜 Intellectual Property (Patents)</h3>
                             <ul className="research-list">
                               <li style={{marginBottom: '1.5rem'}}>
-                                    <strong>Patent Filed:</strong> "Artificial Intelligence Integrated Water Distribution and Monitoring System"
+                                    <strong>Patent Published</strong> "Artificial Intelligence Integrated Water Distribution and Monitoring System"
                                     <br />
                                     <span className="text-muted">Application Number: 202641030093 | Filed: March 13, 2026 (INDIA Patent Office)</span>
                                 </li>
                                 <li>
-                                    <strong>Patent Filed:</strong> "Artificial Intelligence Integrated Water Level Monitoring Solution with an Associated Alert for Floods"
+                                    <strong>Patent Published</strong> "Artificial Intelligence Integrated Water Level Monitoring Solution with an Associated Alert for Floods"
                                     <br />
                                     <span className="text-muted">Application Number: 202441079490 | Filed: October 25, 2024 (INDIA Patent Office)</span>
                                 </li>
