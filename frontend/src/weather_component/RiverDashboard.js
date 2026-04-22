@@ -208,7 +208,7 @@ const RiverDashboard = () => {
                       onClick={() => !isNaN(levelNumber) && navigate(`/flood-analysis?level=${data.level}`)}
                       title={`View analysis for ${data.level}m`}
                     >
-                      <span className="time-label">H+{index + 1}h</span>
+                      <span className="time-label">H+{index + 1}</span>
                       <div className="bar-track">
                         <div 
                           className="bar-fill" 

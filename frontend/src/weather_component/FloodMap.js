@@ -275,7 +275,7 @@ const FloodMap = () => {
 
       {/* 1. STICKY HEADER */}
       <header className="rd-nav-header">
-        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer' }} onClick={() => navigate('/river-forecast')}>
           <i className="fas fa-satellite-dish" style={{ marginRight: '10px',color: '#3b82f6' }}></i>
           <span style={{ fontWeight: 300 ,color: '#3b82f6'}}>Periyar Risk</span>
         </div>
