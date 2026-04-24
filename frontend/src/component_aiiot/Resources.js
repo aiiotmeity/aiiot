@@ -369,7 +369,7 @@ const ResourcesPage = () => {
                                 <strong> "A Comparative Analysis of Conventional Methods for Sensor-Driven Spatial Interpolation for Air Quality Monitoring"</strong>
                                 <br />
                                 <span className="text-muted">
-                                    Communicated to International Journal of Intelligent Systems and Research (IJISR) 
+                                    International Journal of Engineering and Manufacturing (IJEM) 
                                     | Manuscript No. PAPER020357-1.
                                 </span>
                             </li>
