@@ -5,7 +5,23 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 
-@admin.register(WeatherStation)
+# Custom Admin Site for Weather Monitoring with Dashboard
+class WeatherMonitoringAdminSite(admin.AdminSite):
+    site_header = "🌤️ Weather Monitoring Admin"
+    site_title = "Weather Admin"
+    index_title = "Weather Dashboard"
+    
+    def index(self, request, extra_context=None):
+        """Override index to show custom dashboard"""
+        from django.shortcuts import render
+        extra_context = extra_context or {}
+        return render(request, 'admin/weather_dashboard.html', extra_context)
+
+
+# Create instance of custom admin site
+weather_admin_site = WeatherMonitoringAdminSite(name='weather_admin')
+
+
 class WeatherStationAdmin(admin.ModelAdmin):
     list_display = ('device_id', 'station_name', 'station_type', 'status_badge', 'latest_reading', 'updated_at')
     list_filter = ('station_type', 'is_active', 'updated_at')
@@ -90,30 +106,34 @@ class WeatherStationAdmin(admin.ModelAdmin):
     latest_reading_display.short_description = "Latest Weather Reading"
 
 
-@admin.register(WeatherReading)
 class WeatherReadingAdmin(admin.ModelAdmin):
-    list_display = ('station', 'temperature_display', 'humidity_display', 'wind_speed_display', 'recorded_at')
+    list_display = ('station', 'temperature_display', 'humidity_display', 'pressure_display', 
+                    'wind_speed_display', 'wind_direction_display', 'rainfall_display', 'recorded_at')
     list_filter = ('station', 'recorded_at')
-    search_fields = ('station__device_id',)
-    readonly_fields = ('recorded_at', 'dynamodb_timestamp')
+    search_fields = ('station__device_id', 'station__station_name')
+    readonly_fields = ('recorded_at', 'dynamodb_timestamp', 'weather_summary_display')
     date_hierarchy = 'recorded_at'
     
     fieldsets = (
-        ('Station', {
-            'fields': ('station',)
+        ('Station & Summary', {
+            'fields': ('station', 'weather_summary_display')
         }),
-        ('Environmental Parameters', {
-            'fields': ('temperature_c', 'humidity', 'pressure')
+        ('🌡️ Environmental Parameters', {
+            'fields': ('temperature_c', 'humidity', 'pressure'),
+            'description': 'Temperature, Humidity, and Air Pressure readings'
         }),
-        ('Wind Data', {
-            'fields': ('wind_speed_kph', 'wind_direction')
+        ('💨 Wind Data', {
+            'fields': ('wind_speed_kph', 'wind_direction'),
+            'description': 'Wind speed and direction measurements'
         }),
-        ('Rainfall', {
-            'fields': ('rain_1h_mm', 'rain_24h_mm')
+        ('🌧️ Rainfall', {
+            'fields': ('rain_1h_mm', 'rain_24h_mm'),
+            'description': 'Rainfall accumulation over last hour and 24 hours'
         }),
-        ('Timestamps', {
+        ('⏰ Timestamps & Metadata', {
             'fields': ('recorded_at', 'dynamodb_timestamp', 'server_time'),
-            'classes': ('collapse',)
+            'classes': ('collapse',),
+            'description': 'Data timestamps and DynamoDB references'
         }),
     )
     
@@ -122,25 +142,110 @@ class WeatherReadingAdmin(admin.ModelAdmin):
             return "N/A"
         color = 'red' if obj.temperature_c > 35 else 'orange' if obj.temperature_c > 25 else 'blue'
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{:.1f}°C</span>',
+            '<span style="background-color: {}; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">{:.1f}°C</span>',
             color, obj.temperature_c
         )
-    temperature_display.short_description = "Temperature"
+    temperature_display.short_description = "🌡️ Temp"
     
     def humidity_display(self, obj):
         if obj.humidity is None:
             return "N/A"
-        return f"{obj.humidity:.1f}%"
-    humidity_display.short_description = "Humidity"
+        color = '#4CAF50' if obj.humidity > 60 else '#FFC107' if obj.humidity > 40 else '#FF9800'
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">{:.1f}%</span>',
+            color, obj.humidity
+        )
+    humidity_display.short_description = "💧 Humidity"
+    
+    def pressure_display(self, obj):
+        if obj.pressure is None:
+            return "N/A"
+        return f"{obj.pressure:.1f} hPa"
+    pressure_display.short_description = "Pressure"
     
     def wind_speed_display(self, obj):
         if obj.wind_speed_kph is None:
             return "N/A"
-        return f"{obj.wind_speed_kph:.1f} km/h"
-    wind_speed_display.short_description = "Wind Speed"
+        color = 'red' if obj.wind_speed_kph > 30 else 'orange' if obj.wind_speed_kph > 15 else 'green'
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold;">{:.1f} km/h</span>',
+            color, obj.wind_speed_kph
+        )
+    wind_speed_display.short_description = "💨 Wind Speed"
+    
+    def wind_direction_display(self, obj):
+        if obj.wind_direction is None:
+            return "N/A"
+        directions = {0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW'}
+        # Find closest direction
+        closest = min(directions.keys(), key=lambda x: abs(obj.wind_direction - x))
+        return f"{obj.wind_direction:.0f}° ({directions[closest]})"
+    wind_direction_display.short_description = "🧭 Direction"
+    
+    def rainfall_display(self, obj):
+        if obj.rain_1h_mm is None:
+            return "N/A"
+        return f"1h: {obj.rain_1h_mm:.1f}mm | 24h: {obj.rain_24h_mm:.1f}mm"
+    rainfall_display.short_description = "🌧️ Rainfall"
+    
+    def weather_summary_display(self, obj):
+        """Display comprehensive weather summary in read-only field"""
+        html = f"""
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
+            <h3 style="margin-top: 0; color: #333;">📊 Real-Time Weather Data</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <tr style="background-color: #e9ecef;">
+                    <td style="padding: 10px; font-weight: bold; border: 1px solid #dee2e6;">Parameter</td>
+                    <td style="padding: 10px; font-weight: bold; border: 1px solid #dee2e6;">Value</td>
+                    <td style="padding: 10px; font-weight: bold; border: 1px solid #dee2e6;">Unit</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">🌡️ Temperature</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">{obj.temperature_c if obj.temperature_c else 'N/A'}</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">°C</td>
+                </tr>
+                <tr style="background-color: #f8f9fa;">
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">💧 Humidity</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">{obj.humidity if obj.humidity else 'N/A'}</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">%</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">🌊 Air Pressure</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">{obj.pressure if obj.pressure else 'N/A'}</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">hPa</td>
+                </tr>
+                <tr style="background-color: #f8f9fa;">
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">💨 Wind Speed</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">{obj.wind_speed_kph if obj.wind_speed_kph else 'N/A'}</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">km/h</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">🧭 Wind Direction</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">{obj.wind_direction if obj.wind_direction else 'N/A'}</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">degrees</td>
+                </tr>
+                <tr style="background-color: #f8f9fa;">
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">🌧️ Rainfall (1h)</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">{obj.rain_1h_mm if obj.rain_1h_mm else 'N/A'}</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">mm</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">🌧️ Rainfall (24h)</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">{obj.rain_24h_mm if obj.rain_24h_mm else 'N/A'}</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">mm</td>
+                </tr>
+                <tr style="background-color: #e9ecef;">
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">⏰ Recorded At</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6; font-weight: bold;">{obj.recorded_at.strftime('%Y-%m-%d %H:%M:%S')}</td>
+                    <td style="padding: 10px; border: 1px solid #dee2e6;">UTC</td>
+                </tr>
+            </table>
+        </div>
+        """
+        return mark_safe(html)
+    weather_summary_display.short_description = "Real-Time Weather Summary"
 
 
-@admin.register(DataRequest)
 class DataRequestAdmin(admin.ModelAdmin):
     list_display = ('request_id', 'email', 'station_id', 'status_badge', 'date_range', 'request_timestamp')
     list_filter = ('status', 'request_timestamp', 'station_id')
@@ -198,3 +303,9 @@ class DataRequestAdmin(admin.ModelAdmin):
     def mark_completed(self, request, queryset):
         count = queryset.update(status='completed')
         self.message_user(request, f"{count} request(s) marked as completed.")
+
+
+# Register with custom weather admin site
+weather_admin_site.register(WeatherStation, WeatherStationAdmin)
+weather_admin_site.register(WeatherReading, WeatherReadingAdmin)
+weather_admin_site.register(DataRequest, DataRequestAdmin)

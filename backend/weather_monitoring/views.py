@@ -644,3 +644,68 @@ def get_place(lat, lon):
             return data.get("display_name", "Unknown Area")
     except:
         return "Unknown Area"
+
+
+@require_GET
+@csrf_exempt
+def weather_admin_dashboard_api(request):
+    """
+    GET /api/weather/admin-dashboard
+    Returns real-time weather data for all stations in a format suitable for the admin dashboard.
+    This endpoint is called every 5 seconds by the dashboard frontend.
+    """
+    try:
+        from django.utils import timezone
+        result = {
+            "station_data": {}
+        }
+        
+        # Get all weather stations from the model
+        from weather_monitoring.models import WeatherStation
+        
+        stations = WeatherStation.objects.all()
+        
+        for station in stations:
+            station_id = station.device_id
+            
+            # Get latest reading for this station
+            latest_reading = station.readings.first()
+            
+            if not latest_reading:
+                result["station_data"][station_id] = {
+                    "latest_item": {},
+                    "health": {"status": "OFFLINE"}
+                }
+                continue
+            
+            # Format the data similar to what the template expects
+            latest_item = {
+                "temperature": latest_reading.temperature_c,
+                "humidity": latest_reading.humidity,
+                "pressure": latest_reading.pressure,
+                "wind_speed_kph": latest_reading.wind_speed_kph,
+                "wind_direction": latest_reading.wind_direction,
+                "rain_1h_mm": latest_reading.rain_1h_mm,
+                "rain_24h_mm": latest_reading.rain_24h_mm,
+                "date": latest_reading.recorded_at.strftime('%Y-%m-%d'),
+                "time": latest_reading.recorded_at.strftime('%H:%M:%S'),
+                "timestamp": latest_reading.dynamodb_timestamp or latest_reading.recorded_at.isoformat()
+            }
+            
+            # Determine if station is online (has recent data within last 30 minutes)
+            now = timezone.now()
+            time_diff = now - latest_reading.recorded_at
+            is_online = time_diff.total_seconds() < 1800  # 30 minutes
+            
+            result["station_data"][station_id] = {
+                "latest_item": latest_item,
+                "health": {
+                    "status": "ONLINE" if is_online else "OFFLINE"
+                }
+            }
+        
+        return JsonResponse(result, encoder=DecimalEncoder)
+    
+    except Exception as e:
+        print(f"Error in weather_admin_dashboard_api: {str(e)}")
+        return JsonResponse({"error": "Failed to fetch dashboard data"}, status=500)

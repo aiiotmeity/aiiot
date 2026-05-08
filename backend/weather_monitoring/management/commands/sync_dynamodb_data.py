@@ -5,124 +5,226 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr
 from decimal import Decimal
 import json
+import os
+from dotenv import load_dotenv
 
-from weather_monitoring.models import WeatherStation, WeatherData, SensorReading
+from weather_monitoring.models import WeatherStation, WeatherReading
+
+load_dotenv()
 
 
 class Command(BaseCommand):
-    help = 'Sync real-time data from DynamoDB to PostgreSQL for admin display'
+    help = 'Sync real-time weather data from DynamoDB to PostgreSQL for admin display'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--hours',
             type=int,
-            default=24,
-            help='Fetch data from last N hours (default: 24)'
+            default=1,
+            help='Fetch data from last N hours (default: 1)'
         )
         parser.add_argument(
-            '--station-id',
-            type=str,
-            default='weather-v2',
-            help='Station ID to sync (default: weather-v2)'
+            '--all-stations',
+            action='store_true',
+            help='Sync all stations (V1 and V2)'
         )
+
+    def get_val(self, obj, default=None):
+        """Helper to extract values from DynamoDB Decimal or dict format"""
+        if obj is None:
+            return default
+        if isinstance(obj, Decimal):
+            return float(obj)
+        if isinstance(obj, dict):
+            if 'N' in obj:
+                return float(obj['N'])
+            if 'S' in obj:
+                return obj['S']
+        if isinstance(obj, (int, float)):
+            return float(obj)
+        return default
 
     def handle(self, *args, **options):
         hours = options['hours']
-        station_id = options['station_id']
+        sync_all = options.get('all_stations', False)
 
-        self.stdout.write(self.style.SUCCESS(f'Starting DynamoDB sync (last {hours} hours)...'))
+        self.stdout.write(self.style.SUCCESS('Starting DynamoDB real-time sync...'))
 
         try:
             # Initialize DynamoDB
-            dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-            weather_table = dynamodb.Table('weather_station_data')
-
-            # Get or create station
-            station, created = WeatherStation.objects.get_or_create(
-                device_id=station_id,
-                defaults={
-                    'device_name': station_id.replace('-', ' ').title(),
-                    'location': 'Unknown Location'
-                }
-            )
+            AWS_REGION = os.getenv('AWS_DYNAMODB_REGION', 'us-east-1')
+            dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
             
-            if created:
-                self.stdout.write(self.style.SUCCESS(f'✓ Created new station: {station.device_name}'))
+            weather_table_v1 = dynamodb.Table('weather_station_data')
+            weather_table_v2 = dynamodb.Table('Weather_station_data_v2')
 
-            # Fetch data from DynamoDB
-            start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
-            start_time_str = start_time.isoformat()
+            total_synced = 0
 
-            # Try common device_id variants: with leading space and without
-            items = []
-            used_device = None
-            for candidate in (f' {station_id}', station_id):
+            # ========== SYNC V2 STATIONS (aws-asiet-v1) ==========
+            if sync_all:
+                stations_to_sync = [
+                    ('weather-v2', weather_table_v1, 'V1'),
+                    ('aws-asiet-v1', weather_table_v2, 'V2')
+                ]
+            else:
+                # Default: sync latest from V2 only
+                stations_to_sync = [('aws-asiet-v1', weather_table_v2, 'V2')]
+
+            for station_id, table, version in stations_to_sync:
                 try:
-                    response = weather_table.query(
-                        KeyConditionExpression=Key('device_id').eq(candidate),
-                        ScanIndexForward=False,
-                        Limit=100
-                    )
-                    if response.get('Items'):
-                        items = response.get('Items', [])
-                        used_device = candidate
-                        break
-                except Exception:
-                    continue
-
-            # Fallback: scan by contains if query returned nothing
-            if not items:
-                try:
-                    response = weather_table.scan(
-                        FilterExpression=Attr('device_id').contains(station_id)
-                    )
-                    items = response.get('Items', [])
-                except Exception as e:
-                    self.stdout.write(self.style.WARNING(f'⚠ DynamoDB scan failed: {e}'))
-            count = 0
-
-            for item in items:
-                try:
-                    # Extract data
-                    payload = item.get('data', {}).get('decoded_payload', {})
-                    timestamp_str = item.get('timestamp', timezone.now().isoformat())
+                    self.stdout.write(f'\n📡 Processing {station_id} ({version} Table)...')
                     
-                    # Parse timestamp
-                    try:
-                        timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-                    except:
-                        timestamp = timezone.now()
-
-                    # Check if already exists
-                    weather_data, created = WeatherData.objects.get_or_create(
-                        station=station,
-                        timestamp=timestamp,
+                    # Get or create station
+                    station, created = WeatherStation.objects.get_or_create(
+                        device_id=station_id,
                         defaults={
-                            'temperature': float(payload.get('temperature')) if payload.get('temperature') else None,
-                            'humidity': float(payload.get('humidity')) if payload.get('humidity') else None,
-                            'pressure': float(payload.get('pressure')) if payload.get('pressure') else None,
-                            'wind_speed': float(payload.get('wind_speed')) if payload.get('wind_speed') else None,
-                            'wind_direction': payload.get('wind_direction', ''),
-                            'rainfall': float(payload.get('rainfall')) if payload.get('rainfall') else None,
-                            'raw_data': payload
+                            'station_name': f'{station_id.replace("-", " ").title()} Station',
+                            'station_type': version,
+                            'is_active': True
                         }
                     )
                     
                     if created:
-                        count += 1
+                        self.stdout.write(self.style.SUCCESS(f'  ✓ Created new station: {station.station_name}'))
+
+                    count = 0
+                    
+                    # ===== V2 TABLE (New Format) =====
+                    if version == 'V2':
+                        try:
+                            response = table.query(
+                                KeyConditionExpression=Key('device_id').eq(station_id),
+                                ScanIndexForward=False,
+                                Limit=100
+                            )
+                            items = response.get('Items', [])
+                            
+                            # Handle pagination
+                            while 'LastEvaluatedKey' in response:
+                                response = table.query(
+                                    KeyConditionExpression=Key('device_id').eq(station_id),
+                                    ScanIndexForward=False,
+                                    ExclusiveStartKey=response['LastEvaluatedKey'],
+                                    Limit=100
+                                )
+                                items.extend(response.get('Items', []))
+
+                            for item in items:
+                                try:
+                                    payload = item.get('payload', {})
+                                    received_at = item.get('received_at', '')
+                                    
+                                    # Parse timestamp
+                                    try:
+                                        recorded_at = datetime.fromisoformat(received_at.replace('Z', '+00:00'))
+                                    except:
+                                        recorded_at = timezone.now()
+
+                                    # Check if already exists (avoid duplicates)
+                                    existing = WeatherReading.objects.filter(
+                                        station=station,
+                                        dynamodb_timestamp=received_at
+                                    ).exists()
+                                    
+                                    if existing:
+                                        continue
+
+                                    # Extract weather data
+                                    temperature_c = self.get_val(payload.get('temperature_c'))
+                                    humidity = self.get_val(payload.get('humidity'))
+                                    wind_speed_kph = self.get_val(payload.get('wind_speed_kph'))
+                                    wind_direction = self.get_val(payload.get('wind_direction'))
+                                    rain_1h_mm = self.get_val(payload.get('rain_1h_mm'))
+                                    rain_24h_mm = self.get_val(payload.get('rain_24h_mm'))
+                                    server_time = payload.get('server_time', '')
+                                    if isinstance(server_time, dict):
+                                        server_time = server_time.get('S', '')
+
+                                    # Create reading
+                                    WeatherReading.objects.create(
+                                        station=station,
+                                        temperature_c=temperature_c,
+                                        humidity=humidity,
+                                        pressure=1013.0,  # Default as per API
+                                        wind_speed_kph=wind_speed_kph,
+                                        wind_direction=wind_direction,
+                                        rain_1h_mm=rain_1h_mm,
+                                        rain_24h_mm=rain_24h_mm,
+                                        server_time=str(server_time),
+                                        dynamodb_timestamp=received_at,
+                                        recorded_at=recorded_at
+                                    )
+                                    count += 1
+
+                                except Exception as e:
+                                    self.stdout.write(self.style.WARNING(f'    ⚠ Item error: {str(e)}'))
+                                    continue
+
+                        except Exception as e:
+                            self.stdout.write(self.style.ERROR(f'  ✗ V2 Query failed: {str(e)}'))
+
+                    # ===== V1 TABLE (Old Format with nested structure) =====
+                    else:
+                        try:
+                            # V1 has leading space in device_id
+                            response = table.query(
+                                KeyConditionExpression=Key('device_id').eq(' ' + station_id),
+                                ScanIndexForward=False,
+                                Limit=100
+                            )
+                            items = response.get('Items', [])
+
+                            for item in items:
+                                try:
+                                    # V1 data is nested under 'data.decoded_payload'
+                                    payload = item.get('data', {}).get('decoded_payload', {})
+                                    timestamp_str = item.get('timestamp', timezone.now().isoformat())
+                                    
+                                    # Parse timestamp
+                                    try:
+                                        recorded_at = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                                    except:
+                                        recorded_at = timezone.now()
+
+                                    # Extract V1 weather data
+                                    temperature_c = self.get_val(payload.get('temperature'))
+                                    humidity = self.get_val(payload.get('humidity'))
+                                    wind_speed_kph = self.get_val(payload.get('wind_speed'))
+                                    wind_direction = self.get_val(payload.get('wind_direction'))
+                                    rain_1h_mm = self.get_val(payload.get('rainfall_1h'))
+                                    rain_24h_mm = self.get_val(payload.get('rainfall_24h'))
+
+                                    # Create reading
+                                    WeatherReading.objects.create(
+                                        station=station,
+                                        temperature_c=temperature_c,
+                                        humidity=humidity,
+                                        pressure=self.get_val(payload.get('pressure'), 1013.0),
+                                        wind_speed_kph=wind_speed_kph,
+                                        wind_direction=wind_direction,
+                                        rain_1h_mm=rain_1h_mm,
+                                        rain_24h_mm=rain_24h_mm,
+                                        dynamodb_timestamp=timestamp_str,
+                                        recorded_at=recorded_at
+                                    )
+                                    count += 1
+
+                                except Exception as e:
+                                    self.stdout.write(self.style.WARNING(f'    ⚠ Item error: {str(e)}'))
+                                    continue
+
+                        except Exception as e:
+                            self.stdout.write(self.style.ERROR(f'  ✗ V1 Query failed: {str(e)}'))
+
+                    self.stdout.write(self.style.SUCCESS(f'  ✓ Synced {count} records for {station_id}'))
+                    total_synced += count
 
                 except Exception as e:
-                    self.stdout.write(self.style.WARNING(f'⚠ Error processing item: {str(e)}'))
-                    continue
-
-            # Update station's last_data_received
-            if items:
-                station.last_data_received = timezone.now()
-                station.save()
+                    self.stdout.write(self.style.ERROR(f'  ✗ Error syncing {station_id}: {str(e)}'))
 
             self.stdout.write(
-                self.style.SUCCESS(f'✓ Successfully synced {count} new records to PostgreSQL')
+                self.style.SUCCESS(f'\n✅ Successfully synced {total_synced} real-time weather records to admin panel!')
             )
 
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'✗ Error syncing DynamoDB: {str(e)}'))
+            self.stdout.write(self.style.ERROR(f'✗ Error during sync: {str(e)}'))

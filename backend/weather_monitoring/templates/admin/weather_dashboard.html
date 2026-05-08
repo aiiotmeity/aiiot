@@ -1,0 +1,441 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<style>
+    :root {
+        --card-bg: #ffffff;
+        --text-primary: black;
+        --text-secondary: #7f8c8d;
+        --success: #10b981;
+        --danger: #ef4444;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --radius: 8px;
+    }
+
+    .dashboard-wrapper {
+        margin-bottom: 30px;
+        width: 100%;
+    }
+
+    .dashboard-header {
+        margin-bottom: 20px;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 15px;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.8rem;
+        color: #1e293b;
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .dashboard-header p {
+        margin: 5px 0 0 0;
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+
+    .dashboard-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px; 
+        width: 100%;
+    }
+    
+    .weather-card { 
+        background: var(--card-bg); 
+        border-radius: var(--radius); 
+        box-shadow: var(--shadow);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .weather-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+        padding: 16px 18px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-bottom: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .station-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+        margin: 0;
+    }
+
+    .station-meta {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.9);
+        display: block;
+        margin-top: 3px;
+    }
+
+    .status-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .status-dot { 
+        width: 8px; 
+        height: 8px; 
+        border-radius: 50%; 
+        animation: pulse 2s infinite;
+    }
+
+    .status-pill.online .status-dot { 
+        background: #4ade80;
+        box-shadow: 0 0 10px #4ade80;
+    }
+
+    .status-pill.offline .status-dot { 
+        background: #f87171;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .card-body { 
+        padding: 20px;
+        flex: 1;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #0f172a;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        margin-top: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .section-label:first-child { 
+        margin-top: 0; 
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .metric-item {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid #cbd5e1;
+        transition: all 0.3s;
+    }
+
+    .metric-item:hover {
+        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+        transform: translateY(-2px);
+    }
+
+    .metric-label {
+        display: block;
+        font-size: 0.65rem;
+        color: #475569;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    .metric-value {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .metric-unit {
+        display: block;
+        font-size: 0.7rem;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    .update-time {
+        margin-top: 12px;
+        font-size: 0.7rem;
+        text-align: center;
+        color: #94a3b8;
+        padding-top: 12px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .alert-banner {
+        display: none;
+        background: #fef2f2;
+        border-top: 2px solid #fca5a5;
+        color: #dc2626;
+        padding: 10px;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .alert-banner.show {
+        display: block;
+    }
+
+    .no-data-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: #64748b;
+    }
+
+    .no-data-message h2 {
+        color: #475569;
+        margin-bottom: 10px;
+    }
+
+    /* Color coding for severity */
+    .temp-hot { color: #dc2626; }
+    .temp-warm { color: #ea580c; }
+    .temp-cold { color: #0284c7; }
+
+    @media (max-width: 900px) {
+        .dashboard-grid { 
+            grid-template-columns: 1fr;
+        }
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    html, body {
+        scroll-behavior: smooth;
+    }
+</style>
+
+<div class="dashboard-wrapper">
+    <div class="dashboard-header">
+        <h1>🌤️ Weather Monitoring - Live Dashboard</h1>
+        <p>Real-time weather data from all monitoring stations</p>
+    </div>
+
+    <div class="dashboard-grid" id="weather-grid">
+        <!-- Cards will be loaded here via JavaScript -->
+    </div>
+</div>
+
+<script>
+    const API_URL = "{% url 'weather:weather_admin_dashboard' %}";
+    const REFRESH_INTERVAL = 5000; // 5 seconds
+
+    // Station configuration
+    const STATIONS_CONFIG = {
+        'aws-asiet-v1': {
+            name: 'ASIET Campus Station',
+            location: '📍 ASIET Campus',
+            emoji: '🏢'
+        },
+        'weather-v2': {
+            name: 'Main Weather Station',
+            location: '📍 Main Location',
+            emoji: '🌍'
+        }
+    };
+
+    async function fetchWeatherData() {
+        try {
+            const response = await fetch(API_URL, { credentials: 'same-origin' });
+            if (!response.ok) {
+                console.error('Weather API returned status', response.status);
+                return;
+            }
+            const data = await response.json();
+
+            if (data.station_data) {
+                renderDashboard(data.station_data);
+            }
+        } catch (error) {
+            console.error("Error fetching weather data:", error);
+        }
+    }
+
+    function renderDashboard(stationData) {
+        const grid = document.getElementById('weather-grid');
+        
+        if (Object.keys(stationData).length === 0) {
+            grid.innerHTML = `
+                <div class="no-data-message" style="grid-column: 1/-1;">
+                    <h2>📡 No Weather Data Available</h2>
+                    <p>Please sync weather data from DynamoDB first using: python manage.py sync_dynamodb_data</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+
+        for (const [stationId, stationInfo] of Object.entries(stationData)) {
+            const config = STATIONS_CONFIG[stationId] || {
+                name: stationId.replace('-', ' ').toUpperCase(),
+                location: '📍 Unknown Location',
+                emoji: '📍'
+            };
+
+            const item = stationInfo.latest_item || {};
+            const isOnline = stationInfo.health && (stationInfo.health.status || '').toUpperCase() === 'ONLINE';
+
+            const temp = item.temperature || '--';
+            const tempClass = temp !== '--' ? (temp > 35 ? 'temp-hot' : temp > 25 ? 'temp-warm' : 'temp-cold') : '';
+
+            html += `
+                <div class="weather-card">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="station-title">${config.emoji} ${config.name}</h3>
+                            <span class="station-meta">${config.location}</span>
+                        </div>
+                        <div class="status-pill ${isOnline ? 'online' : 'offline'}">
+                            <span class="status-dot"></span>
+                            <span>${isOnline ? 'LIVE' : 'OFFLINE'}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <!-- ATMOSPHERE SECTION -->
+                        <div class="section-label">🌡️ Atmosphere</div>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <span class="metric-label">Temperature</span>
+                                <span class="metric-value ${tempClass}">${formatValue(temp, 1)}</span>
+                                <span class="metric-unit">°C</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Humidity</span>
+                                <span class="metric-value">${formatValue(item.humidity, 1)}</span>
+                                <span class="metric-unit">%</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Pressure</span>
+                                <span class="metric-value">${formatValue(item.pressure, 0)}</span>
+                                <span class="metric-unit">hPa</span>
+                            </div>
+                        </div>
+
+                        <!-- WIND SECTION -->
+                        <div class="section-label">💨 Wind</div>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <span class="metric-label">Speed</span>
+                                <span class="metric-value">${formatValue(item.wind_speed_kph, 1)}</span>
+                                <span class="metric-unit">km/h</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Direction</span>
+                                <span class="metric-value">${formatValue(item.wind_direction, 0)}°</span>
+                                <span class="metric-unit">${getWindDirection(item.wind_direction)}</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Gust</span>
+                                <span class="metric-value">--</span>
+                                <span class="metric-unit">km/h</span>
+                            </div>
+                        </div>
+
+                        <!-- RAINFALL SECTION -->
+                        <div class="section-label">🌧️ Rainfall</div>
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <span class="metric-label">Last Hour</span>
+                                <span class="metric-value">${formatValue(item.rain_1h_mm, 1)}</span>
+                                <span class="metric-unit">mm</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Last 24h</span>
+                                <span class="metric-value">${formatValue(item.rain_24h_mm, 1)}</span>
+                                <span class="metric-unit">mm</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Total</span>
+                                <span class="metric-value">--</span>
+                                <span class="metric-unit">mm</span>
+                            </div>
+                        </div>
+
+                        <div class="update-time">
+                            ⏰ Updated: ${formatTime(item.timestamp || item.time)}
+                        </div>
+                    </div>
+
+                    <div class="alert-banner ${isOnline ? '' : 'show'}">
+                        ⚠️ OFFLINE - No recent data
+                    </div>
+                </div>
+            `;
+        }
+
+        grid.innerHTML = html;
+    }
+
+    function formatValue(value, decimals) {
+        if (value === null || value === undefined || value === '--' || value === 'N/A') {
+            return '--';
+        }
+        if (!isNaN(value)) {
+            return parseFloat(value).toFixed(decimals);
+        }
+        return value;
+    }
+
+    function formatTime(timestamp) {
+        if (!timestamp || timestamp === '--') return '--';
+        try {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch {
+            return timestamp;
+        }
+    }
+
+    function getWindDirection(degrees) {
+        if (degrees === null || degrees === undefined || degrees === '--') return '--';
+        const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+        const index = Math.round(degrees / 22.5) % 16;
+        return dirs[index];
+    }
+
+    // Initial load
+    fetchWeatherData();
+
+    // Refresh every 5 seconds
+    setInterval(fetchWeatherData, REFRESH_INTERVAL);
+</script>
+
+{{ block.super }}
+{% endblock %}

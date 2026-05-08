@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './WeatherHomepage.css';
 import { useNavigate } from 'react-router-dom';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 
 // --- API CONFIGURATION ---
@@ -12,6 +13,11 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
   const navigate = useNavigate();
   const [currentWeather, setCurrentWeather] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [historicalData, setHistoricalData] = useState([]);
+  const [historicalLoading, setHistoricalLoading] = useState(false);
+  const [historicalError, setHistoricalError] = useState(null);
+  const [selectedDays, setSelectedDays] = useState(3);
+  const [selectedMetric, setSelectedMetric] = useState('temperature');
 
   // Update time every second
   useEffect(() => {
@@ -46,6 +52,45 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
     return () => clearInterval(interval);
   }, []);
   
+  const fetchHistoricalData = async (daysToFetch = selectedDays) => {
+    setHistoricalLoading(true);
+    setHistoricalError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/weather/historical-data?days=${daysToFetch}&station_id=weather-v2`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch historical weather data');
+      }
+
+      setHistoricalData(result.data || []);
+    } catch (error) {
+      console.error('Error fetching historical weather data:', error);
+      setHistoricalError(error.message || 'Failed to load historical data');
+      setHistoricalData([]);
+    } finally {
+      setHistoricalLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistoricalData(selectedDays);
+  }, [selectedDays]);
+
+  const chartData = useMemo(() => {
+    if (!historicalData || historicalData.length === 0) return [];
+    const TARGET_POINTS = 30;
+    const step = Math.max(1, Math.ceil(historicalData.length / TARGET_POINTS));
+    return historicalData.filter((_, index) => index % step === 0);
+  }, [historicalData]);
+
+  const metricOptions = [
+    { value: 'temperature', label: 'Temperature (°C)' },
+    { value: 'humidity', label: 'Humidity (%)' },
+    { value: 'rainfall1h', label: 'Rainfall 1h (mm)' },
+    { value: 'rainfall24h', label: 'Rainfall 24h (mm)' }
+  ];
 
   const handleAccessWeatherApp = () => {
     navigate('/weather-map');
@@ -201,6 +246,77 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
                 Learn More
               </a>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Historical Chart Section */}
+      <section id="historical" className="historical-section">
+        <div className="historical-container">
+          <div className="section-header">
+            <h2>Historical Weather Trend</h2>
+            <p>Live historical charting using existing weather_monitoring API data.</p>
+          </div>
+
+          <div className="historical-controls">
+            <div className="control-group">
+              <label>Period</label>
+              <select
+                value={selectedDays}
+                onChange={(e) => setSelectedDays(Number(e.target.value))}
+              >
+                <option value={1}>Last 24 Hours</option>
+                <option value={3}>Last 3 Days</option>
+                <option value={7}>Last 7 Days</option>
+                <option value={30}>Last 30 Days</option>
+              </select>
+            </div>
+
+            <div className="control-group">
+              <label>Metric</label>
+              <select
+                value={selectedMetric}
+                onChange={(e) => setSelectedMetric(e.target.value)}
+              >
+                {metricOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="chart-card">
+            {historicalLoading ? (
+              <div className="chart-loading">Loading historical chart...</div>
+            ) : historicalError ? (
+              <div className="chart-error">{historicalError}</div>
+            ) : !chartData.length ? (
+              <div className="chart-no-data">No historical data available for the selected period.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="timestamp"
+                    tickFormatter={timestamp => new Date(timestamp).toLocaleDateString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    fontSize={11}
+                    stroke="#666"
+                    minTickGap={20}
+                  />
+                  <YAxis stroke="#666" fontSize={11} />
+                  <Tooltip labelFormatter={label => new Date(label).toLocaleString()} />
+                  <Bar dataKey={selectedMetric} fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+
+            {chartData.length > 0 && (
+              <div className="chart-footer">
+                Showing {chartData.length} points from {historicalData.length} raw records.
+              </div>
+            )}
           </div>
         </div>
       </section>
