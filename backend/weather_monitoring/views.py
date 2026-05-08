@@ -1,4 +1,5 @@
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -365,7 +366,56 @@ def get_all_requests(request):
     except Exception as e:
         print(f"Error fetching requests: {str(e)}")
         return JsonResponse({"error": "Failed to fetch requests"}, status=500)
-    
+
+
+@require_GET
+def weather_admin_dashboard_api(request):
+    """API endpoint for the weather dashboard data."""
+    try:
+        result = {"station_data": {}}
+        from weather_monitoring.models import WeatherStation
+
+        stations = WeatherStation.objects.all()
+        now = timezone.now()
+
+        for station in stations:
+            latest = station.readings.first()
+            if not latest:
+                result["station_data"][station.device_id] = {
+                    "latest_item": {},
+                    "health": {"status": "OFFLINE"}
+                }
+                continue
+
+            timestamp = latest.recorded_at.isoformat()
+            status = "ONLINE" if (now - latest.recorded_at).total_seconds() < 1800 else "OFFLINE"
+
+            result["station_data"][station.device_id] = {
+                "latest_item": {
+                    "temperature": latest.temperature_c,
+                    "humidity": latest.humidity,
+                    "pressure": latest.pressure,
+                    "wind_speed_kph": latest.wind_speed_kph,
+                    "wind_direction": latest.wind_direction,
+                    "rain_1h_mm": latest.rain_1h_mm,
+                    "rain_24h_mm": latest.rain_24h_mm,
+                    "date": latest.recorded_at.strftime('%Y-%m-%d'),
+                    "time": latest.recorded_at.strftime('%H:%M:%S'),
+                    "timestamp": timestamp
+                },
+                "health": {"status": status}
+            }
+
+        return JsonResponse(result, encoder=DecimalEncoder)
+    except Exception as e:
+        print(f"Error in weather_admin_dashboard_api: {e}")
+        return JsonResponse({"error": "Failed to fetch dashboard data"}, status=500)
+
+
+@require_GET
+def weather_dashboard_view(request):
+    """Render the weather monitoring dashboard inside the default admin."""
+    return render(request, 'admin/weather_dashboard.html')
 
 
 # Ensure we have a usable S3 client (don't raise at import time)
@@ -644,68 +694,3 @@ def get_place(lat, lon):
             return data.get("display_name", "Unknown Area")
     except:
         return "Unknown Area"
-
-
-@require_GET
-@csrf_exempt
-def weather_admin_dashboard_api(request):
-    """
-    GET /api/weather/admin-dashboard
-    Returns real-time weather data for all stations in a format suitable for the admin dashboard.
-    This endpoint is called every 5 seconds by the dashboard frontend.
-    """
-    try:
-        from django.utils import timezone
-        result = {
-            "station_data": {}
-        }
-        
-        # Get all weather stations from the model
-        from weather_monitoring.models import WeatherStation
-        
-        stations = WeatherStation.objects.all()
-        
-        for station in stations:
-            station_id = station.device_id
-            
-            # Get latest reading for this station
-            latest_reading = station.readings.first()
-            
-            if not latest_reading:
-                result["station_data"][station_id] = {
-                    "latest_item": {},
-                    "health": {"status": "OFFLINE"}
-                }
-                continue
-            
-            # Format the data similar to what the template expects
-            latest_item = {
-                "temperature": latest_reading.temperature_c,
-                "humidity": latest_reading.humidity,
-                "pressure": latest_reading.pressure,
-                "wind_speed_kph": latest_reading.wind_speed_kph,
-                "wind_direction": latest_reading.wind_direction,
-                "rain_1h_mm": latest_reading.rain_1h_mm,
-                "rain_24h_mm": latest_reading.rain_24h_mm,
-                "date": latest_reading.recorded_at.strftime('%Y-%m-%d'),
-                "time": latest_reading.recorded_at.strftime('%H:%M:%S'),
-                "timestamp": latest_reading.dynamodb_timestamp or latest_reading.recorded_at.isoformat()
-            }
-            
-            # Determine if station is online (has recent data within last 30 minutes)
-            now = timezone.now()
-            time_diff = now - latest_reading.recorded_at
-            is_online = time_diff.total_seconds() < 1800  # 30 minutes
-            
-            result["station_data"][station_id] = {
-                "latest_item": latest_item,
-                "health": {
-                    "status": "ONLINE" if is_online else "OFFLINE"
-                }
-            }
-        
-        return JsonResponse(result, encoder=DecimalEncoder)
-    
-    except Exception as e:
-        print(f"Error in weather_admin_dashboard_api: {str(e)}")
-        return JsonResponse({"error": "Failed to fetch dashboard data"}, status=500)

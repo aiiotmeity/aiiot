@@ -15,6 +15,7 @@ urlpatterns = [
     path('s3-presign', views.S3PresignView.as_view(), name='s3-presign'),
     path('s3-presign/', views.S3PresignView.as_view(), name='s3-presign-slash'),
     path('debug-read-s3', views.debug_read_s3_csv),
+    path('admin-dashboard', views.weather_admin_dashboard_api, name='weather_admin_dashboard'),
 
     path('flood-analysis', views.flood_analysis, name='flood_analysis'),
 

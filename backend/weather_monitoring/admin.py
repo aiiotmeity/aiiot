@@ -5,23 +5,6 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 
-# Custom Admin Site for Weather Monitoring with Dashboard
-class WeatherMonitoringAdminSite(admin.AdminSite):
-    site_header = "🌤️ Weather Monitoring Admin"
-    site_title = "Weather Admin"
-    index_title = "Weather Dashboard"
-    
-    def index(self, request, extra_context=None):
-        """Override index to show custom dashboard"""
-        from django.shortcuts import render
-        extra_context = extra_context or {}
-        return render(request, 'admin/weather_dashboard.html', extra_context)
-
-
-# Create instance of custom admin site
-weather_admin_site = WeatherMonitoringAdminSite(name='weather_admin')
-
-
 class WeatherStationAdmin(admin.ModelAdmin):
     list_display = ('device_id', 'station_name', 'station_type', 'status_badge', 'latest_reading', 'updated_at')
     list_filter = ('station_type', 'is_active', 'updated_at')
@@ -305,7 +288,6 @@ class DataRequestAdmin(admin.ModelAdmin):
         self.message_user(request, f"{count} request(s) marked as completed.")
 
 
-# Register with custom weather admin site
-weather_admin_site.register(WeatherStation, WeatherStationAdmin)
-weather_admin_site.register(WeatherReading, WeatherReadingAdmin)
-weather_admin_site.register(DataRequest, DataRequestAdmin)
+admin.site.register(WeatherStation, WeatherStationAdmin)
+admin.site.register(WeatherReading, WeatherReadingAdmin)
+admin.site.register(DataRequest, DataRequestAdmin)
