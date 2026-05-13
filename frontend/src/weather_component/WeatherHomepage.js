@@ -251,7 +251,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
       </section>
 
       {/* Historical Chart Section */}
-      <section id="historical" className="historical-section">
+      {/* <section id="historical" className="historical-section">
         <div className="historical-container">
           <div className="section-header">
             <h2>Historical Weather Trend</h2>
@@ -319,7 +319,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
             )}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Features Section */}
       <section id="about" className="features-section">
