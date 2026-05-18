@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from 'react-router-dom'; 
 import "./RiverDashboard.css";
-import dataloggerImage from "../assets/datalogger.png";
 
 const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://aiiot-1.onrender.com'
@@ -125,7 +124,7 @@ const RiverDashboard = () => {
   return (
     <div className="rd-advanced-page">
       <style>
-        {`:root { --hero-bg-image: url(${dataloggerImage}); }`}
+        {`:root { --hero-bg-image: url('/sensor_modules/river.jpeg'); }`}
       </style>
       {/* --- HERO SECTION (MATCHING PROJECTDETAIL) --- */}
       <section className="rd-hero-fullscreen">
@@ -149,6 +148,8 @@ const RiverDashboard = () => {
           <div className="hero-pill">Real-Time Hydrological Monitoring</div>
           <h1 className="hero-main-title">Periyar River Water Level</h1>
           <p className="hero-sub-text">Advanced AI-powered flood forecasting system providing 6-hour predictive insights for the Kalady region.</p>
+          
+          
           
           <div className={`rd-status-card-top ${currentStatus.class}`}>
             <i className={`fas ${currentStatus.icon}`}></i>
@@ -243,7 +244,10 @@ const RiverDashboard = () => {
   );
 })}
               </div>
+              
             </div>
+            
+
             
           </section>
 
@@ -270,10 +274,189 @@ const RiverDashboard = () => {
 
         </div>
       </div>
+      {/* Solution Cards Section */}
+{/* Solution Cards Section */}
+<div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 420px))',
+    justifyContent: 'center',
+    gap: '18px',
+    marginTop: '40px',
+    marginBottom: '40px',
+    width: '100%',
+  }}
+>
+  {/* Card 1 */}
+  <a
+    href="https://aiiot.it.com/project/water-level"
+    style={{ textDecoration: 'none' }}
+  >
+    <div
+      style={{
+        background: '#ffffff',
+        border: '1px solid #dbe4f0',
+        borderRadius: '18px',
+        padding: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        transition: 'all 0.25s ease',
+        boxShadow: '0 4px 14px rgba(15,23,42,0.04)',
+        cursor: 'pointer',
+        minHeight: '88px',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow =
+          '0 10px 24px rgba(37,99,235,0.12)';
+        e.currentTarget.style.borderColor = '#3b82f6';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow =
+          '0 4px 14px rgba(15,23,42,0.04)';
+        e.currentTarget.style.borderColor = '#dbe4f0';
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div
+          style={{
+            width: '46px',
+            height: '46px',
+            borderRadius: '14px',
+            background: '#eef4ff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#2563eb',
+            fontSize: '18px',
+            flexShrink: 0,
+          }}
+        >
+          <i className="fas fa-water"></i>
+        </div>
 
+        <div>
+          <h4
+            style={{
+              margin: 0,
+              fontSize: '17px',
+              fontWeight: '700',
+              color: '#0f172a',
+            }}
+          >
+            Digital Water Solution
+          </h4>
 
+          <p
+            style={{
+              margin: '6px 0 0 0',
+              fontSize: '13px',
+              color: '#64748b',
+              lineHeight: '1.5',
+            }}
+          >
+            Explore intelligent monitoring architecture
+          </p>
+        </div>
+      </div>
 
+      <i
+        className="fas fa-arrow-up-right-from-square"
+        style={{
+          color: '#94a3b8',
+          fontSize: '15px',
+        }}
+      ></i>
+    </div>
+  </a>
 
+  {/* Card 2 */}
+  <a
+    href="https://aiiot.it.com/product-details/flood-alert"
+    style={{ textDecoration: 'none' }}
+  >
+    <div
+      style={{
+        background: '#ffffff',
+        border: '1px solid #dbe4f0',
+        borderRadius: '18px',
+        padding: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        transition: 'all 0.25s ease',
+        boxShadow: '0 4px 14px rgba(15,23,42,0.04)',
+        cursor: 'pointer',
+        minHeight: '88px',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow =
+          '0 10px 24px rgba(16,185,129,0.12)';
+        e.currentTarget.style.borderColor = '#10b981';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow =
+          '0 4px 14px rgba(15,23,42,0.04)';
+        e.currentTarget.style.borderColor = '#dbe4f0';
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div
+          style={{
+            width: '46px',
+            height: '46px',
+            borderRadius: '14px',
+            background: '#ecfdf5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#10b981',
+            fontSize: '18px',
+            flexShrink: 0,
+          }}
+        >
+          <i className="fas fa-network-wired"></i>
+        </div>
+
+        <div>
+          <h4
+            style={{
+              margin: 0,
+              fontSize: '17px',
+              fontWeight: '700',
+              color: '#0f172a',
+            }}
+          >
+            Distribution Network
+          </h4>
+
+          <p
+            style={{
+              margin: '6px 0 0 0',
+              fontSize: '13px',
+              color: '#64748b',
+              lineHeight: '1.5',
+            }}
+          >
+            Review flood alert product details
+          </p>
+        </div>
+      </div>
+
+      <i
+        className="fas fa-arrow-up-right-from-square"
+        style={{
+          color: '#94a3b8',
+          fontSize: '15px',
+        }}
+      ></i>
+    </div>
+  </a>
+</div>
          
       {/* --- ADVANCED FOOTER (MATCHING PROJECTDETAIL) --- */}
      <footer className="footer" style={{ background: '#0f172a', color: '#cbd5e1', padding: '3rem 0 1rem 0' }}>

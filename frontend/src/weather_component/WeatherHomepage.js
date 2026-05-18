@@ -110,7 +110,9 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
    // window.open('http://localhost:8000', '_blank');
   //};
   
-
+const handleOpenDemandForecasting = () => {
+  navigate('/demand-forecasting');
+};
   return (
     <div className="weather-homepage-container">
       {/* Government Header */}
@@ -149,28 +151,39 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
             </div>
 
             <div className="header-actions">
-            <button 
-              className="btn btn-primary"
-              onClick={handleAccessWeatherApp}
-            >
-              <i className="fas fa-tachometer-alt"></i>
-              Access Live Data
-            </button>
-            <button 
-              className="btn btn-success"
-              onClick={handleOpenRiverDashboard}
-            >
-              <i className="fas fa-water"></i>
-              Periyar River Forecast
-            </button>
-            <button 
-              className="btn btn-secondary"
-              onClick={handleDataRequest}
-            >
-              <i className="fas fa-download"></i>
-              Request Historical Data
-            </button>
-          </div>
+  <button 
+    className="btn btn-primary"
+    onClick={handleAccessWeatherApp}
+  >
+    <i className="fas fa-tachometer-alt"></i>
+    Access Live Data
+  </button>
+  <button 
+    className="btn btn-success"
+    onClick={handleOpenRiverDashboard}
+  >
+    <i className="fas fa-water"></i>
+    Periyar River Forecast
+  </button>
+  
+  {/* --- NEWLY ADDED WATER DEMAND REDIRECT BUTTON --- */}
+  <button 
+    className="btn btn-info"
+    style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none' }}
+    onClick={handleOpenDemandForecasting}
+  >
+    <i className="fas fa-chart-pie" style={{ marginRight: '8px' }}></i>
+    Water Demand Forecast
+  </button>
+
+  <button 
+    className="btn btn-secondary"
+    onClick={handleDataRequest}
+  >
+    <i className="fas fa-download"></i>
+    Request Historical Data
+  </button>
+</div>
           </div>
         </div>
       </header>

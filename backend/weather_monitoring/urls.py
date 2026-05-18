@@ -18,5 +18,5 @@ urlpatterns = [
     path('admin-dashboard', views.weather_admin_dashboard_api, name='weather_admin_dashboard'),
 
     path('flood-analysis', views.flood_analysis, name='flood_analysis'),
-
+   path('water-demand', views.get_water_distribution_demand, name='water_distribution_demand'),
 ]

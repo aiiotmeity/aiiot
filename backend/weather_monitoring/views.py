@@ -694,3 +694,47 @@ def get_place(lat, lon):
             return data.get("display_name", "Unknown Area")
     except:
         return "Unknown Area"
+    
+# Add this endpoint to your myapp/views.py file
+
+@require_GET
+def get_water_distribution_demand(request):
+    """
+    GET /api/weather/water-demand
+    Streams real-time valve demand metrics straight from the S3 testbed infrastructure.
+    """
+    if 's3_client' not in globals() or s3_client is None:
+        return JsonResponse({"error": "AWS S3 Client service state initialized as offline."}, status=503)
+
+    # Derived from your S3 bucket console image properties
+    bucket_name = 'water-distribution'
+    s3_key = 'testbed/node_valve_demand.json'
+
+    try:
+        # Stream down the live file object stream buffer from S3
+        s3_object = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+        raw_content = s3_object['Body'].read().decode('utf-8')
+        
+        # Parse text into JSON array objects safely
+        telemetry_payload = json.loads(raw_content)
+        
+        return JsonResponse({
+            "success": True,
+            "timestamp": telemetry_payload.get("timestamp", "N/A"),
+            "demand": telemetry_payload.get("demand", {})
+        }, encoder=DecimalEncoder)
+
+    except ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+        print(f"❌ S3 Client Connectivity Error [{error_code}]: {e}")
+        if error_code == 'NoSuchKey':
+            return JsonResponse({"error": "Target testbed telemetry matrices matrix not located on S3 profile mapping."}, status=404)
+        return JsonResponse({"error": f"S3 Access Interrupted: {error_code}"}, status=500)
+        
+    except json.JSONDecodeError as e:
+        print(f"❌ File Parsing Exception: JSON malformed in S3 file object: {e}")
+        return JsonResponse({"error": "Failed parsing real-time telemetry streaming matrix structures."}, status=500)
+        
+    except Exception as e:
+        print(f"❌ Unexpected Error in water demand matrix acquisition: {str(e)}")
+        return JsonResponse({"error": "Internal infrastructure communication failure."}, status=500)

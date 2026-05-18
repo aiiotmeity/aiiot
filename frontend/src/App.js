@@ -22,7 +22,7 @@ import ResourcesPage from './component_aiiot/Resources';
 import ProductOverview from './component_aiiot/ProductOverview';
 import PrivacyPolicy from './component_aiiot/PrivacyPolicy';
 import FloodMap from './weather_component/FloodMap';
-
+import DemandForecasting from './weather_component/DemandForecasting';
 
 // Session Manager
 const SessionManager = {
@@ -321,6 +321,7 @@ function App() {
           {/* Legacy admin routes */}
           <Route path="/admin-login" element={<Navigate to="/admin/login" replace />} />
           <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/demand-forecasting" element={<DemandForecasting />} />
         </Routes>
       </Router>
     </AuthContext.Provider>
