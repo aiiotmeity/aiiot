@@ -719,3 +719,52 @@
     color: black;
   }
 }
+/* MOBILE NAVBAR */
+.mobile-menu-btn {
+  display: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--primary-blue);
+  padding: 1rem;
+}
+
+/* MOBILE VIEW */
+@media (max-width: 768px) {
+
+  .mobile-menu-btn {
+    display: block;
+    text-align: right;
+  }
+
+  .weather-homepage-container .nav-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .weather-homepage-container .nav-menu {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    background: white;
+    border-top: 1px solid #ddd;
+    padding: 0.5rem 0;
+  }
+
+  .weather-homepage-container .nav-menu.active {
+    display: flex;
+  }
+
+  .weather-homepage-container .nav-item {
+    width: 100%;
+  }
+
+  .weather-homepage-container .nav-link {
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #f1f1f1;
+  }
+
+  .weather-homepage-container .nav-link::after {
+    display: none;
+  }
+}

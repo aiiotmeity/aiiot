@@ -18,6 +18,7 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
   const [historicalError, setHistoricalError] = useState(null);
   const [selectedDays, setSelectedDays] = useState(3);
   const [selectedMetric, setSelectedMetric] = useState('temperature');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Update time every second
   useEffect(() => {
@@ -189,31 +190,38 @@ const handleOpenDemandForecasting = () => {
       </header>
 
       {/* Navigation */}
-      <nav className="nav-bar">
-        <div className="nav-container">
-          <ul className="nav-menu">
-            <li className="nav-item">
-              <a href="/" className="nav-link active">Home</a>
-            </li>
-            
-            <li className="nav-item">
-              <a href="#about" className="nav-link">About</a>
-            </li>
-            <li className="nav-item">
-              <a href="#services" className="nav-link">Services</a>
-            </li>
-            
-            <li className="nav-item">
-              <a href="#contact" className="nav-link">Contact</a>
-            </li>
-            
-            
-            {/* <li className="nav-item">
-              <a href="/" className="nav-link">Aiiot</a>
-            </li> */}
-          </ul>
-        </div>
-      </nav>
+      {/* Navigation */}
+<nav className="nav-bar">
+  <div className="nav-container">
+
+    {/* Mobile Menu Button */}
+    <div 
+      className="mobile-menu-btn"
+      onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+    >
+      <i className={mobileMenuOpen ? "fas fa-times" : "fas fa-bars"}></i>
+    </div>
+
+    <ul className={`nav-menu ${mobileMenuOpen ? 'active' : ''}`}>
+      <li className="nav-item">
+        <a href="/" className="nav-link active">Home</a>
+      </li>
+
+      <li className="nav-item">
+        <a href="#about" className="nav-link">About</a>
+      </li>
+
+      <li className="nav-item">
+        <a href="#services" className="nav-link">Services</a>
+      </li>
+
+      <li className="nav-item">
+        <a href="#contact" className="nav-link">Contact</a>
+      </li>
+    </ul>
+
+  </div>
+</nav>
 
       {/* Hero Section */}
       <section id="home" className="hero-section">
