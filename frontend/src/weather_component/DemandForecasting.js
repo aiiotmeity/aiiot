@@ -200,7 +200,7 @@ const DemandForecasting = () => {
                           <p style={{ fontSize: '44px', fontWeight: '800', margin: '0', color: '#0f172a', letterSpacing: '-1.5px', lineHeight: '1' }}>
                             {val}
                           </p>
-                          <span style={{ fontSize: '16px', color: '#475569', fontWeight: '700' }}>m³/h</span>
+                          <span style={{ fontSize: '40px', color: '#475569', fontWeight: '1000' }}>L</span>
                         </div>
 
                         

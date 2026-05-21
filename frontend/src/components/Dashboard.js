@@ -45,33 +45,27 @@ const KNOWN_LOCATIONS = {
     state: 'Kerala',
     country: 'India'
   },
-  '10.1710_76.4296': {
+  '10.1732_76.4275': {
     display_name: 'Mattoor Junction, Kalady',
     city: 'Kalady',
     state: 'Kerala',
     country: 'India'
   },
-  '10.1750_76.4300': {
-    display_name: 'Kalady Town, Kerala',
+  '10.1822_76.4285': {
+    display_name: 'Pothiyakkara Road',
     city: 'Kalady',
     state: 'Kerala',
     country: 'India'
   },
-  '10.165_76.420': {
-    display_name: 'Airport Road, Kalady',
+  '10.1729_76.4325': {
+    display_name: 'Apple One BHK Apartment, Mattoor',
     city: 'Kalady',
     state: 'Kerala',
     country: 'India'
   },
-  '10.1800_76.4700': {
-    display_name: 'Perumbavoor, Kerala',
-    city: 'Perumbavoor',
-    state: 'Kerala',
-    country: 'India'
-  },
-  '10.1900_76.3900': {
-    display_name: 'Angamaly, Kerala',
-    city: 'Angamaly',
+  '10.1734_76.4315': {
+    display_name: 'Mattoor,Kalady',
+    city: 'Mattoor',
     state: 'Kerala',
     country: 'India'
   }

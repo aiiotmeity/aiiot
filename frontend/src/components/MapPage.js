@@ -370,7 +370,7 @@ const MapPage = () => {
             handleStationSelect: (stationId, fromPopup = false) => {
                 // Only allow selection of real stations
                 
-                if (['lora-v1', 'loradev2', 'lora-v3', 'lora-v4'].includes(stationId)) {
+                if (['lora-v1', 'loradev2', 'lora-v3', 'lora-v4','lora-v5'].includes(stationId)) {
                     setSelectedStationId(stationId);
                     if (isMobile) {
                         setActiveTab('details');
@@ -452,6 +452,9 @@ const MapPage = () => {
             }
             if (data.stations['lora-v4']) {
                 processedStations['lora-v4'] = data.stations['lora-v4'];
+            }
+            if (data.stations['lora-v5']) {
+                processedStations['lora-v5'] = data.stations['lora-v5'];
             }
             // Add coming soon stations (location only)
             ['temp-3'].forEach(id => {
@@ -664,7 +667,7 @@ const MapPage = () => {
     const handleStationSelect = useCallback((stationId) => {
         // Only allow selection of real stations
         // AFTER
-        if (['lora-v1', 'loradev2', 'lora-v3', 'lora-v4'].includes(stationId)) {
+        if (['lora-v1', 'loradev2', 'lora-v3', 'lora-v4','lora-v5'].includes(stationId)) {
             setSelectedStationId(stationId);
             if (isMobile) {
                 setActiveTab('details');

@@ -152,7 +152,9 @@ STATION_LOCATIONS = {
     "lora-v1": {"lat":10.178385739668958,"lon": 76.43052237497399},
     "loradev2": {"lat": 10.182204721868617, "lon": 76.42850343115732},
     "lora-v3":{"lat": 10.173254902926303, "lng": 76.42755590382993},  # Example for Station 4
-    "lora-v4": {"lat": 10.1729013391553, "lon": 76.43259601451521}
+    "lora-v4": {"lat": 10.1729013391553, "lon": 76.43259601451521},
+    "lora-v5":{"lat":10.173415, "lon":76.431556}
+    
 }
 
 
@@ -570,17 +572,20 @@ class HomeAPI(APIView):
                 loradev2_items = get_device_data("loradev2", limit=24)
                 lora_v3_items = get_device_data("lora-v3", limit=24)
                 lora_v4_items = get_device_data("aqm-v4", limit=24)
+                lora_v5_items = get_device_data("lora-v5", limit=24)
                 
                 latest_v1, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
                 latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
                 latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
                 latest_v4, avg_lora_v4, _, high_index_lora_v4 = process_device_items(lora_v4_items)
+                latest_v5, avg_lora_v5, _, high_index_lora_v5 = process_device_items(lora_v5_items)
                  
                 station_locations = {
                     'lora-v1': { 'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)' },
                     'loradev2': { 'lat': 10.182204721868617, 'lng': 76.42850343115732, 'name': 'Station 2 (Pothiyakkara Road)' },
                     'lora-v3': { 'lat': 10.173254902926303, 'lng': 76.42755590382993, 'name': 'Station 3 (Mattoor Junction)' },
                     'lora-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)' },
+                    'lora-v5': { 'lat': 10.173415, 'lng': 76.431556, 'name': 'Station 5 (Mattoor,Kalady)' }
                 }
 
                 # --- START: THE FIX ---
@@ -590,8 +595,8 @@ class HomeAPI(APIView):
                     'lora-v1': {'averages': avg_lora_v1, 'highest_sub_index': high_index_lora_v1, 'station_info': station_locations['lora-v1'], 'last_updated_on': latest_v1.get('last_updated_on') if latest_v1 else 'N/A', 'latest_readings': latest_v1},
                     'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'last_updated_on': latest_v2.get('last_updated_on') if latest_v2 else 'N/A', 'latest_readings': latest_v2},
                     'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'last_updated_on': latest_v3.get('last_updated_on') if latest_v3 else 'N/A', 'latest_readings': latest_v3},
-                    'lora-v4': {'averages': avg_lora_v4, 'highest_sub_index': high_index_lora_v4, 'station_info': station_locations['lora-v4'], 'last_updated_on': latest_v4.get('last_updated_on') if latest_v4 else 'N/A', 'latest_readings': latest_v4}
-                
+                    'lora-v4': {'averages': avg_lora_v4, 'highest_sub_index': high_index_lora_v4, 'station_info': station_locations['lora-v4'], 'last_updated_on': latest_v4.get('last_updated_on') if latest_v4 else 'N/A', 'latest_readings': latest_v4},
+                    'lora-v5': {'averages': avg_lora_v5, 'highest_sub_index': high_index_lora_v5, 'station_info': station_locations['lora-v5'], 'last_updated_on': latest_v5.get('last_updated_on') if latest_v5 else 'N/A', 'latest_readings': latest_v5}
                 }
                 # --- END: THE FIX ---
                 
@@ -812,13 +817,15 @@ def map_realtimedata_api(request):
         latest_v2, avg_loradev2, _, high_index_loradev2 = process_device_items(get_device_data("loradev2", limit=24))
         latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(get_device_data("lora-v3", limit=24))
         latest_v4, avg_lora_v4, _, high_index_lora_v4 = process_device_items(get_device_data("aqm-v4", limit=24))
+        latest_v5, avg_lora_v5, _, high_index_lora_v5 = process_device_items(get_device_data("lora-v5", limit=24))
         
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': { 'lat': 10.18220, 'lng': 76.4285, 'name': 'Station 2 (Pothiyakkara Road)' },
             'lora-v3': { 'lat': 10.17325, 'lng': 76.42755, 'name': 'Station 3 (Mattoor Junction)'},
             'lora-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)'},
-            'temp-3': { 'lat': 10.185, 'lng': 76.425, 'name':  'Station 5 (Kalady Town)'},
+            'lora-v5': { 'lat': 10.173415, 'lng': 76.431556, 'name': 'Station 5 (Mattoor,Kalady)' },
+            # 'temp-3': { 'lat': 10.185, 'lng': 76.425, 'name':  'Station 5 (Kalady Town)'},
         }
 
         response_data = {
@@ -827,7 +834,8 @@ def map_realtimedata_api(request):
                 'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2'], 'latest_readings': latest_v2},
                 'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3'], 'latest_readings': latest_v3},
                 'lora-v4': {'averages': avg_lora_v4, 'highest_sub_index': high_index_lora_v4, 'station_info': station_locations['lora-v4'], 'latest_readings': latest_v4},
-                'temp-3': { 'averages': None, 'highest_sub_index': None, 'station_info': station_locations['temp-3'], 'latest_readings': None }
+                'lora-v5': {'averages': avg_lora_v5, 'highest_sub_index': high_index_lora_v5, 'station_info': station_locations['lora-v5'], 'latest_readings': latest_v5},
+                # 'temp-3': { 'averages': None, 'highest_sub_index': None, 'station_info': station_locations['temp-3'], 'latest_readings': None }
             }
         }
         return Response(response_data, status=status.HTTP_200_OK)
@@ -868,7 +876,11 @@ def map_realtimedata_api(request):
                     'station_info': {'lat': 10.1729, 'lng': 76.4325, 'name': 'Station 4'},
                     'latest_readings': {'temp': 28.7, 'hum': 22.3}
                 },
-                'temp-3': {'station_info': {'lat': 10.185, 'lng': 76.425, 'name': 'Station 5 (Coming Soon)'}}
+                'lora-v5': {
+                    'averages': {'pm25': 12.5, 'pm10': 25.3}, 'highest_sub_index': 45,
+                    'station_info': {'lat': 10.173415, 'lng': 76.431556, 'name': 'Station 5'},
+                    'latest_readings': {'temp': 29, 'hum': 22.6}
+                }
             }
         }
         return Response(fallback_stations, status=status.HTTP_200_OK)
@@ -882,7 +894,7 @@ def station_forecast_api(request, station_id):
     """
     try:
         # --- START: THE FIX --- Added 'lora-v4' to the allowed list
-        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'lora-v4', 'aqm-v4', 'temp-3']
+        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'lora-v4', 'aqm-v4', 'lora-v5']
         # --- END: THE FIX ---
         
         if station_id not in valid_ids:
@@ -934,19 +946,22 @@ def all_devices_api(request):
         lora_v1_items = get_device_data("lora-v1")
         loradev2_items = get_device_data("loradev2")
         lora_v3_items = get_device_data("lora-v3") 
-        lora_v4_items = get_device_data("aqm-v4") # <-- Fetching aqm-v4
+        lora_v4_items = get_device_data("aqm-v4")
+        lora_v5_items = get_device_data("lora-v5") # <-- Fetching lora-v5
 
         # Process all three datasets
         latest_lora_v1, avg_lora_v1, subindices_lora_v1, high_index_lora_v1 = process_device_items(lora_v1_items)
         latest_loradev2, avg_loradev2, subindices_loradev2, high_index_loradev2 = process_device_items(loradev2_items)
         latest_lora_v3, avg_lora_v3, subindices_lora_v3, high_index_lora_v3 = process_device_items(lora_v3_items) # <-- Processing lora-v3
         latest_lora_v4, avg_lora_v4, subindices_lora_v4, high_index_lora_v4 = process_device_items(lora_v4_items) # <-- Processing aqm-v4
+        latest_lora_v5, avg_lora_v5, subindices_lora_v5, high_index_lora_v5 = process_device_items(lora_v5_items) # <-- Processing lora-v5
 
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Pothiyakkara Road)' },
             'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Mattoor Junction)'},
             'aqm-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)'},
+            'lora-v5': { 'lat': 10.173415, 'lng': 76.431556, 'name': 'Station 5 (Mattoor,Kalady)' },
         }
 
         return Response({
@@ -983,6 +998,15 @@ def all_devices_api(request):
                 'station_name': 'Station 4 (Apple One BHK Apartment)',
                 'station_info': station_locations.get("aqm-v4", {})
             },
+            'lora-v5':
+                {
+                    'latest_item': latest_lora_v5,
+                    'averages': avg_lora_v5,
+                    'sub_indices': {k: round(v, 2) if v is not None else None for k, v in subindices_lora_v5.items()},
+                    'highest_sub_index': high_index_lora_v5,
+                    'station_name': 'Station 5 (Mattoor,Kalady)',
+                    'station_info': station_locations.get("lora-v5", {})
+                }
             # --- END FIX ---
         })
 
@@ -1505,19 +1529,23 @@ def dashboard_api(request):
         v1 = get_device_data("lora-v1", limit=24)
         v2 = get_device_data("loradev2", limit=24)
         v3 = get_device_data("lora-v3", limit=24)
-        v4 = get_device_data("aqm-v4", limit=24) # <-- Fetching aqm-v4 data for dashboard
+        v4 = get_device_data("aqm-v4", limit=24) 
+        v5 = get_device_data("lora-v5", limit=24)
+        # <-- Fetching aqm-v4 data for dashboard
 
         # Process data
         l1, a1, s1, h1 = process_device_items(v1)
         l2, a2, s2, h2 = process_device_items(v2)
         l3, a3, s3, h3 = process_device_items(v3)
         l4, a4, s4, h4 = process_device_items(v4)
+        l5, a5, s5, h5 = process_device_items(v5)
 
         station_locations = {
             'lora-v1': {'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': {'lat': 10.1822047218, 'lng': 76.4285034311, 'name': 'Station 2 (Pothiyakkara Road)'},
             'lora-v3': {'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Mattoor Junction)'},
             'aqm-v4': {'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor )'},
+            'lora-v5': {'lat': 10.173415, 'lng': 76.431556, 'name': 'Station 5 (Mattoor,Kalady)'},
         }
 
         realtime_data = {
@@ -1548,6 +1576,13 @@ def dashboard_api(request):
                 "sub_indices": s4,
                 "station_info": station_locations["aqm-v4"],
                 "latest_readings": l4,
+            },
+            'lora-v5': {
+                "averages": a5,
+                "highest_sub_index": h5,
+                "sub_indices": s5,
+                "station_info": station_locations["lora-v5"],
+                "latest_readings": l5,
             }
             
         }
@@ -1796,7 +1831,7 @@ def station_forecast_api(request, station_id):
     Provides forecast data for all 5 stations.
     """
     try:
-        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'lora-v4', 'aqm-v4', 'temp-3']
+        valid_ids = ['lora-v1', 'loradev2', 'lora-v3', 'lora-v4', 'aqm-v4', 'lora-v5']
         if station_id not in valid_ids:
             return Response({'error': 'Invalid station ID'}, status=400)
 
@@ -1873,18 +1908,22 @@ def health_report_api(request):
             lora_v1_items = get_device_data("lora-v1", limit=24)
             loradev2_items = get_device_data("loradev2", limit=24)
             lora_v3_items = get_device_data("lora-v3", limit=24)
-            lora_v4_items = get_device_data("aqm-v4", limit=24) # <-- Fetching aqm-v4 data for health report as well
+            lora_v4_items = get_device_data("aqm-v4", limit=24)
+            lora_v5_items = get_device_data("lora-v5", limit=24)
+             # <-- Fetching aqm-v4 data for health report as well
 
             _, avg_lora_v1, _, high_index_lora_v1 = process_device_items(lora_v1_items)
             _, avg_loradev2, _, high_index_loradev2 = process_device_items(loradev2_items)
             _, avg_lora_v3, _, high_index_lora_v3 = process_device_items(lora_v3_items)
             _, avg_lora_v4, _, high_index_lora_v4 = process_device_items(lora_v4_items)
+            _, avg_lora_v5, _, high_index_lora_v5 = process_device_items(lora_v5_items)
             
             station_locations = {
                 'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
                 'loradev2': { 'lat': 10.182204, 'lng': 76.428503, 'name': 'Station 2 (Pothiyakkara Road)' },
                 'lora-v3': { 'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Mattoor Junction)' },
                 'aqm-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor )' },
+                'lora-v5': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 5 (Mattoor,Kalady)' },
                 # ... include your temp stations here as well
             }
 
@@ -1893,6 +1932,7 @@ def health_report_api(request):
                 'loradev2': {'averages': avg_loradev2, 'highest_sub_index': high_index_loradev2, 'station_info': station_locations['loradev2']},
                 'lora-v3': {'averages': avg_lora_v3, 'highest_sub_index': high_index_lora_v3, 'station_info': station_locations['lora-v3']},
                 'aqm-v4': {'averages': avg_lora_v4, 'highest_sub_index': high_index_lora_v4, 'station_info': station_locations['aqm-v4']},
+                'lora-v5': {'averages': avg_lora_v5, 'highest_sub_index': high_index_lora_v5, 'station_info': station_locations['lora-v5']},
                 # ... add simulated data for temp stations if needed
             }
             cache.set('map_realtime_data', all_stations_data, 60)
@@ -2137,6 +2177,7 @@ def admin_dashboard_api(request):
         loradev2_items = get_items_safe("loradev2")
         lora_v3_items = get_items_safe("lora-v3") 
         lora_v4_items = get_items_safe("aqm-v4")
+        lora_v5_items = get_items_safe("lora-v5")
         # <--- Added Station 4
 
         # 3. Calculate AQI (High Index)
@@ -2151,6 +2192,7 @@ def admin_dashboard_api(request):
         aqi_v2 = get_aqi_safe(loradev2_items)
         aqi_v3 = get_aqi_safe(lora_v3_items) # <--- Added Station 3 AQI
         aqi_v4 = get_aqi_safe(lora_v4_items) # <--- Added Station 4 AQI
+        aqi_v5 = get_aqi_safe(lora_v5_items) # <--- Added Station 5 AQI
 
         # 4. Extract COMPLETE Sensor Data
         def get_complete_sensor_data(items):
@@ -2191,6 +2233,8 @@ def admin_dashboard_api(request):
         latest_complete_v1 = get_complete_sensor_data(lora_v1_items)
         latest_complete_v2 = get_complete_sensor_data(loradev2_items)
         latest_complete_v3 = get_complete_sensor_data(lora_v3_items) # <--- Added Station 3 Data
+        latest_complete_v4 = get_complete_sensor_data(lora_v4_items) # <--- Added Station 4 Data
+        latest_complete_v5 = get_complete_sensor_data(lora_v5_items) # <--- Added Station 5 Data
 
         # 5. Build Response
         response_data = {
@@ -2217,6 +2261,12 @@ def admin_dashboard_api(request):
                     'aqi': aqi_v4,
                     'health': {'status': get_complete_sensor_data(lora_v4_items).get('device_status')}
                 },
+                # Station 5 (lora-v5)
+                'lora-v5': {
+                    'latest_item': get_complete_sensor_data(lora_v5_items),
+                    'aqi': aqi_v5,
+                    'health': {'status': get_complete_sensor_data(lora_v5_items).get('device_status')}
+                }
             },
             # ... keep your users/analytics sections same as before ...
             'timestamp': datetime.now().isoformat()
