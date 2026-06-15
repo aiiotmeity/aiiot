@@ -210,25 +210,87 @@ def get_s3_forecast_data(device_type=None):
         return [], None
 
     try:
-        # --- START: THE FIX ---
+        # Build a list of candidate filename suffixes to handle variations on S3
         if device_type == 'lora-v1':
-            file_suffix = 'lora_v1'  # Uses underscore for Station 1
+            candidates = ['lora_v1', 'lora-v1', 'lora_v1']
         elif device_type in ['lora-v4', 'aqm-v4']:
-            file_suffix = 'aqm_v4'   # Maps to latest_forecast_aqm_v4.json (from your S3 screenshot)
+            candidates = ['aqm_v4', 'aqm-v4', 'aqm_v4']
+        elif device_type == 'lora-v5':
+            candidates = ['lora_v5', 'lora-v5', 'lora_v5']
         else:
-            file_suffix = device_type  # Directly uses 'lora-v3' and 'loradev2'
+            # include both hyphen and underscore variants (e.g., 'lora-v5' and 'lora_v5')
+            candidates = [device_type, device_type.replace('-', '_')]
 
-        s3_key = f'data/air_quality/latest_forecast_{file_suffix}.json'
-        # --- END: THE FIX ---
-        
-        logger.info(f"Fetching S3 forecast data from: {s3_key}")
-        
-        response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
-        s3_data = json.loads(response['Body'].read().decode('utf-8'))
-        
-        forecast_dates = s3_data.get('dates', [])
-        gases_data = s3_data.get('gases', {})
-        updated_at = s3_data.get('updated_at')
+        # Candidate key patterns to try (prefer the 'latest_forecast_' prefix but fall back)
+        candidate_keys = []
+        for c in candidates:
+            candidate_keys.extend([
+                f'data/air_quality/latest_forecast_{c}.json',
+                f'data/air_quality/forecast_{c}.json',
+                f'data/air_quality/forecast_{c}.csv',
+                f'data/air_quality/{c}.json',
+                f'data/air_quality/{c}.csv',
+                f'data/air_quality/forecast_{c}.txt'
+            ])
+
+        s3_data = None
+        used_key = None
+        for key in candidate_keys:
+            try:
+                logger.info(f"Trying S3 key for forecast: {key}")
+                resp = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=key)
+                body = resp['Body'].read()
+                # Try JSON parse first
+                try:
+                    s3_data = json.loads(body.decode('utf-8'))
+                    used_key = key
+                    break
+                except Exception:
+                    # If not JSON, attempt CSV parsing later
+                    s3_data = {'_raw_body': body, '_raw_key': key}
+                    used_key = key
+                    break
+            except ClientError as e:
+                # Try next candidate if object not found
+                if e.response['Error']['Code'] in ('NoSuchKey', '404'):
+                    continue
+                else:
+                    logger.error(f"S3 ClientError when checking key {key}: {e}")
+                    continue
+
+        if not s3_data:
+            logger.error(f"No forecast file found on S3 for device {device_type}. Tried {len(candidate_keys)} keys.")
+            return [], None
+
+        # If we found JSON structured data, use it
+        if isinstance(s3_data, dict) and 'dates' in s3_data and 'gases' in s3_data:
+            forecast_dates = s3_data.get('dates', [])
+            gases_data = s3_data.get('gases', {})
+            updated_at = s3_data.get('updated_at')
+        else:
+            # Attempt to parse CSV fallback if raw body present
+            raw = s3_data.get('_raw_body') if isinstance(s3_data, dict) else None
+            updated_at = None
+            if raw:
+                try:
+                    text = raw.decode('utf-8')
+                    reader = csv.DictReader(io.StringIO(text))
+                    rows = list(reader)
+                    # Expecting a CSV where first column is date and other columns are gases
+                    if not rows:
+                        return [], None
+                    # Build a simple forecast structure from CSV columns
+                    cols = reader.fieldnames
+                    forecast_dates = [r[cols[0]] for r in rows][:4]
+                    gases_data = {}
+                    for col in cols[1:]:
+                        gases_data[col] = {'values': [safe_float_conversion(r[col]) or 0 for r in rows][:4]}
+                except Exception as e:
+                    logger.error(f"Failed to parse CSV forecast for key {used_key}: {e}")
+                    return [], None
+            else:
+                logger.error(f"Unexpected forecast data format for key {used_key}")
+                return [], None
 
         if not forecast_dates or not gases_data:
             return [], updated_at
@@ -248,16 +310,20 @@ def get_s3_forecast_data(device_type=None):
                     value = gases_data[json_key]['values'][i]
                     day_entry[frontend_key] = round(float(value), 2)
                 except (KeyError, IndexError, TypeError, ValueError):
-                    day_entry[frontend_key] = 0
+                    # Try alternate key names in CSV (e.g., lowercase or underscore variants)
+                    alt = gases_data.get(json_key.replace('.', '').replace('2', '2') )
+                    if alt and i < len(alt.get('values', [])):
+                        day_entry[frontend_key] = round(float(alt['values'][i]), 2)
+                    else:
+                        day_entry[frontend_key] = 0
             processed_forecast.append(day_entry)
-        
+
+        logger.info(f"Successfully loaded forecast from S3 key: {used_key}")
         return processed_forecast, updated_at
 
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'NoSuchKey':
-            logger.error(f"S3 forecast file not found: {s3_key}")
-        else:
-            logger.error(f"S3 ClientError for {device_type}: {e}")
+    except Exception as e:
+        logger.error(f"Error fetching/parsing S3 forecast for {device_type}: {e}")
+        return [], None
         return [], None
     except Exception as e:
         logger.error(f"Error in get_s3_forecast_data for {device_type}: {e}")
