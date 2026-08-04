@@ -15,19 +15,19 @@ const zoneLocationMapping = {
     bgGradient: "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)"
   },
   "Node2_Zone_Demand": {
-    sectionTitle: "SECTION 2",
+    sectionTitle: "SECTION 1",
     label: "Zone ID: Node 2",
     color: "#3b82f6", 
     bgGradient: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)"
   },
   "Node5_Zone_Demand": {
-    sectionTitle: "SECTION 3",
+    sectionTitle: "SECTION 2",
     label: "Zone ID: Node 5",
     color: "#10b981", 
     bgGradient: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)"
   },
   "Node7_Zone_Demand": {
-    sectionTitle: "SECTION 4",
+    sectionTitle: "SECTION 3 ",
     label: "Zone ID: Node 7",
     color: "#f59e0b", 
     bgGradient: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)"
