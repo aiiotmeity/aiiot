@@ -21,15 +21,7 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // --- ENHANCED DATA SOURCE FOR STATIONS ---
 const weatherStations = [
     // 1. EXISTING STATION (Old Table)
-    {
-        id: 'weather-v2',
-        name: 'Neeleeswaram Weather Station',
-        location: ' Malayattoor, Kerala 683587',
-        coordinates: [10.18638769282108, 76.4884866440563],
-        status: 'active',
-        description: 'Primary weather monitoring station for real-time atmospheric data collection'
-
-    },
+  
     // 2. NEW STATION (New Table)
     {
         id: 'aws-asiet-v1', // This ID matches your new DynamoDB key
