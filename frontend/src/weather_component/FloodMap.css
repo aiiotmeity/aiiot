@@ -1,0 +1,45 @@
+/*
+  FloodMap.css
+
+  NOTE: this file was empty before — it was imported in FloodMap.js
+  (`import "./FloodMap.css"`) but had no rules, so the map was running
+  entirely on Leaflet's own default styles.
+
+  THE "HAND CONTROLLER" ISSUE
+  ----------------------------
+  By default, Leaflet applies a hand/"grab" cursor to the ENTIRE map
+  container (leaflet-container) to indicate the map itself can be
+  dragged/panned. That cursor shows up everywhere on the map, not just
+  over things you can actually click — so users see a hand pointer over
+  empty water/land with nothing under it, and it looks broken or
+  inconsistent when nothing happens on click.
+
+  The only things that are genuinely clickable are your CircleMarker
+  points, which Leaflet tags with the class "leaflet-interactive".
+
+  FIX: turn off the hand/grab cursor on the map background, and make
+  sure only real interactive elements (markers, popups) show a pointer.
+*/
+
+/* Map background: plain cursor, not a hand */
+.leaflet-container {
+  cursor: default !important;
+}
+
+/* Covers both the "grab" (idle) and "grabbing" (while dragging) states
+   that Leaflet swaps in as hand-shaped cursors */
+.leaflet-container.leaflet-grab,
+.leaflet-container.leaflet-touch-drag {
+  cursor: default !important;
+}
+
+.leaflet-container.leaflet-dragging.leaflet-grab,
+.leaflet-container.leaflet-dragging.leaflet-touch-drag {
+  cursor: default !important;
+}
+
+/* Actual clickable things (your flood-risk markers) keep a pointer
+   cursor, so it's clear which spots really respond to clicks */
+.leaflet-interactive {
+  cursor: pointer !important;
+}

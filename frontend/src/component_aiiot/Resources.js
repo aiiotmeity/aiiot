@@ -365,7 +365,7 @@ const ResourcesPage = () => {
                                 </span>
                             </li>
                             <li>
-                                <span className="badge-status communicated">Communicated</span>
+                                <span className="badge-status communicated">Published</span>
                                 <strong> "A Comparative Analysis of Conventional Methods for Sensor-Driven Spatial Interpolation for Air Quality Monitoring"</strong>
                                 <br />
                                 <span className="text-muted">

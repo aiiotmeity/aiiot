@@ -482,7 +482,9 @@ class S3PresignView(APIView):
 
 @require_GET
 def debug_read_s3_csv(request):
+    print("🔍 entering into debug_read_s3_csv")
     file_name = request.GET.get('file', 'forecast_output.csv')
+    print(f"🔍 Requested file: {file_name}")
 
     bucket = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST', 'aqi-training')
     region = os.getenv('AWS_S3_REGION_NAME_BUCKET', 'ap-south-1')
