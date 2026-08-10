@@ -26,8 +26,8 @@ const RiverDashboard = () => {
   const getStatus = (level) => {
     const val = parseFloat(level);
     if (isNaN(val)) return { label: "--", class: "status-unknown", color: "#ccc", icon: "fa-question-circle" };
-    if (val < 3) return { label: "Normal", class: "status-normal", color: "#10b981", icon: "fa-check-circle" }; 
-    if (val < 8.0) return { label: "Caution", class: "status-caution", color: "#f59e0b", icon: "fa-exclamation-circle" }; 
+    if (val < 8) return { label: "Normal", class: "status-normal", color: "#10b981", icon: "fa-check-circle" }; 
+    if (val < 11) return { label: "Caution", class: "status-caution", color: "#f59e0b", icon: "fa-exclamation-circle" }; 
     return { label: "Warning", class: "status-critical", color: "#ef4444", icon: "fa-radiation-alt" }; 
   };
 
@@ -202,7 +202,7 @@ const RiverDashboard = () => {
               <div className="rd-timeline-flex">
                 {forecastData.slice(-7).map((data, index) => {
   const levelNumber = parseFloat(data.level);
-  const maxExpectedLevel = 8.0; 
+  const maxExpectedLevel = 11.0; 
   const fillPercentage = Math.min((levelNumber / maxExpectedLevel) * 100, 100);
 
   return (
