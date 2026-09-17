@@ -172,10 +172,50 @@ def safe_float_conversion(value):
 
 def truncate_nanoseconds(timestamp):
     """Truncates nanoseconds from a timestamp string for correct parsing."""
+    if timestamp is None:
+        return None
+    timestamp = str(timestamp).strip()
+    if not timestamp:
+        return None
     if '.' in timestamp:
         parts = timestamp.split('.')
         return f"{parts[0]}.{parts[1][:6]}Z"
     return timestamp
+
+
+def parse_received_at(value):
+    """Parse ISO and Unix timestamps from DynamoDB values."""
+    if value is None:
+        return None
+
+    if isinstance(value, (int, float)):
+        numeric = float(value)
+        if abs(numeric) > 1e12:
+            numeric = numeric / 1000.0
+        return datetime.fromtimestamp(numeric, tz=timezone.utc).replace(tzinfo=None)
+
+    value_str = str(value).strip()
+    if not value_str:
+        return None
+
+    if value_str.isdigit() or (value_str.startswith('-') and value_str[1:].isdigit()):
+        numeric = float(value_str)
+        if abs(numeric) > 1e12:
+            numeric = numeric / 1000.0
+        return datetime.fromtimestamp(numeric, tz=timezone.utc).replace(tzinfo=None)
+
+    for fmt in ('%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%d %H:%M:%S', '%d:%m:%Y %H:%M', '%d:%m:%Y'):
+        try:
+            if fmt in ('%Y-%m-%d %H:%M:%S', '%d:%m:%Y %H:%M', '%d:%m:%Y'):
+                return datetime.strptime(value_str, fmt)
+            return datetime.strptime(truncate_nanoseconds(value_str), fmt)
+        except ValueError:
+            continue
+
+    try:
+        return datetime.fromisoformat(value_str.replace('Z', '+00:00')).replace(tzinfo=None)
+    except ValueError:
+        return None
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """Calculate distance between two points using Haversine formula."""
@@ -516,14 +556,15 @@ def process_device_items(items):
     if not items:
         return None, {}, {}, None
 
-    # ... (parsing and sorting logic remains the same) ...
     for item in items:
         item.update(parse_payload(item.get('payload', {})))
+
+    def sort_key(item):
+        dt = parse_received_at(item.get('received_at'))
+        return dt if dt is not None else datetime.min
+
     try:
-        items.sort(
-            key=lambda x: datetime.strptime(truncate_nanoseconds(x['received_at']), '%Y-%m-%dT%H:%M:%S.%fZ'),
-            reverse=True
-        )
+        items.sort(key=sort_key, reverse=True)
     except (ValueError, TypeError):
         pass
 
@@ -549,8 +590,8 @@ def process_device_items(items):
             except (ValueError, TypeError):
                 latest_item['last_updated_on'] = "Invalid date/time"
         else:
-            db_timestamp = datetime.strptime(truncate_nanoseconds(latest_item['received_at']), '%Y-%m-%dT%H:%M:%S.%fZ')
-            latest_item['last_updated_on'] = db_timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            db_timestamp = parse_received_at(latest_item.get('received_at'))
+            latest_item['last_updated_on'] = db_timestamp.strftime('%Y-%m-%d %H:%M:%S') if db_timestamp is not None else 'Unknown time'
     
     # ... (The rest of the function for calculations remains the same) ...
     latest_24_items = items[:24]
@@ -684,14 +725,13 @@ class HomeAPI(APIView):
             return Response(response_data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            # --- CATCH THE ERROR AND RETURN FALLBACK DATA ---
-            logger.error(f"HomeAPI failed to fetch live data: {e}. Serving fallback response.")
-            
+            logger.error(f"HomeAPI failed to fetch live data: {e}. Returning no-data response.")
+
             fallback_response = {
-                'highest_sub_index': 42,
-                'aqi_status': 'Good',
+                'highest_sub_index': None,
+                'aqi_status': 'NO DATA',
                 'station_name': 'ASIET Campus',
-                'last_updated_on': 'Showing recent data',
+                'last_updated_on': 'No live data available',
             }
             return Response(fallback_response, status=status.HTTP_200_OK)
         

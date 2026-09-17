@@ -635,9 +635,9 @@ function Dashboard() {
         method: 'location_interpolation',
         values: { pm25: 24, pm10: 40, so2: 7, no2: 38, co: 1.0, o3: 45, nh3: 90, temp: 28, hum: 65, pre: 1013 },
         aqi: 48,
-        station_name: 'Your Location (Sample)',
+        station_name: 'Your Location',
         is_interpolated: true,
-        distance_message: '🎯 Showing sample interpolated data for your location.'
+        distance_message: '🎯 Showing interpolated data for your location.'
       });
     } else {
       // Mimic default

@@ -112,17 +112,25 @@ const createStationPopupContent = (station, stationId) => {
         { key: 'pre', name: 'Pressure', unit: 'hPa' }
     ];
 
-    // 2. Dynamically filter out missing sensors
-    // 2. Dynamically filter out missing sensors using ONLY the raw payload (matching the sidebar)
+    const hasMeasurement = (raw = {}, avg = {}, key) => {
+        if (key === 'temp') {
+            return raw.temp !== undefined || raw.temperature !== undefined || avg.temp !== undefined || avg.temperature !== undefined;
+        }
+        if (key === 'humidity') {
+            return raw.hum !== undefined || raw.humidity !== undefined || avg.hum !== undefined || avg.humidity !== undefined;
+        }
+        if (key === 'pre') {
+            return raw.pre !== undefined || raw.pressure !== undefined || avg.pre !== undefined || avg.pressure !== undefined;
+        }
+
+        return raw[key] !== undefined || avg[key] !== undefined;
+    };
+
+    // 2. Dynamically filter out missing sensors using both latest readings and averages
     const activePollutants = masterPollutants.filter(p => {
         const raw = latest_readings || {};
-        
-        if (p.key === 'temp') return raw.temp !== undefined || raw.temperature !== undefined;
-        if (p.key === 'humidity') return raw.hum !== undefined || raw.humidity !== undefined;
-        if (p.key === 'pre') return raw.pre !== undefined || raw.pressure !== undefined;
-        
-        // For pollutants, check if the sensor physically sent data in the latest reading
-        return raw[p.key] !== undefined && raw[p.key] !== null;
+        const avg = averages || {};
+        return hasMeasurement(raw, avg, p.key);
     });
 
     // 3. Generate HTML only for active sensors
@@ -132,14 +140,14 @@ const createStationPopupContent = (station, stationId) => {
         const avg = averages || {};
 
         if (p.key === 'temp') {
-            displayValue = raw.temp ?? raw.temperature ?? 'N/A';
+            displayValue = raw.temp ?? raw.temperature ?? avg.temp ?? avg.temperature ?? 'N/A';
         } else if (p.key === 'humidity') {
-            displayValue = raw.hum ?? raw.humidity ?? 'N/A';
+            displayValue = raw.hum ?? raw.humidity ?? avg.hum ?? avg.humidity ?? 'N/A';
         } else if (p.key === 'pre') {
-            displayValue = raw.pre ?? raw.pressure ?? 'N/A';
+            displayValue = raw.pre ?? raw.pressure ?? avg.pre ?? avg.pressure ?? 'N/A';
         } else {
-            const value = avg[p.key];
-            displayValue = value !== undefined && value !== null ? value.toFixed(2) : 'N/A';
+            const value = avg[p.key] ?? raw[p.key];
+            displayValue = value !== undefined && value !== null ? Number(value).toFixed(2) : 'N/A';
         }
 
         return `
@@ -711,16 +719,26 @@ const MapPage = () => {
         { key: 'pre', name: 'Pressure', unit: 'hPa' },
     ];
 
+    const hasMeasurement = (raw = {}, avg = {}, key) => {
+        if (key === 'temp') {
+            return raw.temp !== undefined || raw.temperature !== undefined || avg.temp !== undefined || avg.temperature !== undefined;
+        }
+        if (key === 'humidity') {
+            return raw.hum !== undefined || raw.humidity !== undefined || avg.hum !== undefined || avg.humidity !== undefined;
+        }
+        if (key === 'pre') {
+            return raw.pre !== undefined || raw.pressure !== undefined || avg.pre !== undefined || avg.pressure !== undefined;
+        }
+
+        return raw[key] !== undefined || avg[key] !== undefined;
+    };
+
     // 2. Dynamically filter to only show cards for data the sensor actually sends
-    const activePollutants = selectedStationData && selectedStationData.latest_readings
+    const activePollutants = selectedStationData
         ? pollutants.filter(p => {
-            const raw = selectedStationData.latest_readings;
-            // Handle naming variations from different sensors
-            if (p.key === 'temp') return raw.temp !== undefined || raw.temperature !== undefined;
-            if (p.key === 'humidity') return raw.hum !== undefined || raw.humidity !== undefined;
-            if (p.key === 'pre') return raw.pre !== undefined || raw.pressure !== undefined;
-            // Otherwise, check if the exact key exists in the database payload
-            return raw[p.key] !== undefined;
+            const raw = selectedStationData.latest_readings || {};
+            const avg = selectedStationData.averages || {};
+            return hasMeasurement(raw, avg, p.key);
         })
         : [];
 
@@ -730,11 +748,12 @@ const MapPage = () => {
         const raw = selectedStationData.latest_readings || {};
         const avg = selectedStationData.averages || {};
 
-        if (key === 'temp') return raw.temp ?? raw.temperature ?? 'N/A';
-        if (key === 'humidity') return raw.hum ?? raw.humidity ?? 'N/A';
-        if (key === 'pre') return raw.pre ?? raw.pressure ?? 'N/A';
+        if (key === 'temp') return raw.temp ?? raw.temperature ?? avg.temp ?? avg.temperature ?? 'N/A';
+        if (key === 'humidity') return raw.hum ?? raw.humidity ?? avg.hum ?? avg.humidity ?? 'N/A';
+        if (key === 'pre') return raw.pre ?? raw.pressure ?? avg.pre ?? avg.pressure ?? 'N/A';
 
-        return avg[key] !== undefined ? avg[key].toFixed(2) : 'N/A';
+        const value = avg[key] ?? raw[key];
+        return value !== undefined && value !== null ? Number(value).toFixed(2) : 'N/A';
     };
 
     // === FORECAST CHART CONFIGURATION ===

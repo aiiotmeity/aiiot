@@ -226,15 +226,15 @@ const FloodMap = () => {
 
   if (loading) return <div className="rd-loading"><div className="rd-spinner"></div><p>Syncing Satellite Data...</p></div>;
 
-  const threshold = floodData?.current_water_level || 3.5;
-  const isNormalState = threshold <= 3.0;
+  const threshold = floodData?.current_water_level || 8.0;
+  const isNormalState = threshold <= 8.0;
   const severeZones = floodData?.data?.filter(d => d.depth >= threshold) || [];
   const otherZones = floodData?.data?.filter(d => d.depth < threshold) || [];
   const currentSevere = severeZones.slice((severePage - 1) * ITEMS_PER_PAGE, severePage * ITEMS_PER_PAGE);
 
   const getAlert = (level) => {
-    if (level < 3) return { title: "Conditions Normal", message: "Water levels are safe.", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", icon: "fa-check-circle" };
-    if (level < 8) return { title: "Caution: Rising Water", message: "Monitoring required.", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)", icon: "fa-exclamation-circle" };
+    if (level < 8) return { title: "Conditions Normal", message: "Water levels are safe.", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", icon: "fa-check-circle" };
+    if (level < 11) return { title: "Caution: Rising Water", message: "Monitoring required.", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)", icon: "fa-exclamation-circle" };
     return { title: "⚠️ Flood Warning", message: "Extreme risk detected.", color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)", icon: "fa-exclamation-triangle" };
   };
 

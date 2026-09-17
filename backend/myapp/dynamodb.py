@@ -40,13 +40,6 @@ def initialize_aws_resources():
         except ImportError:
             pass
         
-        # Force set environment variables if not available
-        if not os.getenv('AWS_ACCESS_KEY_ID'):
-            os.environ['AWS_ACCESS_KEY_ID'] = 'AKIAWX2IF6FQ5PMWSN7G'
-            os.environ['AWS_SECRET_ACCESS_KEY'] = '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'
-            os.environ['AWS_S3_REGION_NAME'] = 'us-east-1'
-            os.environ['AWS_STORAGE_BUCKET_NAME'] = 'ai-model-bucket-output'
-        
         aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
         aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
         aws_region = os.getenv('AWS_S3_REGION_NAME', 'us-east-1')
