@@ -68,7 +68,8 @@ const RiverDashboard = () => {
     const fetchRealTimeLevel = async () => {
       try {
         const response = await fetchWithRetry(DEBUG_API, { 
-          params: { file: "hourly_averages/STA_01_MASTER_LOG.csv", _t: new Date().getTime() } 
+          // params: { file: "hourly_averages/STA_01_MASTER_LOG.csv", _t: new Date().getTime() } 
+          params: { file: "aqi-training/latest_water_level.csv", _t: new Date().getTime() } 
         });
         if (response.data.status === "success" && response.data.preview.length > 0) {
           const rawLines = response.data.preview;

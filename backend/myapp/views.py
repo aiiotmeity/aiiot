@@ -2517,6 +2517,7 @@ def admin_export_data_api(request):
             data = list(users)
         elif export_type == 'health_assessments':
             assessments = HealthAssessment.objects.select_related('user').all()
+            print(assessments.query)
             data = [{
                 'id': a.id,
                 'user_name': a.user.name,

@@ -124,9 +124,9 @@ const handleOpenDemandForecasting = () => {
               {/* <a href="https://www.india.gov.in" target="_blank" rel="noopener noreferrer">
                 Govt.of India
               </a> */}
-              <a href="https://moes.gov.in" target="_blank" rel="noopener noreferrer">
+              {/* <a href="https://moes.gov.in" target="_blank" rel="noopener noreferrer">
                 Ministry of Earth Sciences
-              </a>
+              </a> */}
             </div>
             <div className="header-time">
               {currentTime.toLocaleString('en-IN', {
