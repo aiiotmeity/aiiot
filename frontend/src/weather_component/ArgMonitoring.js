@@ -58,9 +58,6 @@ const fmtAge = (sec) => {
 
 const fmtVal = (v, unit = '') => (v === null || v === undefined ? '--' : `${v}${unit}`);
 
-// -39 °C means the temperature/humidity sensor is not connected
-const isFault = (row) => row && row.temperature !== null && row.temperature <= -39;
-
 const ArgMonitoring = () => {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -119,9 +116,7 @@ const ArgMonitoring = () => {
       .filter((_, i) => i % step === 0 || i === rows.length - 1)
       .map(r => ({
         ...r,
-        label: hours > 24 ? fmtDateTime(r.timestamp) : fmtTime(r.timestamp),
-        temperature: isFault(r) ? null : r.temperature,
-        humidity: isFault(r) ? null : r.humidity
+        label: hours > 24 ? fmtDateTime(r.timestamp) : fmtTime(r.timestamp)
       }));
   }, [rows, hours]);
 
@@ -155,7 +150,6 @@ const ArgMonitoring = () => {
   }, [page, totalPages]);
 
   const latest = data?.latest;
-  const fault = isFault(latest);
   const online = data?.status === 'ONLINE';
   const summary = data?.summary || {};
 
@@ -223,13 +217,6 @@ const ArgMonitoring = () => {
             <i className="fas fa-exclamation-triangle"></i> {error}
           </div>
         )}
-        {fault && (
-          <div className="arg-alert warn">
-            <i className="fas fa-tools"></i> Temperature/humidity sensor not responding
-            (reading -39 °C). Rainfall data is unaffected.
-          </div>
-        )}
-
         {loading && !data ? (
           <div className="arg-empty">Loading live data...</div>
         ) : !data ? (
@@ -251,10 +238,10 @@ const ArgMonitoring = () => {
                 <div>
                   <div className="arg-kpi-label">Temperature</div>
                   <div className="arg-kpi-value">
-                    {fault ? <em>---</em> : <>{fmtVal(latest.temperature)}<span> °C</span></>}
+                    {fmtVal(latest.temperature)}<span> °C</span>
                   </div>
                   <div className="arg-kpi-sub">
-                    {fault ? '—' : `Min ${fmtVal(summary.min_temperature)} / Max ${fmtVal(summary.max_temperature)} °C`}
+                    Min {fmtVal(summary.min_temperature)} / Max {fmtVal(summary.max_temperature)} °C
                   </div>
                 </div>
               </div>
@@ -263,9 +250,9 @@ const ArgMonitoring = () => {
                 <div>
                   <div className="arg-kpi-label">Humidity</div>
                   <div className="arg-kpi-value">
-                    {fault ? <em>---</em> : <>{fmtVal(latest.humidity)}<span> %</span></>}
+                    {fmtVal(latest.humidity)}<span> %</span>
                   </div>
-                  <div className="arg-kpi-sub">{fault ? '—' : `Average: ${fmtVal(summary.avg_humidity, ' %')}`}</div>
+                  <div className="arg-kpi-sub">Average: {fmtVal(summary.avg_humidity, ' %')}</div>
                 </div>
               </div>
               <div className="arg-kpi count">
@@ -362,8 +349,8 @@ const ArgMonitoring = () => {
                         <td>{fmtDateTime(r.timestamp)} {isNewest && <span className="arg-new">LATEST</span>}</td>
                         <td>{r.id}</td>
                         <td>{fmtVal(r.rainfall)}</td>
-                        <td>{isFault(r) ? <span className="arg-err">---</span> : fmtVal(r.temperature)}</td>
-                        <td>{isFault(r) ? <span className="arg-err">---</span> : fmtVal(r.humidity)}</td>
+                        <td>{fmtVal(r.temperature)}</td>
+                        <td>{fmtVal(r.humidity)}</td>
                       </tr>
                       );
                     })}
