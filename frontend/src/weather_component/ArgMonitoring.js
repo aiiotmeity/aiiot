@@ -200,11 +200,11 @@ const ArgMonitoring = () => {
       <main className="arg-main">
         {/* Live info bar */}
         <div className="arg-livebar">
-          <div>
+          {/* <div>
             
             
             {latest && <> Reading time <strong>{fmtDateTime(latest.timestamp)}</strong></>}
-          </div>
+          </div> */}
           
         </div>
 
@@ -226,7 +226,6 @@ const ArgMonitoring = () => {
                 <div>
                   <div className="arg-kpi-label">Rainfall (RFD)</div>
                   <div className="arg-kpi-value">{fmtVal(latest.rainfall)}<span> mm</span></div>
-                  <div className="arg-kpi-sub">Max in range: {fmtVal(summary.max_rainfall, ' mm')}</div>
                 </div>
               </div>
               <div className="arg-kpi temp">
@@ -236,9 +235,7 @@ const ArgMonitoring = () => {
                   <div className="arg-kpi-value">
                     {fmtVal(latest.temperature)}<span> °C</span>
                   </div>
-                  <div className="arg-kpi-sub">
-                    Min {fmtVal(summary.min_temperature)} / Max {fmtVal(summary.max_temperature)} °C
-                  </div>
+                  
                 </div>
               </div>
               <div className="arg-kpi hum">
@@ -248,7 +245,6 @@ const ArgMonitoring = () => {
                   <div className="arg-kpi-value">
                     {fmtVal(latest.humidity)}<span> %</span>
                   </div>
-                  <div className="arg-kpi-sub">Average: {fmtVal(summary.avg_humidity, ' %')}</div>
                 </div>
               </div>
               <div className="arg-kpi count">
