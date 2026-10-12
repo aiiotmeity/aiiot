@@ -184,12 +184,8 @@ const ArgMonitoring = () => {
       </h1>
 
       <p>
-        Illithode &amp; Kuttampuzha · Upstream Rainfall Monitoring
-      </p>
-
-      <p>
-        Upstream rainfall monitoring supports improved river-flow
-        assessment and flood preparedness at Kalady.
+        Stations at Illithode and Kuttampuzha track rainfall to support
+        river-flow assessment and flood preparedness in Kalady.
       </p>
 
       {/* <p>
