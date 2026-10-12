@@ -154,35 +154,47 @@
 /* Header Actions - Cohesive Buttons */
 .weather-homepage-container .header-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.65rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .weather-homepage-container .btn {
-  padding: 0.75rem 1.25rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
+  min-height: 46px;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 600;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  gap: 0.55rem;
+  font-size: 0.86rem;
   text-align: center;
   justify-content: center;
   font-family: inherit;
+  white-space: nowrap;
+}
+
+.weather-homepage-container .header-actions .btn i {
+  font-size: 0.9rem;
+  opacity: 0.9;
 }
 
 .weather-homepage-container .btn:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+}
+
+.weather-homepage-container .btn:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 3px;
 }
 
 .weather-homepage-container .btn-primary {
-  background: var(--accent-green);
+  background: #1d4ed8;
   color: var(--white);
 }
 .weather-homepage-container .btn-primary:hover {
@@ -198,19 +210,29 @@
 }
 
 .weather-homepage-container .btn-info {
-  background: #0284c7 !important;
-  color: var(--white) !important;
+  background: #0284c7;
+  color: var(--white);
 }
 .weather-homepage-container .btn-info:hover {
-  background: #0369a1 !important;
+  background: #0369a1;
+}
+
+.weather-homepage-container .btn-arg {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+.weather-homepage-container .btn-arg:hover {
+  background: #dbeafe;
 }
 
 .weather-homepage-container .btn-secondary {
-  background: #475569;
-  color: var(--white);
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #e2e8f0;
 }
 .weather-homepage-container .btn-secondary:hover {
-  background: #334155;
+  background: #e2e8f0;
 }
 
 .weather-homepage-container .btn-outline {
@@ -666,7 +688,7 @@
     width: 100%;
   }
   .weather-homepage-container .btn {
-    width: calc(50% - 0.5rem);
+    width: auto;
   }
 }
 
@@ -701,8 +723,28 @@
 }
 
 @media (max-width: 480px) {
+  .weather-homepage-container .header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
   .weather-homepage-container .btn {
     width: 100%;
+    min-height: 48px;
+    padding: 0.65rem 0.55rem;
+    font-size: 0.78rem;
+    white-space: normal;
+  }
+
+  .weather-homepage-container .header-actions .btn:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weather-homepage-container .btn {
+    transition: none;
   }
 }
 

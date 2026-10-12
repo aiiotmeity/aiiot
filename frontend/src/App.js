@@ -24,6 +24,7 @@ import PrivacyPolicy from './component_aiiot/PrivacyPolicy';
 import FloodMap from './weather_component/FloodMap';
 import DemandForecasting from './weather_component/DemandForecasting';
 import AiiotChatWidget from './component_aiiot/AiiotChatWidget';
+import ArgRainfall from './weather_component/ArgMonitoring';
 
 // Session Manager
 const SessionManager = {
@@ -270,6 +271,8 @@ function App() {
           <Route path="/weather-map" element={<MapComponent />} />
           <Route path="/river-forecast" element={<RiverDashboard />} />
           <Route path="/flood-analysis" element={<FloodMap />} />
+          <Route path="/demand-forecasting" element={<DemandForecasting />} />  
+          <Route path="/arg-monitoring" element={<ArgRainfall />} />/>
           
 
           {/* Protected Routes with Health Assessment Check */}
@@ -331,6 +334,5 @@ function App() {
 }
 
 export default App;
-
 
 

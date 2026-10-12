@@ -9,6 +9,30 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://aiiot-1.onrender.com'
   : 'http://localhost:8000';
 
+// --- ARG (Automatic Rain Gauge) CONFIGURATION ---
+const ARG_STATION_ID = 'ARGS1';
+// Minutes to add to the logger timestamp before display.
+// 0 = show as recorded. Set to 330 if the logger clock is UTC and you want IST.
+const ARG_TIME_OFFSET_MIN = 0;
+
+const formatArgTime = (ts, withDate = true) => {
+  if (!ts) return '--';
+  const d = new Date(ts);
+  if (isNaN(d)) return ts;
+  d.setMinutes(d.getMinutes() + ARG_TIME_OFFSET_MIN);
+  const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (!withDate) return time;
+  const date = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  return `${date}, ${time}`;
+};
+
+// Temperature at -39 °C with 0% humidity means the T/RH sensor is not connected
+const isArgSensorFault = (row) =>
+  row && row.temperature !== null && row.temperature <= -39;
+
+const formatArgValue = (value, unit) =>
+  value === null || value === undefined ? '--' : `${value}${unit}`;
+
 const WeatherHomepage = ({ onNavigateToWeather }) => {
   const navigate = useNavigate();
   const [currentWeather, setCurrentWeather] = useState(null);
@@ -19,6 +43,13 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
   const [selectedDays, setSelectedDays] = useState(3);
   const [selectedMetric, setSelectedMetric] = useState('temperature');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // ARG rainfall station state
+  const [argData, setArgData] = useState([]);
+  const [argLatest, setArgLatest] = useState(null);
+  const [argLoading, setArgLoading] = useState(false);
+  const [argError, setArgError] = useState(null);
+  const [argMetric, setArgMetric] = useState('rainfall');
 
   // Update time every second
   useEffect(() => {
@@ -78,6 +109,45 @@ const WeatherHomepage = ({ onNavigateToWeather }) => {
   useEffect(() => {
     fetchHistoricalData(selectedDays);
   }, [selectedDays]);
+
+  // Fetch ARG rainfall data (from S3 via backend)
+  useEffect(() => {
+    const fetchArgData = async () => {
+      setArgLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/weather/arg-rainfall?station=${ARG_STATION_ID}&limit=96`);
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to fetch ARG data');
+        }
+        setArgData(result.data || []);
+        setArgLatest(result.latest || null);
+        setArgError(null);
+      } catch (error) {
+        console.error('Error fetching ARG data:', error);
+        setArgError(error.message || 'Failed to load ARG data');
+      } finally {
+        setArgLoading(false);
+      }
+    };
+
+    fetchArgData();
+    const interval = setInterval(fetchArgData, 300000); // Refresh every 5 minutes
+    return () => clearInterval(interval);
+  }, []);
+
+  const argChartData = useMemo(
+    () => argData.map(row => ({ ...row, label: formatArgTime(row.timestamp) })),
+    [argData]
+  );
+
+  const argMetricOptions = [
+    { value: 'rainfall', label: 'Rainfall (mm)', color: '#0284c7' },
+    { value: 'temperature', label: 'Temperature (°C)', color: '#ea580c' },
+    { value: 'humidity', label: 'Humidity (%)', color: '#059669' }
+  ];
+  const activeArgMetric = argMetricOptions.find(m => m.value === argMetric);
+  const argFault = isArgSensorFault(argLatest);
 
   const chartData = useMemo(() => {
     if (!historicalData || historicalData.length === 0) return [];
@@ -170,14 +240,21 @@ const handleOpenDemandForecasting = () => {
   {/* --- NEWLY ADDED WATER DEMAND REDIRECT BUTTON --- */}
   <button 
     className="btn btn-info"
-    style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none' }}
     onClick={handleOpenDemandForecasting}
   >
-    <i className="fas fa-chart-pie" style={{ marginRight: '8px' }}></i>
+    <i className="fas fa-chart-pie"></i>
     Water Demand Forecast
   </button>
 
-  <button 
+  <button
+    className="btn btn-arg"
+    onClick={() => navigate('/arg-monitoring')}
+  >
+    <i className="fas fa-cloud-rain"></i>
+    ARG Monitoring
+  </button>
+
+  <button
     className="btn btn-secondary"
     onClick={handleDataRequest}
   >
@@ -205,6 +282,12 @@ const handleOpenDemandForecasting = () => {
     <ul className={`nav-menu ${mobileMenuOpen ? 'active' : ''}`}>
       <li className="nav-item">
         <a href="/" className="nav-link active">Home</a>
+      </li>
+
+      <li className="nav-item">
+        <a href="#arg-rainfall" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
+          Rainfall (ARG)
+        </a>
       </li>
 
       <li className="nav-item">
@@ -268,6 +351,108 @@ const handleOpenDemandForecasting = () => {
               </a>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ARG Rainfall Data Section */}
+      <section id="arg-rainfall" className="arg-section">
+        <div className="arg-container">
+          <div className="section-header">
+            <h2>Rainfall Data (ARG)</h2>
+            <p>Automatic Rain Gauge station {ARG_STATION_ID}: rainfall, temperature and humidity</p>
+          </div>
+
+          {argLoading && !argLatest ? (
+            <div className="arg-message">Loading ARG data...</div>
+          ) : argError && !argLatest ? (
+            <div className="arg-message arg-error">
+              <i className="fas fa-exclamation-triangle"></i> {argError}
+            </div>
+          ) : argLatest ? (
+            <>
+              <div className="arg-cards">
+                <div className="arg-card">
+                  <div className="arg-card-icon arg-rain"><i className="fas fa-cloud-rain"></i></div>
+                  <div className="arg-card-label">Rainfall</div>
+                  <div className="arg-card-value">{formatArgValue(argLatest.rainfall, ' mm')}</div>
+                </div>
+                <div className="arg-card">
+                  <div className="arg-card-icon arg-temp"><i className="fas fa-thermometer-half"></i></div>
+                  <div className="arg-card-label">Temperature</div>
+                  <div className="arg-card-value">
+                    {argFault ? <span className="arg-fault">Sensor error</span> : formatArgValue(argLatest.temperature, ' °C')}
+                  </div>
+                </div>
+                <div className="arg-card">
+                  <div className="arg-card-icon arg-hum"><i className="fas fa-tint"></i></div>
+                  <div className="arg-card-label">Humidity</div>
+                  <div className="arg-card-value">
+                    {argFault ? <span className="arg-fault">Sensor error</span> : formatArgValue(argLatest.humidity, ' %')}
+                  </div>
+                </div>
+                <div className="arg-card">
+                  <div className="arg-card-icon arg-time"><i className="fas fa-clock"></i></div>
+                  <div className="arg-card-label">Last Update</div>
+                  <div className="arg-card-value arg-card-small">{formatArgTime(argLatest.timestamp)}</div>
+                </div>
+              </div>
+
+              <div className="arg-chart-card">
+                <div className="arg-chart-header">
+                  <h3>Recent Readings</h3>
+                  <div className="arg-tabs">
+                    {argMetricOptions.map(option => (
+                      <button
+                        key={option.value}
+                        className={`arg-tab ${argMetric === option.value ? 'active' : ''}`}
+                        onClick={() => setArgMetric(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={argChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="label" fontSize={11} stroke="#666" minTickGap={30} />
+                    <YAxis stroke="#666" fontSize={11} />
+                    <Tooltip />
+                    <Bar dataKey={argMetric} name={activeArgMetric.label} fill={activeArgMetric.color} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="arg-table-card">
+                <h3>Latest 10 Readings</h3>
+                <div className="arg-table-wrap">
+                  <table className="arg-table">
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Rainfall (mm)</th>
+                        <th>Temperature (°C)</th>
+                        <th>Humidity (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...argData].reverse().slice(0, 10).map(row => (
+                        <tr key={row.timestamp}>
+                          <td>{formatArgTime(row.timestamp)}</td>
+                          <td>{formatArgValue(row.rainfall, '')}</td>
+                          <td>{isArgSensorFault(row) ? <span className="arg-fault">Error</span> : formatArgValue(row.temperature, '')}</td>
+                          <td>{isArgSensorFault(row) ? <span className="arg-fault">Error</span> : formatArgValue(row.humidity, '')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="arg-message">No ARG data available yet.</div>
+          )}
         </div>
       </section>
 

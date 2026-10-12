@@ -8,6 +8,8 @@ from boto3.dynamodb.conditions import Attr, Key
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
+import io
+import csv
 import uuid,requests
 import os
 from dotenv import load_dotenv
@@ -27,6 +29,8 @@ try:
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
     AWS_REGION = os.getenv('AWS_S3_REGION_NAME', 'us-east-1')
     S3_BUCKET_FORECAST = os.getenv('AWS_STORAGE_BUCKET_NAME_FORECAST')
+    S3_BUCKET_RAINFALL = os.getenv('AWS_STORAGE_BUCKET_NAME_RAINFALL')
+
 
     if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
         s3_client = boto3.client(
@@ -740,3 +744,204 @@ def get_water_distribution_demand(request):
     except Exception as e:
         print(f"❌ Unexpected Error in water demand matrix acquisition: {str(e)}")
         return JsonResponse({"error": "Internal infrastructure communication failure."}, status=500)
+
+# =========================================================
+# ARG (Automatic Rain Gauge) STATION DATA
+# Reads the master log written by arg_processor.py on the droplet:
+#   s3://arg-station-data/arg-station1-data/ARGS1_MASTER_LOG.csv
+# Columns: ID, RFD(mm), T(c), RH(%), Timestamp
+# =========================================================
+ARG_S3_BUCKET = os.getenv('ARG_S3_BUCKET', 'arg-station-data')
+ARG_S3_PREFIX = os.getenv('ARG_S3_PREFIX', 'arg-station1-data/')
+ARG_S3_REGION = os.getenv('ARG_S3_REGION', 'ap-south-1')
+
+
+def _arg_float(value):
+    """Convert a CSV cell to float, or None if empty / not a number."""
+    try:
+        if value is None or str(value).strip() == '':
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+@require_GET
+def get_arg_rainfall_data(request):
+    """
+    GET /api/weather/arg-rainfall?station=ARGS1&limit=96
+    Returns the latest ARG reading plus recent history from S3.
+    """
+    station = request.GET.get('station', 'ARGS1').strip()
+    try:
+        limit = max(1, min(int(request.GET.get('limit', 96)), 2000))
+    except ValueError:
+        limit = 96
+
+    try:
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            region_name=ARG_S3_REGION
+        )
+
+        key = f"{ARG_S3_PREFIX}{station}_MASTER_LOG.csv"
+        try:
+            obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=key)
+        except ClientError as e:
+            if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
+                raise
+            # Fallback: use the newest CSV in the folder
+            listing = s3.list_objects_v2(Bucket=ARG_S3_BUCKET, Prefix=ARG_S3_PREFIX)
+            csv_objects = [o for o in listing.get('Contents', []) if o['Key'].endswith('.csv')]
+            if not csv_objects:
+                return JsonResponse({"error": f"No ARG data found in s3://{ARG_S3_BUCKET}/{ARG_S3_PREFIX}"}, status=404)
+            key = max(csv_objects, key=lambda o: o['LastModified'])['Key']
+            obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=key)
+
+        content = obj['Body'].read().decode('utf-8-sig')
+        reader = csv.DictReader(io.StringIO(content))
+
+        rows = []
+        for r in reader:
+            timestamp = (r.get('Timestamp') or '').strip()
+            if not timestamp:
+                continue
+            rows.append({
+                "id": (r.get('ID') or station).strip(),
+                "timestamp": timestamp,
+                "rainfall": _arg_float(r.get('RFD(mm)')),
+                "temperature": _arg_float(r.get('T(c)')),
+                "humidity": _arg_float(r.get('RH(%)')),
+            })
+
+        if not rows:
+            return JsonResponse({"error": "ARG file is empty"}, status=404)
+
+        rows.sort(key=lambda x: x['timestamp'])
+        recent = rows[-limit:]
+
+        return JsonResponse({
+            "station": station,
+            "source": f"s3://{ARG_S3_BUCKET}/{key}",
+            "latest": recent[-1],
+            "count": len(recent),
+            "data": recent
+        })
+
+    except ClientError as e:
+        code = e.response.get('Error', {}).get('Code', 'Unknown')
+        print(f"❌ ARG S3 error [{code}]: {e}")
+        return JsonResponse({"error": f"S3 access error: {code}"}, status=500)
+    except Exception as e:
+        print(f"❌ Error in get_arg_rainfall_data: {e}")
+        return JsonResponse({"error": "Failed to fetch ARG data"}, status=500)
+
+
+@require_GET
+def get_arg_realtime(request):
+    """
+    GET /api/weather/arg-realtime?station=ARGS1&hours=24
+    REAL-TIME ARG data: merges the hourly master log (CSV) with the live
+    readings pushed on every new file ({station}_LATEST.json).
+    """
+    station = request.GET.get('station', 'ARGS1').strip()
+    try:
+        hours = max(1, min(int(request.GET.get('hours', 24)), 24 * 30))
+    except ValueError:
+        hours = 24
+
+    try:
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            region_name=ARG_S3_REGION
+        )
+
+        merged = {}  # timestamp -> row (dedupes CSV + live readings)
+
+        def add_row(ts, rid, rf, t, rh):
+            ts = (ts or '').strip()
+            if not ts:
+                return
+            merged[ts] = {
+                "id": (rid or station).strip(),
+                "timestamp": ts,
+                "rainfall": _arg_float(rf),
+                "temperature": _arg_float(t),
+                "humidity": _arg_float(rh),
+            }
+
+        # 1. Hourly master log (history)
+        try:
+            obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=f"{ARG_S3_PREFIX}{station}_MASTER_LOG.csv")
+            content = obj['Body'].read().decode('utf-8-sig')
+            for r in csv.DictReader(io.StringIO(content)):
+                add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
+        except ClientError as e:
+            if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
+                raise
+
+        # 2. Live readings (newest, not yet in the hourly log)
+        live_updated_epoch = None
+        try:
+            obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=f"{ARG_S3_PREFIX}{station}_LATEST.json")
+            live = json.loads(obj['Body'].read().decode('utf-8'))
+            live_updated_epoch = live.get('updated_at_epoch')
+            for r in (live.get('pending') or []) + [live.get('latest') or {}]:
+                add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
+        except ClientError as e:
+            if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
+                raise
+
+        if not merged:
+            return JsonResponse({"error": f"No ARG data found for {station}"}, status=404)
+
+        rows = sorted(merged.values(), key=lambda x: x['timestamp'])
+        latest = rows[-1]
+
+        # Keep only the requested window, counted back from the newest reading
+        try:
+            newest_dt = datetime.fromisoformat(latest['timestamp'])
+            cutoff = (newest_dt - timedelta(hours=hours)).isoformat()
+            window = [r for r in rows if r['timestamp'] >= cutoff]
+        except ValueError:
+            window = rows[-hours * 4:]
+
+        now_epoch = int(datetime.now(timezone.utc).timestamp())
+        age_seconds = (now_epoch - live_updated_epoch) if live_updated_epoch else None
+
+        def stat(key, fn):
+            vals = [r[key] for r in window if r[key] is not None
+                    # skip temp/humidity from readings where the sensor is faulty (-39 °C)
+                    and (key == 'rainfall' or r['temperature'] is None or r['temperature'] > -39)]
+            return fn(vals) if vals else None
+
+        return JsonResponse({
+            "station": station,
+            "latest": latest,
+            "server_epoch": now_epoch,
+            "last_received_epoch": live_updated_epoch,
+            "last_received_age_sec": age_seconds,
+            # Station sends every 15 min, so >30 min without data = offline
+            "status": "ONLINE" if age_seconds is not None and age_seconds < 1800 else "OFFLINE",
+            "summary": {
+                "max_rainfall": stat('rainfall', max),
+                "max_temperature": stat('temperature', max),
+                "min_temperature": stat('temperature', min),
+                "avg_humidity": stat('humidity', lambda v: round(sum(v) / len(v), 1)),
+            },
+            "count": len(window),
+            "data": window
+        })
+
+    except ClientError as e:
+        code = e.response.get('Error', {}).get('Code', 'Unknown')
+        print(f"❌ ARG realtime S3 error [{code}]: {e}")
+        return JsonResponse({"error": f"S3 access error: {code}"}, status=500)
+    except Exception as e:
+        print(f"❌ Error in get_arg_realtime: {e}")
+        return JsonResponse({"error": "Failed to fetch ARG realtime data"}, status=500)
+ 
