@@ -284,11 +284,7 @@ const handleOpenDemandForecasting = () => {
         <a href="/" className="nav-link active">Home</a>
       </li>
 
-      <li className="nav-item">
-        <a href="#arg-rainfall" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
-          Rainfall (ARG)
-        </a>
-      </li>
+      
 
       <li className="nav-item">
         <a href="#about" className="nav-link">About</a>
@@ -354,107 +350,8 @@ const handleOpenDemandForecasting = () => {
         </div>
       </section>
 
-      {/* ARG Rainfall Data Section */}
-      <section id="arg-rainfall" className="arg-section">
-        <div className="arg-container">
-          <div className="section-header">
-            <h2>Rainfall Data (ARG)</h2>
-            <p>Automatic Rain Gauge station {ARG_STATION_ID}: rainfall, temperature and humidity</p>
-          </div>
-
-          {argLoading && !argLatest ? (
-            <div className="arg-message">Loading ARG data...</div>
-          ) : argError && !argLatest ? (
-            <div className="arg-message arg-error">
-              <i className="fas fa-exclamation-triangle"></i> {argError}
-            </div>
-          ) : argLatest ? (
-            <>
-              <div className="arg-cards">
-                <div className="arg-card">
-                  <div className="arg-card-icon arg-rain"><i className="fas fa-cloud-rain"></i></div>
-                  <div className="arg-card-label">Rainfall</div>
-                  <div className="arg-card-value">{formatArgValue(argLatest.rainfall, ' mm')}</div>
-                </div>
-                <div className="arg-card">
-                  <div className="arg-card-icon arg-temp"><i className="fas fa-thermometer-half"></i></div>
-                  <div className="arg-card-label">Temperature</div>
-                  <div className="arg-card-value">
-                    {argFault ? <span className="arg-fault">Sensor error</span> : formatArgValue(argLatest.temperature, ' °C')}
-                  </div>
-                </div>
-                <div className="arg-card">
-                  <div className="arg-card-icon arg-hum"><i className="fas fa-tint"></i></div>
-                  <div className="arg-card-label">Humidity</div>
-                  <div className="arg-card-value">
-                    {argFault ? <span className="arg-fault">Sensor error</span> : formatArgValue(argLatest.humidity, ' %')}
-                  </div>
-                </div>
-                <div className="arg-card">
-                  <div className="arg-card-icon arg-time"><i className="fas fa-clock"></i></div>
-                  <div className="arg-card-label">Last Update</div>
-                  <div className="arg-card-value arg-card-small">{formatArgTime(argLatest.timestamp)}</div>
-                </div>
-              </div>
-
-              <div className="arg-chart-card">
-                <div className="arg-chart-header">
-                  <h3>Recent Readings</h3>
-                  <div className="arg-tabs">
-                    {argMetricOptions.map(option => (
-                      <button
-                        key={option.value}
-                        className={`arg-tab ${argMetric === option.value ? 'active' : ''}`}
-                        onClick={() => setArgMetric(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={argChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" fontSize={11} stroke="#666" minTickGap={30} />
-                    <YAxis stroke="#666" fontSize={11} />
-                    <Tooltip />
-                    <Bar dataKey={argMetric} name={activeArgMetric.label} fill={activeArgMetric.color} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="arg-table-card">
-                <h3>Latest 10 Readings</h3>
-                <div className="arg-table-wrap">
-                  <table className="arg-table">
-                    <thead>
-                      <tr>
-                        <th>Time</th>
-                        <th>Rainfall (mm)</th>
-                        <th>Temperature (°C)</th>
-                        <th>Humidity (%)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...argData].reverse().slice(0, 10).map(row => (
-                        <tr key={row.timestamp}>
-                          <td>{formatArgTime(row.timestamp)}</td>
-                          <td>{formatArgValue(row.rainfall, '')}</td>
-                          <td>{isArgSensorFault(row) ? <span className="arg-fault">Error</span> : formatArgValue(row.temperature, '')}</td>
-                          <td>{isArgSensorFault(row) ? <span className="arg-fault">Error</span> : formatArgValue(row.humidity, '')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="arg-message">No ARG data available yet.</div>
-          )}
-        </div>
-      </section>
+      
+     
 
       {/* Historical Chart Section */}
       {/* <section id="historical" className="historical-section">

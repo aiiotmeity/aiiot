@@ -47,8 +47,13 @@
   cursor: pointer;
   font-family: inherit;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 .arg-back:hover { background: rgba(255, 255, 255, 0.2); }
+.arg-back:focus-visible {
+  outline: 3px solid #7dd3fc;
+  outline-offset: 3px;
+}
 
 .arg-title { flex: 1; min-width: 240px; }
 .arg-title h1 {
@@ -377,7 +382,21 @@
 }
 
 @media (max-width: 600px) {
+  .arg-topbar { padding: 1rem 0; }
+  .arg-topbar-inner {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0 1rem;
+  }
+  .arg-back { align-self: flex-start; }
+  .arg-title {
+    width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
   .arg-title h1 { font-size: 1.25rem; }
+  .arg-title p { line-height: 1.5; }
   .arg-kpis { grid-template-columns: 1fr 1fr; }
   .arg-kpi { flex-direction: column; text-align: center; padding: 1rem 0.75rem; }
   .arg-kpi-value { font-size: 1.4rem; }
