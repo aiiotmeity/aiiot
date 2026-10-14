@@ -63,7 +63,7 @@ const ArgMonitoring = () => {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [hours, setHours] = useState(24);
+  const [hours, setHours] = useState(6);
   const [countdown, setCountdown] = useState(REFRESH_SECONDS);
   const [ageSec, setAgeSec] = useState(null);
   const [page, setPage] = useState(1);
@@ -200,11 +200,11 @@ const ArgMonitoring = () => {
       <main className="arg-main">
         {/* Live info bar */}
         <div className="arg-livebar">
-          {/* <div>
+          <div>
             
             
             {latest && <> Reading time <strong>{fmtDateTime(latest.timestamp)}</strong></>}
-          </div> */}
+          </div>
           
         </div>
 
