@@ -23,7 +23,6 @@ import ProductOverview from './component_aiiot/ProductOverview';
 import PrivacyPolicy from './component_aiiot/PrivacyPolicy';
 import FloodMap from './weather_component/FloodMap';
 import DemandForecasting from './weather_component/DemandForecasting';
-import AiiotChatWidget from './component_aiiot/AiiotChatWidget';
 import ArgRainfall from './weather_component/ArgMonitoring';
 
 // Session Manager
@@ -272,7 +271,7 @@ function App() {
           <Route path="/river-forecast" element={<RiverDashboard />} />
           <Route path="/flood-analysis" element={<FloodMap />} />
           <Route path="/demand-forecasting" element={<DemandForecasting />} />  
-          <Route path="/arg-monitoring" element={<ArgRainfall />} />/>
+          <Route path="/arg-monitoring" element={<ArgRainfall />} />
           
 
           {/* Protected Routes with Health Assessment Check */}
@@ -327,12 +326,10 @@ function App() {
           <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/demand-forecasting" element={<DemandForecasting />} />
         </Routes>
-        <AiiotChatWidget />
       </Router>
     </AuthContext.Provider>
   );
 }
 
 export default App;
-
 

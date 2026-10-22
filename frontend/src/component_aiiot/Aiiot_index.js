@@ -368,62 +368,7 @@ useEffect(() => {
       {/* Main Content */}
       <main style={{ flex: 1, paddingTop: '3rem' }}>
         {/* Hero Section */}
-        <section className="hero-gradient reveal-on-scroll" style={{ padding: '5rem 0' }}>
-          <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3rem' }}>
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <p style={{ display: 'inline-block', padding: '0.5rem 1rem', background: '#eff6ff', color: '#2563eb', fontSize: '0.875rem', fontWeight: 500, borderRadius: '9999px', marginBottom: '1.5rem' }}>
-                  Sponsored by Ministry of Electronics and Information Technology
-                </p>
-                <h1 style={{ fontSize: '3rem', fontWeight: 700, color: '#1e293b', marginBottom: '1.5rem', lineHeight: 1.2 }}>
-                  Center for AI-IoT <span style={{ color: '#3b82f6' }}>Innovations</span>
-                </h1>
-                <p style={{ fontSize: '1.125rem', color: '#475569', marginBottom: '2rem' }}>
-                  The Center for AI IoT Innovation is a facility focused on the integration of electronics hardware design 
-                  with artificial intelligence (AI) and explainable AI (XAI).
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem', justifyContent: 'center' }}>
-                  <a href="#projects" style={{ padding: '0.75rem 1.5rem', background: '#3b82f6', color: 'white', fontWeight: 500, borderRadius: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration:'none' }}>
-                    Explore Projects <span>→</span>
-                  </a>
-                </div>
-              </div>
-              <div className="hero-image-frame-straight">
-              <div className="hero-zoom-container">
-                {heroImages.map((imgSrc, index) => (
-                  <img 
-                    key={index}
-                    src={imgSrc} 
-                    alt={`Hero Slide ${index}`} 
-                    className={`hero-zoom-img ${index === currentImageIndex ? 'active' : ''}`}
-                  />
-                ))}
-                
-                {/* Dots Indicator (Centered at bottom of image) */}
-                {heroImages.length > 0 && (
-                  <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '10px', zIndex: 10, padding: '8px 16px', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', borderRadius: '30px' }}>
-                    {heroImages.map((_, index) => (
-                      <button 
-                        key={index} 
-                        onClick={() => handleIndicatorClick(index)} 
-                        style={{ 
-                          width: '10px', 
-                          height: '10px', 
-                          borderRadius: '50%', 
-                          background: index === currentImageIndex ? '#ffffff' : 'rgba(255,255,255,0.4)', 
-                          border: 'none', 
-                          cursor: 'pointer',
-                          transition: 'all 0.3s'
-                        }} 
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            </div>
-          </div>
-        </section>
+        
 
         {/* About Section */}
         <section id="about" className="reveal-on-scroll" style={{ padding: '5rem 0' }}>
