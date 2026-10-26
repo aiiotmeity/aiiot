@@ -248,7 +248,11 @@ const MapPage = () => {
     const mapRef = useRef(null);
     const markersRef = useRef({});
     const userLocationMarkerRef = useRef(null);
-    
+    const accuracyCircleRef = useRef(null);
+    const locationRequestRef = useRef(false);   // true while a GPS request is running
+    const autoLocateTriedRef = useRef(false);   // auto-locate only once per visit
+    const [locationError, setLocationError] = useState(null);
+
     // Hooks
     const navigate = useNavigate();
     const { user, logout, loading: authLoading } = useAuth();
@@ -259,53 +263,70 @@ const MapPage = () => {
   ? 'https://aiiot-1.onrender.com'
   : 'http://localhost:8000';
 
-    // === USER LOCATION TRACKING - FIXED ===
-    const trackUserLocation = useCallback(() => {
-    // FIXED: Prevent multiple requests and unnecessary reloads
-        if (isLocationLoading) {
-            console.log('Location request already in progress...');
-            return;
-        }
+    // === USER LOCATION TRACKING ===
+    // isManual = true when the user taps the crosshair button (always re-centres, shows errors)
+    const trackUserLocation = useCallback((isManual = false) => {
+        // Prevent overlapping requests (ref, so this callback doesn't change on every request)
+        if (locationRequestRef.current) return;
 
         if (!user) {
-            console.log('User not authenticated for location tracking');
+            if (isManual) setLocationError('Log in to see the air quality at your location.');
             return;
         }
 
         if (!navigator.geolocation) {
-            alert("Geolocation is not supported by this browser.");
+            setLocationError('Location is not supported by this browser.');
             return;
         }
 
+        locationRequestRef.current = true;
         setIsLocationLoading(true);
+        setLocationError(null);
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                const loc = { 
-                    lat: position.coords.latitude, 
+                const loc = {
+                    lat: position.coords.latitude,
                     lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy, // metres
                     timestamp: Date.now()
                 };
-                
+
                 console.log('Location obtained:', loc);
+                locationRequestRef.current = false;
                 setUserLocation(loc);
                 setIsLocationLoading(false);
-                
-                // FIXED: Only update map if significantly different location
+
                 if (mapInstance) {
                     const currentCenter = mapInstance.getCenter();
                     const distance = calculateDistance(
-                        currentCenter.lat, 
-                        currentCenter.lng, 
-                        loc.lat, 
+                        currentCenter.lat,
+                        currentCenter.lng,
+                        loc.lat,
                         loc.lng
                     );
-                    
-                    // Only center map if more than 1km away to prevent constant reloads
-                    if (distance > 1) { // 1 km
+
+                    // Button tap: always go to the user. Auto-locate: only move if >1 km away.
+                    if (isManual || distance > 1) {
                         mapInstance.setView([loc.lat, loc.lng], 15);
                     }
-                    
+
+                    // Accuracy circle — shows how precise the GPS fix is
+                    if (loc.accuracy && loc.accuracy < 5000) {
+                        if (accuracyCircleRef.current) {
+                            accuracyCircleRef.current.setLatLng([loc.lat, loc.lng]).setRadius(loc.accuracy);
+                        } else {
+                            accuracyCircleRef.current = window.L.circle([loc.lat, loc.lng], {
+                                radius: loc.accuracy,
+                                color: '#2563eb',
+                                weight: 1,
+                                fillColor: '#2563eb',
+                                fillOpacity: 0.08,
+                                interactive: false
+                            }).addTo(mapInstance);
+                        }
+                    }
+
                     // Update user marker without recreating
                     const userIcon = window.L.divIcon({
                         html: '<div class="user-location-marker"><i class="fas fa-user"></i></div>',
@@ -335,21 +356,34 @@ const MapPage = () => {
                 }
             },
             (error) => {
+                locationRequestRef.current = false;
                 setIsLocationLoading(false);
-                console.warn('Geolocation error:', error.message);
-                
-                // Don't show alert for permission denied
-                if (error.code !== error.PERMISSION_DENIED) {
-                    console.error('Location error:', error.message);
+                console.warn('Geolocation error:', error.code, error.message);
+
+                const messages = {
+                    1: 'Location permission is blocked. Allow location for this site in your browser settings.',
+                    2: 'Your location could not be found. Check that GPS / location services are on.',
+                    3: 'Finding your location took too long. Tap the location button to try again.'
+                };
+                // Auto-locate stays quiet when permission is denied; a button tap always explains.
+                if (isManual || error.code !== 1) {
+                    setLocationError(messages[error.code] || 'Could not get your location.');
                 }
             },
             {
                 enableHighAccuracy: true,
-                timeout: 8000,
-                maximumAge: 300000 // 5 minutes cache - prevents constant requests
+                timeout: 15000,     // GPS on phones often needs more than 8 s
+                maximumAge: 60000   // reuse a fix up to 1 min old (was 5 min = stale position)
             }
         );
-    }, [user, mapInstance, isLocationLoading]);
+    }, [user, mapInstance]);
+
+    // Hide the location message automatically after a few seconds
+    useEffect(() => {
+        if (!locationError) return;
+        const t = setTimeout(() => setLocationError(null), 6000);
+        return () => clearTimeout(t);
+    }, [locationError]);
 
     // Initialize auth state properly
     useEffect(() => {
@@ -359,18 +393,18 @@ const MapPage = () => {
         }
     }, [authLoading]);
 
-    // Auto-track location when user logs in and map is ready
+    // Auto-locate ONCE when the user is logged in and the map is ready.
+    // (Before: it re-ran after every failure, so a denied/timed-out request retried every 2 s forever.)
     useEffect(() => {
-        // FIXED: Only auto-track once when conditions are met
-        if (!user || !mapInstance || userLocation) return;
-        
-        // Add a longer delay to prevent immediate requests
+        if (!user || !mapInstance || userLocation || autoLocateTriedRef.current) return;
+
         const timer = setTimeout(() => {
-            trackUserLocation();
-        }, 2000); // 2 second delay
-        
+            autoLocateTriedRef.current = true;
+            trackUserLocation(false);
+        }, 1500);
+
         return () => clearTimeout(timer);
-    }, [user, mapInstance, trackUserLocation]); // Added trackUserLocation as dependency
+    }, [user, mapInstance, userLocation, trackUserLocation]);
     
     // Make component instance available globally for popup callbacks
     useEffect(() => {
@@ -670,6 +704,11 @@ const MapPage = () => {
             userLocationMarkerRef.current.remove();
             userLocationMarkerRef.current = null;
         }
+        if (accuracyCircleRef.current) {
+            accuracyCircleRef.current.remove();
+            accuracyCircleRef.current = null;
+        }
+        autoLocateTriedRef.current = false;
     }, [logout]);
 
     const handleStationSelect = useCallback((stationId) => {
@@ -1026,8 +1065,8 @@ const MapPage = () => {
                                     </div>
                                     
                                     {/* User's readings */}
-                                    {/* <div className="mobile-readings-section">
-                                        <h4><i className="fas fa-user-circle"></i> Your Air Quality</h4>
+                                     <div className="mobile-readings-section">
+                                        {/* <h4><i className="fas fa-user-circle"></i> Your Air Quality</h4>
                                         <div className="mobile-readings-grid">
                                            
                                             {pollutants
@@ -1044,8 +1083,8 @@ const MapPage = () => {
                                                     </div>
                                                 </div>
                                             ))}
-                                        </div>
-                                    </div> */}
+                                        </div> */}
+                                    </div> 
                                 </div>
                             ) : (
                                 <div className="mobile-location-prompt">
@@ -1055,7 +1094,7 @@ const MapPage = () => {
                                         <p>Enable location to see personalized air quality data calculated from our real sensors</p>
                                         <button 
                                             className="mobile-location-btn"
-                                            onClick={trackUserLocation}
+                                            onClick={() => trackUserLocation(true)}
                                             disabled={isLocationLoading}
                                         >
                                             {isLocationLoading ? (
@@ -1156,8 +1195,16 @@ const MapPage = () => {
                     <div id="map" ref={mapRef} className="map-element"></div>
                     
                     {/* Map Controls */}
-                    <button 
-                        onClick={trackUserLocation} 
+                    {locationError && (
+                        <div className="location-toast" role="status">
+                            <i className="fas fa-location-crosshairs"></i>
+                            <span>{locationError}</span>
+                            <button onClick={() => setLocationError(null)} aria-label="Dismiss">×</button>
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => trackUserLocation(true)}
                         className={`my-location-btn ${isLocationLoading ? 'loading' : ''}`}
                         title="Find My Location"
                         disabled={isLocationLoading}

@@ -1841,3 +1841,36 @@
   .map-page .my-location-btn,
   .map-page .mobile-map-controls { display: none !important; }
 }
+/* Location status message (permission blocked, timeout, login needed) */
+.map-page .location-toast {
+  position: absolute;
+  top: 10px;
+  left: 54px;
+  right: 54px;
+  z-index: 1002;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--text);
+  color: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  animation: fadeInUp 0.2s ease-out;
+}
+
+.map-page .location-toast i { margin-top: 2px; color: #93c5fd; }
+.map-page .location-toast span { flex: 1; }
+
+.map-page .location-toast button {
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}

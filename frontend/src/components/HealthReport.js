@@ -561,7 +561,7 @@ function HealthReport() {
                         <li><Link to="/homepage" className="nav-link">🏠 Home</Link></li>
                         <li><Link to="/dashboard" className="nav-link">👤 Profile</Link></li>
                         <li><Link to="/health-assessment" className="nav-link">📋 Health Update</Link></li>
-                        <li><Link to="/add-family" className="nav-link">👥 Add Family</Link></li>
+                        {/* <li><Link to="/add-family" className="nav-link">👥 Add Family</Link></li> */}
                         {/*<li><Link to="/map" className="nav-link">🗺️ Live Map</Link></li>*/}
                         <li className="user-info">👤 <span>{displayName}</span></li>
                         <li>
@@ -902,7 +902,7 @@ function HealthReport() {
                             <ul>
                                 <li><a href="/homepage"> Home</a></li>
                                 <li><a href="/health-report"> Health Report</a></li>
-                                <li><a href="/add-family"> Add Family</a></li>
+                                {/* <li><a href="/add-family"> Add Family</a></li> */}
                                 <li><a href="/map" >Live Map</a></li>
                             </ul>
                         </div>

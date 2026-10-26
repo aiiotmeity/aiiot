@@ -370,10 +370,10 @@ function FamilyPage() {
                             </div>
                         </div>
                         <div className="header-actions">
-                            <button className="add-member-btn primary" onClick={handleAddMemberClick}>
+                            {/* <button className="add-member-btn primary" onClick={handleAddMemberClick}>
                                 <span className="btn-icon">➕</span>
                                 <span>Add Family Member</span>
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 </div>
