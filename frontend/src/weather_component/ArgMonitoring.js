@@ -68,6 +68,12 @@ const ArgMonitoring = () => {
   const [ageSec, setAgeSec] = useState(null);
   const [page, setPage] = useState(1);
 
+  // Download-key dialog
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyInput, setKeyInput] = useState('');
+  const [keyError, setKeyError] = useState('');
+  const [downloading, setDownloading] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
       const response = await fetch(
@@ -153,19 +159,75 @@ const ArgMonitoring = () => {
   const online = data?.status === 'ONLINE';
   const summary = data?.summary || {};
 
-  const downloadCsv = () => {
-    const header = 'ID,Timestamp,RFD(mm),T(c),RH(%)';
-    const lines = rows.map(r =>
-      [r.id, r.timestamp, r.rainfall ?? '', r.temperature ?? '', r.humidity ?? ''].join(',')
-    );
-    const blob = new Blob([[header, ...lines].join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${STATION_ID}_${hours}h.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  // ---- Protected CSV download ----
+  // The key is checked by the backend (/api/weather/arg-download/), never in this file.
+  const openKeyModal = () => {
+    setKeyInput('');
+    setKeyError('');
+    setShowKeyModal(true);
   };
+
+  const closeKeyModal = useCallback(() => {
+    if (downloading) return;
+    setShowKeyModal(false);
+    setKeyInput('');
+    setKeyError('');
+  }, [downloading]);
+
+  // Close the dialog with Esc
+  useEffect(() => {
+    if (!showKeyModal) return;
+    const onKey = (e) => { if (e.key === 'Escape') closeKeyModal(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showKeyModal, closeKeyModal]);
+
+  const handleKeySubmit = async (e) => {
+    e.preventDefault();
+    const key = keyInput.trim();
+    if (!key) return;
+
+    setDownloading(true);
+    setKeyError('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/weather/arg-download/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, station: STATION_ID, hours })
+      });
+
+      if (!response.ok) {
+        let message = 'Download failed. Please try again.';
+        try {
+          const err = await response.json();
+          if (err?.error) message = err.error;
+        } catch (_) { /* not JSON */ }
+        if (response.status === 401) message = 'Incorrect download key.';
+        setKeyError(message);
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${STATION_ID}_${hours}h.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      setShowKeyModal(false);
+      setKeyInput('');
+    } catch (err) {
+      console.error('ARG download error:', err);
+      setKeyError('Could not reach the server. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const rangeLabel = RANGES.find(r => r.hours === hours)?.label || `${hours} hours`;
 
   return (
     <div className="arg-page">
@@ -270,8 +332,8 @@ const ArgMonitoring = () => {
                   </button>
                 ))}
               </div>
-              <button className="arg-download" onClick={downloadCsv} disabled={!rows.length}>
-                <i className="fas fa-download"></i> Download CSV
+              <button className="arg-download" onClick={openKeyModal} disabled={!rows.length}>
+                <i className="fas fa-lock"></i> Download CSV
               </button>
             </div>
 
@@ -391,6 +453,52 @@ const ArgMonitoring = () => {
           </>
         )}
       </main>
+
+      {/* Download-key dialog */}
+      {showKeyModal && (
+        <div className="arg-modal-backdrop" onClick={closeKeyModal}>
+          <form
+            className="arg-modal"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleKeySubmit}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="arg-modal-title"
+          >
+            <div className="arg-modal-icon"><i className="fas fa-lock"></i></div>
+            <h3 id="arg-modal-title">Download access</h3>
+            <p>Enter the download key to export <strong>{rangeLabel}</strong> of {STATION_ID} data as CSV.</p>
+
+            <input
+              type="password"
+              className={`arg-modal-input ${keyError ? 'has-error' : ''}`}
+              placeholder="Download key"
+              value={keyInput}
+              onChange={(e) => { setKeyInput(e.target.value); setKeyError(''); }}
+              autoComplete="off"
+              autoFocus
+              disabled={downloading}
+            />
+
+            {keyError && (
+              <div className="arg-modal-error">
+                <i className="fas fa-exclamation-circle"></i> {keyError}
+              </div>
+            )}
+
+            <div className="arg-modal-actions">
+              <button type="button" className="arg-modal-cancel" onClick={closeKeyModal} disabled={downloading}>
+                Cancel
+              </button>
+              <button type="submit" className="arg-download" disabled={downloading || !keyInput.trim()}>
+                {downloading
+                  ? <><i className="fas fa-spinner fa-spin"></i> Checking...</>
+                  : <><i className="fas fa-download"></i> Download</>}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

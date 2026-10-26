@@ -2166,3 +2166,272 @@
 html {
   scroll-behavior: smooth;
 }
+/* =====================================================================
+   NAVBAR — FINAL OVERRIDE (matches Dashboard navbar)
+   Keep this block at the END of the file. It replaces all earlier
+   navbar rules; nothing else on the page is affected.
+   ===================================================================== */
+.airaware-homepage-container .navbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1001 !important;
+  height: 60px !important;
+  min-height: 60px !important;
+  padding: 0 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+}
+
+.airaware-homepage-container .navbar:hover {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.airaware-homepage-container .navbar .navbar-content {
+  height: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.airaware-homepage-container .navbar .navbar-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  color: #0f172a !important;
+  text-decoration: none !important;
+  transform: none !important;
+}
+
+.airaware-homepage-container .navbar .navbar-brand:hover {
+  color: #0f172a !important;
+  transform: none !important;
+}
+
+.airaware-homepage-container .navbar .navbar-brand img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.airaware-homepage-container .navbar .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.airaware-homepage-container .navbar .nav-links li { list-style: none; }
+
+.airaware-homepage-container .navbar .nav-link,
+.airaware-homepage-container .navbar .nav-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 34px !important;
+  margin: 0 !important;
+  padding: 0 0.8rem !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: #475569 !important;
+  font-family: inherit !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none !important;
+  transform: none !important;
+  overflow: visible !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.airaware-homepage-container .navbar .nav-link::before,
+.airaware-homepage-container .navbar .nav-button::before {
+  display: none !important;
+}
+
+.airaware-homepage-container .navbar .nav-link:hover,
+.airaware-homepage-container .navbar .nav-button:hover {
+  background: #f1f5f9 !important;
+  color: #2563eb !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* "Hello, name" pill */
+.airaware-homepage-container .navbar .nav-link.user-greeting {
+  height: 30px !important;
+  margin: 0 0.25rem 0 0.5rem !important;
+  padding: 0 0.75rem !important;
+  border-radius: 999px !important;
+  background: #eef2ff !important;
+  color: #4f46e5 !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  pointer-events: none;
+}
+
+/* Login / Logout */
+.airaware-homepage-container .navbar .nav-link.login-btn {
+  margin-left: 0.25rem !important;
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+  font-weight: 600 !important;
+}
+
+.airaware-homepage-container .navbar .nav-link.login-btn:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+}
+
+.airaware-homepage-container .navbar .menu-toggle {
+  display: none !important;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 768px) {
+  .airaware-homepage-container .navbar {
+    height: 56px !important;
+    min-height: 56px !important;
+    padding: 0 !important;
+    /* blur would trap the fixed dropdown inside the navbar */
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+  }
+
+  .airaware-homepage-container .navbar .navbar-content { padding: 0 1rem; }
+
+  .airaware-homepage-container .navbar .navbar-brand { font-size: 1rem !important; }
+
+  .airaware-homepage-container .navbar .navbar-brand img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .airaware-homepage-container .navbar .menu-toggle {
+    display: grid !important;
+    place-items: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #0f172a !important;
+    font-size: 1.05rem !important;
+    cursor: pointer;
+    transform: none !important;
+  }
+
+  .airaware-homepage-container .navbar .menu-toggle:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    transform: none !important;
+  }
+
+  /* Full-screen dropdown under the navbar */
+  .airaware-homepage-container .navbar .nav-links {
+    display: none !important;
+    position: fixed !important;
+    top: 56px !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    z-index: 1000 !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    padding: 0.75rem !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
+    overflow-y: auto !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .airaware-homepage-container .navbar .nav-links.active {
+    display: flex !important;
+    animation: aaNavMenuIn 0.18s ease-out;
+  }
+
+  .airaware-homepage-container .navbar .nav-links li { width: 100%; }
+
+  .airaware-homepage-container .navbar .nav-link,
+  .airaware-homepage-container .navbar .nav-button {
+    width: 100% !important;
+    height: 44px !important;
+    justify-content: flex-start !important;
+    padding: 0 0.9rem !important;
+    border: 1px solid #f1f5f9 !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    color: #334155 !important;
+    font-size: 0.9rem !important;
+    text-align: left !important;
+  }
+
+  .airaware-homepage-container .navbar .nav-link:hover,
+  .airaware-homepage-container .navbar .nav-button:hover {
+    background: #f8fafc !important;
+    color: #2563eb !important;
+    border-color: #e2e8f0 !important;
+    transform: none !important;
+  }
+
+  /* Greeting moves to the top of the menu */
+  .airaware-homepage-container .navbar .nav-link.user-greeting {
+    order: -1;
+    height: 38px !important;
+    margin: 0 0 4px !important;
+    justify-content: center !important;
+    border: none !important;
+    border-radius: 10px !important;
+    background: #eef2ff !important;
+    color: #4f46e5 !important;
+    font-size: 0.85rem !important;
+  }
+
+  .airaware-homepage-container .navbar .nav-link.login-btn {
+    margin: 4px 0 0 !important;
+    justify-content: center !important;
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fecaca !important;
+  }
+
+  .airaware-homepage-container .navbar .nav-link.login-btn:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #ef4444 !important;
+  }
+}
+
+@keyframes aaNavMenuIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

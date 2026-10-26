@@ -1,5 +1,5 @@
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as datetime_timezone
 import boto3
 from rest_framework import viewsets
 from django.utils import timezone
@@ -149,12 +149,11 @@ WHO_LIMITS = {
 }
 
 STATION_LOCATIONS = {
-    "lora-v1": {"lat":10.178385739668958,"lon": 76.43052237497399},
-    "loradev2": {"lat": 10.182204721868617, "lon": 76.42850343115732},
-    "lora-v3":{"lat": 10.173254902926303, "lng": 76.42755590382993},  # Example for Station 4
-    "lora-v4": {"lat": 10.1729013391553, "lon": 76.43259601451521},
-    "lora-v5":{"lat":10.173415, "lon":76.431556}
-    
+    "lora-v1": {"lat": 10.177616769612804, "lon": 76.42937539438601},
+    "loradev2": {"lat": 10.182200047988038, "lon": 76.42848271607176},
+    "lora-v3": {"lat": 10.173275136335581, "lon": 76.42753346304463},
+    "lora-v4": {"lat": 10.172227697974966, "lon": 76.43270178197247},
+    "lora-v5": {"lat": 10.173187643818856, "lon": 76.43148469238002}
 }
 
 
@@ -192,7 +191,7 @@ def parse_received_at(value):
         numeric = float(value)
         if abs(numeric) > 1e12:
             numeric = numeric / 1000.0
-        return datetime.fromtimestamp(numeric, tz=timezone.utc).replace(tzinfo=None)
+        return datetime.fromtimestamp(numeric, tz=datetime_timezone.utc).replace(tzinfo=None)
 
     value_str = str(value).strip()
     if not value_str:
@@ -202,7 +201,7 @@ def parse_received_at(value):
         numeric = float(value_str)
         if abs(numeric) > 1e12:
             numeric = numeric / 1000.0
-        return datetime.fromtimestamp(numeric, tz=timezone.utc).replace(tzinfo=None)
+        return datetime.fromtimestamp(numeric, tz=datetime_timezone.utc).replace(tzinfo=None)
 
     for fmt in ('%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%d %H:%M:%S', '%d:%m:%Y %H:%M', '%d:%m:%Y'):
         try:
@@ -924,13 +923,15 @@ def map_realtimedata_api(request):
         latest_v3, avg_lora_v3, _, high_index_lora_v3 = process_device_items(get_device_data("lora-v3", limit=24))
         latest_v4, avg_lora_v4, _, high_index_lora_v4 = process_device_items(get_device_data("aqm-v4", limit=24))
         latest_v5, avg_lora_v5, _, high_index_lora_v5 = process_device_items(get_device_data("lora-v5", limit=24))
+
+
         
         station_locations = {
-            'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
-            'loradev2': { 'lat': 10.18220, 'lng': 76.4285, 'name': 'Station 2 (Pothiyakkara Road)' },
-            'lora-v3': { 'lat': 10.17325, 'lng': 76.42755, 'name': 'Station 3 (Mattoor Junction)'},
-            'lora-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)'},
-            'lora-v5': { 'lat': 10.173415, 'lng': 76.431556, 'name': 'Station 5 (Mattoor,Kalady)' },
+            'lora-v1': { 'lat': 10.177616769612804, 'lng': 76.42937539438601, 'name': 'Station 1 (ASIET Campus)'},
+            'loradev2': { 'lat': 10.182200047988038, 'lng': 76.42848271607176, 'name': 'Station 2 (Pothiyakkara Road)' },
+            'lora-v3': { 'lat': 10.173275136335581, 'lng': 76.42753346304463, 'name': 'Station 3 (Marottichodu)' },
+            'lora-v4': { 'lat': 10.172227697974966, 'lng': 76.43270178197247, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)'},
+            'lora-v5': { 'lat': 10.173187643818856, 'lng': 76.43148469238002, 'name': 'Station 5 (Mattoor,Kalady)' },
             # 'temp-3': { 'lat': 10.185, 'lng': 76.425, 'name':  'Station 5 (Kalady Town)'},
         }
 
@@ -1065,7 +1066,7 @@ def all_devices_api(request):
         station_locations = {
             'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': { 'lat': 10.170950, 'lng': 76.429628, 'name': 'Station 2 (Pothiyakkara Road)' },
-            'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Mattoor Junction)'},
+            'lora-v3': { 'lat': 10.165, 'lng': 76.420, 'name': 'Station 3 (Marottichodu)' },
             'aqm-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor)'},
             'lora-v5': { 'lat': 10.173415, 'lng': 76.431556, 'name': 'Station 5 (Mattoor,Kalady)' },
         }
@@ -1084,7 +1085,7 @@ def all_devices_api(request):
                 'averages': avg_loradev2,
                 'sub_indices': {k: round(v, 2) if v is not None else None for k, v in subindices_loradev2.items()},
                 'highest_sub_index': high_index_loradev2,
-                'station_name': 'Mattoor Junction Station',
+                'station_name': 'Pothiyakkara Road ',
                 'station_info': station_locations.get("loradev2", {})
             },
             # --- START FIX: ADD THIS ENTIRE BLOCK ---
@@ -1093,7 +1094,7 @@ def all_devices_api(request):
                 'averages': avg_lora_v3,
                 'sub_indices': {k: round(v, 2) if v is not None else None for k, v in subindices_lora_v3.items()},
                 'highest_sub_index': high_index_lora_v3,
-                'station_name': 'Station 3 (Airport Rd)',
+                'station_name': 'Station 3 (Marottichodu)',
                 'station_info': station_locations.get("lora-v3", {})
             },
             'aqm-v4': {
@@ -1110,7 +1111,7 @@ def all_devices_api(request):
                     'averages': avg_lora_v5,
                     'sub_indices': {k: round(v, 2) if v is not None else None for k, v in subindices_lora_v5.items()},
                     'highest_sub_index': high_index_lora_v5,
-                    'station_name': 'Station 5 (Mattoor,Kalady)',
+                    'station_name': 'Station 5 (Mattoor)',
                     'station_info': station_locations.get("lora-v5", {})
                 }
             # --- END FIX ---
@@ -1649,7 +1650,7 @@ def dashboard_api(request):
         station_locations = {
             'lora-v1': {'lat': 10.178322, 'lng': 76.430591, 'name': 'Station 1 (ASIET Campus)'},
             'loradev2': {'lat': 10.1822047218, 'lng': 76.4285034311, 'name': 'Station 2 (Pothiyakkara Road)'},
-            'lora-v3': {'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Mattoor Junction)'},
+            'lora-v3': {'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Marottichodu)'},
             'aqm-v4': {'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor )'},
             'lora-v5': {'lat': 10.173415, 'lng': 76.431556, 'name': 'Station 5 (Mattoor,Kalady)'},
         }
@@ -2027,7 +2028,7 @@ def health_report_api(request):
             station_locations = {
                 'lora-v1': { 'lat': 10.178322, 'lng': 76.430891, 'name': 'Station 1 (ASIET Campus)' },
                 'loradev2': { 'lat': 10.182204, 'lng': 76.428503, 'name': 'Station 2 (Pothiyakkara Road)' },
-                'lora-v3': { 'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Mattoor Junction)' },
+                'lora-v3': { 'lat': 10.1732549029, 'lng': 76.4275559038, 'name': 'Station 3 (Marottichodu)' },
                 'aqm-v4': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 4 (Apple One BHK Apartment, Mattoor )' },
                 'lora-v5': { 'lat': 10.1729013391553, 'lng': 76.43259601451521, 'name': 'Station 5 (Mattoor,Kalady)' },
                 # ... include your temp stations here as well

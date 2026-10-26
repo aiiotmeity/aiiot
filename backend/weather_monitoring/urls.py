@@ -20,4 +20,5 @@ urlpatterns = [
     path('flood-analysis', views.flood_analysis, name='flood_analysis'),
     path('water-demand', views.get_water_distribution_demand, name='water_distribution_demand'),
     path('arg-realtime', views.get_arg_realtime, name='arg_realtime'),
+    path('arg-download/', views.arg_download, name='arg_download'),
 ]

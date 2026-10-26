@@ -315,8 +315,11 @@ const FloodMap = () => {
         <MapLegend />
 
         <MapContainer center={[10.16, 76.43]} zoom={13} style={{ height: "100%", width: "100%" }}>
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-          <MapController targetLoc={mapCenter} />
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        maxZoom={19}
+/>          <MapController targetLoc={mapCenter} />
           {userPos && <CircleMarker center={userPos} radius={8} pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.8 }}><Popup>Your Location</Popup></CircleMarker>}
           {floodData?.data?.map((point, idx) => {
             const status = getRiskStatus(point.depth, isNormalState);

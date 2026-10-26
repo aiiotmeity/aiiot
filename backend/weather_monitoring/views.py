@@ -20,6 +20,9 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from botocore.config import Config
 import reverse_geocoder as rg
+import hmac
+from django.core.cache import cache
+from django.http import HttpResponse
 
 load_dotenv()
 
@@ -944,4 +947,131 @@ def get_arg_realtime(request):
     except Exception as e:
         print(f"❌ Error in get_arg_realtime: {e}")
         return JsonResponse({"error": "Failed to fetch ARG realtime data"}, status=500)
- 
+
+
+# =========================================================
+# ARG — PROTECTED CSV DOWNLOAD
+# POST /api/weather/arg-download/   body: {"key": "...", "station": "ARGS1", "hours": 24}
+# The key is checked against the ARG_DOWNLOAD_KEY environment variable.
+# =========================================================
+ARG_DL_MAX_ATTEMPTS = 5            # wrong keys allowed per IP...
+ARG_DL_LOCKOUT_SECONDS = 15 * 60   # ...within this many seconds
+
+
+def _client_ip(request):
+    fwd = request.META.get('HTTP_X_FORWARDED_FOR')
+    return fwd.split(',')[0].strip() if fwd else request.META.get('REMOTE_ADDR', 'unknown')
+
+
+def _load_arg_rows(station, hours):
+    """Same data as get_arg_realtime: master CSV + live JSON, trimmed to the last `hours`."""
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+        region_name=ARG_S3_REGION
+    )
+
+    merged = {}
+
+    def add_row(ts, rid, rf, t, rh):
+        ts = (ts or '').strip()
+        if not ts:
+            return
+        merged[ts] = {
+            "id": (rid or station).strip(),
+            "timestamp": ts,
+            "rainfall": _arg_float(rf),
+            "temperature": _arg_float(t),
+            "humidity": _arg_float(rh),
+        }
+
+    try:
+        obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=f"{ARG_S3_PREFIX}{station}_MASTER_LOG.csv")
+        content = obj['Body'].read().decode('utf-8-sig')
+        for r in csv.DictReader(io.StringIO(content)):
+            add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
+    except ClientError as e:
+        if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
+            raise
+
+    try:
+        obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=f"{ARG_S3_PREFIX}{station}_LATEST.json")
+        live = json.loads(obj['Body'].read().decode('utf-8'))
+        for r in (live.get('pending') or []) + [live.get('latest') or {}]:
+            add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
+    except ClientError as e:
+        if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
+            raise
+
+    rows = sorted(merged.values(), key=lambda x: x['timestamp'])
+    if not rows:
+        return []
+
+    try:
+        newest_dt = datetime.fromisoformat(rows[-1]['timestamp'])
+        cutoff = (newest_dt - timedelta(hours=hours)).isoformat()
+        return [r for r in rows if r['timestamp'] >= cutoff]
+    except ValueError:
+        return rows[-hours * 4:]
+
+
+@csrf_exempt
+@require_POST
+def arg_download(request):
+    expected_key = os.environ.get('ARG_DOWNLOAD_KEY', '')
+    if not expected_key:
+        return JsonResponse({'error': 'Downloads are not configured on the server.'}, status=503)
+
+    ip = _client_ip(request)
+    attempts_key = f'arg_dl_attempts:{ip}'
+    attempts = cache.get(attempts_key, 0)
+    if attempts >= ARG_DL_MAX_ATTEMPTS:
+        return JsonResponse({'error': 'Too many wrong attempts. Try again in 15 minutes.'}, status=429)
+
+    try:
+        body = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request.'}, status=400)
+
+    key = str(body.get('key', ''))
+    if not hmac.compare_digest(key.encode(), expected_key.encode()):
+        cache.set(attempts_key, attempts + 1, ARG_DL_LOCKOUT_SECONDS)
+        return JsonResponse({'error': 'Incorrect download key.'}, status=401)
+
+    cache.delete(attempts_key)
+
+    station = str(body.get('station', 'ARGS1')).strip()
+    try:
+        hours = max(1, min(int(body.get('hours', 24)), 24 * 30))
+    except (TypeError, ValueError):
+        hours = 24
+
+    try:
+        rows = _load_arg_rows(station, hours)
+    except ClientError as e:
+        code = e.response.get('Error', {}).get('Code', 'Unknown')
+        print(f"❌ ARG download S3 error [{code}]: {e}")
+        return JsonResponse({'error': f'S3 access error: {code}'}, status=500)
+    except Exception as e:
+        print(f"❌ Error in arg_download: {e}")
+        return JsonResponse({'error': 'Failed to prepare download.'}, status=500)
+
+    if not rows:
+        return JsonResponse({'error': f'No ARG data found for {station}'}, status=404)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['ID', 'Timestamp', 'RFD(mm)', 'T(c)', 'RH(%)'])
+    for r in rows:
+        writer.writerow([
+            r['id'], r['timestamp'],
+            '' if r['rainfall'] is None else r['rainfall'],
+            '' if r['temperature'] is None else r['temperature'],
+            '' if r['humidity'] is None else r['humidity'],
+        ])
+
+    response = HttpResponse(buf.getvalue(), content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{station}_{hours}h.csv"'
+    response['Cache-Control'] = 'no-store'
+    return response

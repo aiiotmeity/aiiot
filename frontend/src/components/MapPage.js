@@ -870,8 +870,8 @@ const MapPage = () => {
 
                         <div className="mobile-section">
                             <div className="section-header">
-                                <h3><i className="fas fa-clock"></i> Coming Soon</h3>
-                                <span className="coming-soon-count">{comingSoonStations.length} stations</span>
+                                {/* <h3><i className="fas fa-clock"></i> Coming Soon</h3> */}
+                                {/* <span className="coming-soon-count">{comingSoonStations.length} stations</span> */}
                             </div>
                             
                             <div className="coming-soon-grid">
@@ -1026,7 +1026,7 @@ const MapPage = () => {
                                     </div>
                                     
                                     {/* User's readings */}
-                                    <div className="mobile-readings-section">
+                                    {/* <div className="mobile-readings-section">
                                         <h4><i className="fas fa-user-circle"></i> Your Air Quality</h4>
                                         <div className="mobile-readings-grid">
                                            
@@ -1045,7 +1045,7 @@ const MapPage = () => {
                                                 </div>
                                             ))}
                                         </div>
-                                    </div>
+                                    </div> */}
                                 </div>
                             ) : (
                                 <div className="mobile-location-prompt">
@@ -1119,28 +1119,33 @@ const MapPage = () => {
                     )}
 
                     <div className="nav-right">
-                        {user ? (
-                            <div className="user-menu">
-                                {!isMobile && (
-                                    <div className="user-info">
-                                        <div className="user-avatar">
-                                            <i className="fas fa-user"></i>
-                                        </div>
-                                        <span className="user-name">{displayName}</span>
-                                    </div>
-                                )}
-                                <button onClick={handleLogout} className="logout-btn">
-                                    <i className="fas fa-sign-out-alt"></i>
-                                    {!isMobile && 'Logout'}
-                                </button>
-                            </div>
-                        ) : (
-                            <Link to="/login" className="login-btn">
-                                <i className="fas fa-sign-in-alt"></i>
-                                {!isMobile && 'Login'}
-                            </Link>
-                        )}
+    {isMobile && (
+        <Link to="/homepage" className="mobile-home-btn" title="Home">
+            <i className="fas fa-home"></i>
+        </Link>
+    )}
+    {user ? (
+        <div className="user-menu">
+            {!isMobile && (
+                <div className="user-info">
+                    <div className="user-avatar">
+                        <i className="fas fa-user"></i>
                     </div>
+                    <span className="user-name">{displayName}</span>
+                </div>
+            )}
+            <button onClick={handleLogout} className="logout-btn">
+                <i className="fas fa-sign-out-alt"></i>
+                {!isMobile && 'Logout'}
+            </button>
+        </div>
+    ) : (
+        <Link to="/login" className="login-btn">
+            <i className="fas fa-sign-in-alt"></i>
+            {!isMobile && 'Login'}
+        </Link>
+    )}
+</div>
                 </div>
             </nav>
 
@@ -1294,7 +1299,7 @@ const MapPage = () => {
                                             
                                             {/* Coming Soon Stations */}
                                             <div className="coming-soon-section">
-                                                <div className="section-subtitle">
+                                                {/* <div className="section-subtitle">
                                                     <i className="fas fa-clock"></i>
                                                     <span>Expanding Soon</span>
                                                 </div>
@@ -1308,7 +1313,7 @@ const MapPage = () => {
                                                             <div className="coming-soon-status">Soon</div>
                                                         </div>
                                                     ))}
-                                                </div>
+                                                </div> */}
                                             </div>
                                             {!user && (
                                     <div className="login-section">

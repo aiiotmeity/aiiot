@@ -1073,7 +1073,7 @@ function Dashboard() {
             <li><Link to="/homepage" className="nav-link" onClick={handleNavLinkClick}>🏠 Home</Link></li>
             <li><Link to="/health-assessment" className="nav-link" onClick={handleNavLinkClick}>📋 Health Update</Link></li>
             <li><Link to="/health-report" className="nav-link" onClick={handleNavLinkClick}>📄 Health Report</Link></li>
-            <li><Link to="/add-family" className="nav-link" onClick={handleNavLinkClick}>👥 Add Family</Link></li>
+            {/* <li><Link to="/add-family" className="nav-link" onClick={handleNavLinkClick}>👥 Add Family</Link></li> */}
             
             <li className="user-info">👤 <span>{username}</span></li>
             <li><button onClick={handleLogout} className="nav-link login-btn">🚪 Logout</button></li>
@@ -1356,7 +1356,7 @@ function Dashboard() {
               <ul>
                 <li><Link to="/homepage"> Home</Link></li>
                 <li><Link to="/health-report">Health Report</Link></li>
-                <li><Link to="/add-family">Add Family</Link></li>
+                {/* <li><Link to="/add-family">Add Family</Link></li> */}
                 <li><Link to="/map">Live map</Link></li>
               </ul>
             </div>

@@ -449,7 +449,8 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
         <div className="city-content">
           <div className="city-name">ASIET Campus Station</div>
           <div className="city-type">Educational Institution</div>
-          <div className="city-description">Main campus monitoring station</div>
+          <div className="city-description">Air quality monitoring within the institutional campus
+</div>
         </div>
         <div className="city-action">
           <span>View on Map</span>
@@ -461,9 +462,10 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
           <i className="fas fa-city"></i>
         </div>
         <div className="city-content">
-          <div className="city-name">Mattoor Junction Station</div>
-          <div className="city-type">Urban Area</div>
-          <div className="city-description">Urban junction monitoring station</div>
+          <div className="city-name">Pothiyakkara Road</div>
+          <div className="city-type">Commercial Area</div>
+          <div className="city-description">Roadside air quality monitoring near the local junction
+</div>
         </div>
         <div className="city-action">
           <span>View on Map</span>
@@ -477,10 +479,11 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
           <i className="fas fa-building-columns"></i>
         </div>
         <div className="city-content">
-          <div className="city-name">Pothiyakkara Road</div>
+          <div className="city-name">Marottichodu</div>
           {/* Added city-type */}
-          <div className="city-type">Commercial</div>
-          <div className="city-description">Monitoring station</div>
+          <div className="city-type">Residential Area</div>
+          <div className="city-description">Air quality monitoring in the local commercial area
+</div>
         </div>
         <div className="city-action">
           <span>View on Map</span>
@@ -495,7 +498,8 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
           <div className="city-name">Apple One BHK Apartment, Mattoor</div>
           {/* Added city-type */}
           <div className="city-type">Residential Area</div>
-          <div className="city-description">Monitoring station</div>
+          <div className="city-description">Air quality monitoring in the surrounding residential area
+</div>
         </div>
         <div className="city-action">
           <span>View on Map</span>
@@ -507,10 +511,11 @@ return { status: 'SEVERE', icon: 'fas fa-biohazard', color: '#7c2d12' };
           <i className="fas fa-plane-departure"></i>
         </div>
         <div className="city-content">
-          <div className="city-name">Airport Road</div>
+          <div className="city-name">Mattoor</div>
           {/* Added city-type */}
-          <div className="city-type">Transportation Hub</div>
-          <div className="city-description">Monitoring station</div>
+          <div className="city-type">Transport Corridor</div>
+          <div className="city-description">Air quality monitoring near the local transport corridor
+</div>
         </div>
         <div className="city-action">
           <span>View on Map</span>
