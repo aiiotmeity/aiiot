@@ -802,7 +802,11 @@ const MapPage = () => {
         const labels = forecastData.map(d => 
             new Date(d.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         );
-        const dataPoints = forecastData.map(d => d[selectedParameter]);
+        // Round every point to 2 decimals
+        const dataPoints = forecastData.map(d => {
+            const v = Number(d[selectedParameter]);
+            return Number.isFinite(v) ? Math.round(v * 100) / 100 : null;
+        });
         
         return { 
             labels, 
@@ -821,6 +825,28 @@ const MapPage = () => {
         };
     }, [forecastData, selectedParameter, isMobile]);
 
+    // Y-axis: start at 0, step is a "nice" number never smaller than 0.01,
+    // so a flat line (e.g. all 0.02) doesn't zoom into 0.0190–0.0210.
+    const forecastYAxis = useMemo(() => {
+        const values = (forecastChartData.datasets[0]?.data || []).filter(v => v !== null);
+        const maxVal = values.length ? Math.max(...values, 0) : 0;
+
+        const niceStep = (x) => {
+            if (x <= 0.01) return 0.01;
+            const p = Math.pow(10, Math.floor(Math.log10(x)));
+            const n = x / p;
+            const m = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+            return Math.max(0.01, m * p);
+        };
+
+        const step = niceStep(maxVal / 4);
+        let max = Math.ceil(maxVal / step) * step;
+        if (max <= maxVal) max += step;           // headroom so the line isn't on the top edge
+        return { min: 0, max: Math.round(max * 100) / 100, step };
+    }, [forecastChartData]);
+
+    const formatTwo = (v) => (v === null || v === undefined || isNaN(v) ? '--' : Number(v).toFixed(2));
+
     const forecastChartOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
@@ -833,6 +859,9 @@ const MapPage = () => {
                 borderColor: '#d1d5db',
                 borderWidth: 1,
                 cornerRadius: 8,
+                callbacks: {
+                    label: (ctx) => `${ctx.dataset.label}: ${formatTwo(ctx.parsed.y)}`
+                }
             }
         },
         scales: { 
@@ -844,9 +873,13 @@ const MapPage = () => {
                 grid: { color: '#f3f4f6' }
             }, 
             y: { 
+                min: forecastYAxis.min,
+                max: forecastYAxis.max,
                 ticks: { 
                     color: '#6b7280', 
-                    font: { size: isMobile ? 10 : 12 } 
+                    font: { size: isMobile ? 10 : 12 },
+                    stepSize: forecastYAxis.step,
+                    callback: (value) => formatTwo(value)
                 },
                 grid: { color: '#f3f4f6' }
             } 
@@ -856,7 +889,7 @@ const MapPage = () => {
                 hoverRadius: isMobile ? 6 : 8
             }
         }
-    }), [isMobile]);
+    }), [isMobile, forecastYAxis]);
 
     // Filter real stations vs coming soon stations
     const realStations = Object.entries(stations).filter(([id, station]) => !station.is_coming_soon);
