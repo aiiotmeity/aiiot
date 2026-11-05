@@ -754,11 +754,26 @@ def get_water_distribution_demand(request):
 #   s3://arg-station-data/arg-station1-data/ARGS1_MASTER_LOG.csv
 # Columns: ID, RFD(mm), T(c), RH(%), Timestamp
 # =========================================================
+
 ARG_S3_BUCKET = os.getenv('ARG_S3_BUCKET', 'arg-station-data')
 ARG_S3_PREFIX = os.getenv('ARG_S3_PREFIX', 'arg-station1-data/')
 ARG_S3_REGION = os.getenv('ARG_S3_REGION', 'ap-south-1')
-
-
+ 
+ARG_STATIONS = {
+    'ARGS1': {
+        'name': 'Illithode',
+        'prefixes': [os.getenv('ARG_S3_PREFIX_ARGS1'), ARG_S3_PREFIX, 'arg-station1-data/', ''],
+    },
+    'ARGS2': {
+        'name': 'Kuttampuzha',
+        'prefixes': [os.getenv('ARG_S3_PREFIX_ARGS2'), 'arg-station2-data/', 'arg-station-2-data/',
+                     'arg-station1-data/', ARG_S3_PREFIX, ''],
+    },
+}
+ 
+_ARG_PREFIX_CACHE = {}  # station -> folder that was found to hold its files
+ 
+ 
 def _arg_float(value):
     """Convert a CSV cell to float, or None if empty / not a number."""
     try:
@@ -767,72 +782,158 @@ def _arg_float(value):
         return float(value)
     except (TypeError, ValueError):
         return None
-
-
+ 
+ 
+def _arg_station(value, default='ARGS1'):
+    """Return a known station ID (case-insensitive), or None if unknown."""
+    station = str(value or default).strip().upper()
+    return station if station in ARG_STATIONS else None
+ 
+ 
+def _arg_s3():
+    return boto3.client(
+        's3',
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+        region_name=ARG_S3_REGION
+    )
+ 
+ 
+def _arg_prefix(s3, station):
+    """Find the S3 folder that holds this station's files (cached after first hit)."""
+    if station in _ARG_PREFIX_CACHE:
+        return _ARG_PREFIX_CACHE[station]
+ 
+    candidates = []
+    for p in ARG_STATIONS[station]['prefixes']:
+        if p is None:
+            continue
+        p = p.strip().lstrip('/')
+        if p and not p.endswith('/'):
+            p += '/'
+        if p not in candidates:
+            candidates.append(p)
+ 
+    for prefix in candidates:
+        for suffix in ('_LATEST.json', '_MASTER_LOG.csv'):
+            try:
+                s3.head_object(Bucket=ARG_S3_BUCKET, Key=f"{prefix}{station}{suffix}")
+                _ARG_PREFIX_CACHE[station] = prefix
+                print(f"✅ ARG {station}: using s3://{ARG_S3_BUCKET}/{prefix}")
+                return prefix
+            except ClientError as e:
+                code = str(e.response.get('Error', {}).get('Code', ''))
+                if code not in ('404', 'NoSuchKey', 'NotFound', '403', 'AccessDenied'):
+                    raise
+ 
+    # Nothing found: use the first candidate so the error names a sensible path
+    return candidates[0] if candidates else ''
+ 
+ 
+def _arg_get(s3, key):
+    """Read an S3 object as text, or None if it does not exist."""
+    try:
+        obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=key)
+        return obj['Body'].read().decode('utf-8-sig')
+    except ClientError as e:
+        if e.response.get('Error', {}).get('Code') in ('NoSuchKey', '404'):
+            return None
+        raise
+ 
+ 
+def _arg_merged_rows(station):
+    """
+    Master CSV (history) + LATEST.json (newest, not yet in the CSV), de-duplicated
+    by timestamp and sorted oldest first.
+    Returns (rows, live_updated_epoch, s3_folder).
+    """
+    s3 = _arg_s3()
+    prefix = _arg_prefix(s3, station)
+    merged = {}
+ 
+    def add_row(ts, rid, rf, t, rh):
+        ts = (ts or '').strip()
+        if not ts:
+            return
+        merged[ts] = {
+            "id": (rid or station).strip(),
+            "timestamp": ts,
+            "rainfall": _arg_float(rf),
+            "temperature": _arg_float(t),
+            "humidity": _arg_float(rh),
+        }
+ 
+    # 1. Hourly master log (history)
+    content = _arg_get(s3, f"{prefix}{station}_MASTER_LOG.csv")
+    if content:
+        for r in csv.DictReader(io.StringIO(content)):
+            add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
+ 
+    # 2. Live readings
+    live_updated_epoch = None
+    content = _arg_get(s3, f"{prefix}{station}_LATEST.json")
+    if content:
+        live = json.loads(content)
+        live_updated_epoch = live.get('updated_at_epoch')
+        for r in (live.get('pending') or []) + [live.get('latest') or {}]:
+            add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
+ 
+    rows = sorted(merged.values(), key=lambda x: x['timestamp'])
+    return rows, live_updated_epoch, f"s3://{ARG_S3_BUCKET}/{prefix}"
+ 
+ 
+def _arg_window(rows, hours):
+    """Keep only the last `hours`, counted back from the newest reading."""
+    if not rows:
+        return []
+    try:
+        newest_dt = datetime.fromisoformat(rows[-1]['timestamp'])
+        cutoff = (newest_dt - timedelta(hours=hours)).isoformat()
+        return [r for r in rows if r['timestamp'] >= cutoff]
+    except ValueError:
+        return rows[-hours * 4:]
+ 
+ 
+def _arg_hours(value, default=24):
+    try:
+        return max(1, min(int(value if value is not None else default), 24 * 30))
+    except (TypeError, ValueError):
+        return default
+ 
+ 
+def _arg_unknown_station():
+    return JsonResponse({"error": f"Unknown station. Use one of: {', '.join(ARG_STATIONS)}"}, status=400)
+ 
+ 
 @require_GET
 def get_arg_rainfall_data(request):
     """
     GET /api/weather/arg-rainfall?station=ARGS1&limit=96
     Returns the latest ARG reading plus recent history from S3.
     """
-    station = request.GET.get('station', 'ARGS1').strip()
+    station = _arg_station(request.GET.get('station'))
+    if not station:
+        return _arg_unknown_station()
     try:
         limit = max(1, min(int(request.GET.get('limit', 96)), 2000))
     except ValueError:
         limit = 96
-
+ 
     try:
-        s3 = boto3.client(
-            's3',
-            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-            region_name=ARG_S3_REGION
-        )
-
-        key = f"{ARG_S3_PREFIX}{station}_MASTER_LOG.csv"
-        try:
-            obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=key)
-        except ClientError as e:
-            if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
-                raise
-            # Fallback: use the newest CSV in the folder
-            listing = s3.list_objects_v2(Bucket=ARG_S3_BUCKET, Prefix=ARG_S3_PREFIX)
-            csv_objects = [o for o in listing.get('Contents', []) if o['Key'].endswith('.csv')]
-            if not csv_objects:
-                return JsonResponse({"error": f"No ARG data found in s3://{ARG_S3_BUCKET}/{ARG_S3_PREFIX}"}, status=404)
-            key = max(csv_objects, key=lambda o: o['LastModified'])['Key']
-            obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=key)
-
-        content = obj['Body'].read().decode('utf-8-sig')
-        reader = csv.DictReader(io.StringIO(content))
-
-        rows = []
-        for r in reader:
-            timestamp = (r.get('Timestamp') or '').strip()
-            if not timestamp:
-                continue
-            rows.append({
-                "id": (r.get('ID') or station).strip(),
-                "timestamp": timestamp,
-                "rainfall": _arg_float(r.get('RFD(mm)')),
-                "temperature": _arg_float(r.get('T(c)')),
-                "humidity": _arg_float(r.get('RH(%)')),
-            })
-
+        rows, _, source = _arg_merged_rows(station)
         if not rows:
-            return JsonResponse({"error": "ARG file is empty"}, status=404)
-
-        rows.sort(key=lambda x: x['timestamp'])
+            return JsonResponse({"error": f"No ARG data found for {station}"}, status=404)
+ 
         recent = rows[-limit:]
-
         return JsonResponse({
             "station": station,
-            "source": f"s3://{ARG_S3_BUCKET}/{key}",
+            "name": ARG_STATIONS[station]['name'],
+            "source": source,
             "latest": recent[-1],
             "count": len(recent),
             "data": recent
         })
-
+ 
     except ClientError as e:
         code = e.response.get('Error', {}).get('Code', 'Unknown')
         print(f"❌ ARG S3 error [{code}]: {e}")
@@ -840,90 +941,42 @@ def get_arg_rainfall_data(request):
     except Exception as e:
         print(f"❌ Error in get_arg_rainfall_data: {e}")
         return JsonResponse({"error": "Failed to fetch ARG data"}, status=500)
-
-
+ 
+ 
 @require_GET
 def get_arg_realtime(request):
     """
     GET /api/weather/arg-realtime?station=ARGS1&hours=24
+    GET /api/weather/arg-realtime?station=ARGS2&hours=24   (Kuttampuzha)
     REAL-TIME ARG data: merges the hourly master log (CSV) with the live
     readings pushed on every new file ({station}_LATEST.json).
     """
-    station = request.GET.get('station', 'ARGS1').strip()
+    station = _arg_station(request.GET.get('station'))
+    if not station:
+        return _arg_unknown_station()
+    hours = _arg_hours(request.GET.get('hours'))
+ 
     try:
-        hours = max(1, min(int(request.GET.get('hours', 24)), 24 * 30))
-    except ValueError:
-        hours = 24
-
-    try:
-        s3 = boto3.client(
-            's3',
-            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-            region_name=ARG_S3_REGION
-        )
-
-        merged = {}  # timestamp -> row (dedupes CSV + live readings)
-
-        def add_row(ts, rid, rf, t, rh):
-            ts = (ts or '').strip()
-            if not ts:
-                return
-            merged[ts] = {
-                "id": (rid or station).strip(),
-                "timestamp": ts,
-                "rainfall": _arg_float(rf),
-                "temperature": _arg_float(t),
-                "humidity": _arg_float(rh),
-            }
-
-        # 1. Hourly master log (history)
-        try:
-            obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=f"{ARG_S3_PREFIX}{station}_MASTER_LOG.csv")
-            content = obj['Body'].read().decode('utf-8-sig')
-            for r in csv.DictReader(io.StringIO(content)):
-                add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
-        except ClientError as e:
-            if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
-                raise
-
-        # 2. Live readings (newest, not yet in the hourly log)
-        live_updated_epoch = None
-        try:
-            obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=f"{ARG_S3_PREFIX}{station}_LATEST.json")
-            live = json.loads(obj['Body'].read().decode('utf-8'))
-            live_updated_epoch = live.get('updated_at_epoch')
-            for r in (live.get('pending') or []) + [live.get('latest') or {}]:
-                add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
-        except ClientError as e:
-            if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
-                raise
-
-        if not merged:
-            return JsonResponse({"error": f"No ARG data found for {station}"}, status=404)
-
-        rows = sorted(merged.values(), key=lambda x: x['timestamp'])
+        rows, live_updated_epoch, source = _arg_merged_rows(station)
+        if not rows:
+            return JsonResponse({"error": f"No ARG data found for {station} ({ARG_STATIONS[station]['name']})"}, status=404)
+ 
         latest = rows[-1]
-
-        # Keep only the requested window, counted back from the newest reading
-        try:
-            newest_dt = datetime.fromisoformat(latest['timestamp'])
-            cutoff = (newest_dt - timedelta(hours=hours)).isoformat()
-            window = [r for r in rows if r['timestamp'] >= cutoff]
-        except ValueError:
-            window = rows[-hours * 4:]
-
+        window = _arg_window(rows, hours)
+ 
         now_epoch = int(datetime.now(timezone.utc).timestamp())
         age_seconds = (now_epoch - live_updated_epoch) if live_updated_epoch else None
-
+ 
         def stat(key, fn):
             vals = [r[key] for r in window if r[key] is not None
                     # skip temp/humidity from readings where the sensor is faulty (-39 °C)
                     and (key == 'rainfall' or r['temperature'] is None or r['temperature'] > -39)]
             return fn(vals) if vals else None
-
+ 
         return JsonResponse({
             "station": station,
+            "name": ARG_STATIONS[station]['name'],
+            "source": source,
             "latest": latest,
             "server_epoch": now_epoch,
             "last_received_epoch": live_updated_epoch,
@@ -939,7 +992,7 @@ def get_arg_realtime(request):
             "count": len(window),
             "data": window
         })
-
+ 
     except ClientError as e:
         code = e.response.get('Error', {}).get('Code', 'Unknown')
         print(f"❌ ARG realtime S3 error [{code}]: {e}")
@@ -947,106 +1000,58 @@ def get_arg_realtime(request):
     except Exception as e:
         print(f"❌ Error in get_arg_realtime: {e}")
         return JsonResponse({"error": "Failed to fetch ARG realtime data"}, status=500)
-
-
+ 
+ 
 # =========================================================
 # ARG — PROTECTED CSV DOWNLOAD
-# POST /api/weather/arg-download/   body: {"key": "...", "station": "ARGS1", "hours": 24}
+# POST /api/weather/arg-download/   body: {"key": "...", "station": "ARGS1" | "ARGS2", "hours": 24}
 # The key is checked against the ARG_DOWNLOAD_KEY environment variable.
 # =========================================================
 ARG_DL_MAX_ATTEMPTS = 5            # wrong keys allowed per IP...
 ARG_DL_LOCKOUT_SECONDS = 15 * 60   # ...within this many seconds
-
-
+ 
+ 
 def _client_ip(request):
     fwd = request.META.get('HTTP_X_FORWARDED_FOR')
     return fwd.split(',')[0].strip() if fwd else request.META.get('REMOTE_ADDR', 'unknown')
-
-
+ 
+ 
 def _load_arg_rows(station, hours):
     """Same data as get_arg_realtime: master CSV + live JSON, trimmed to the last `hours`."""
-    s3 = boto3.client(
-        's3',
-        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-        region_name=ARG_S3_REGION
-    )
-
-    merged = {}
-
-    def add_row(ts, rid, rf, t, rh):
-        ts = (ts or '').strip()
-        if not ts:
-            return
-        merged[ts] = {
-            "id": (rid or station).strip(),
-            "timestamp": ts,
-            "rainfall": _arg_float(rf),
-            "temperature": _arg_float(t),
-            "humidity": _arg_float(rh),
-        }
-
-    try:
-        obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=f"{ARG_S3_PREFIX}{station}_MASTER_LOG.csv")
-        content = obj['Body'].read().decode('utf-8-sig')
-        for r in csv.DictReader(io.StringIO(content)):
-            add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
-    except ClientError as e:
-        if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
-            raise
-
-    try:
-        obj = s3.get_object(Bucket=ARG_S3_BUCKET, Key=f"{ARG_S3_PREFIX}{station}_LATEST.json")
-        live = json.loads(obj['Body'].read().decode('utf-8'))
-        for r in (live.get('pending') or []) + [live.get('latest') or {}]:
-            add_row(r.get('Timestamp'), r.get('ID'), r.get('RFD(mm)'), r.get('T(c)'), r.get('RH(%)'))
-    except ClientError as e:
-        if e.response.get('Error', {}).get('Code') != 'NoSuchKey':
-            raise
-
-    rows = sorted(merged.values(), key=lambda x: x['timestamp'])
-    if not rows:
-        return []
-
-    try:
-        newest_dt = datetime.fromisoformat(rows[-1]['timestamp'])
-        cutoff = (newest_dt - timedelta(hours=hours)).isoformat()
-        return [r for r in rows if r['timestamp'] >= cutoff]
-    except ValueError:
-        return rows[-hours * 4:]
-
-
+    rows, _, _ = _arg_merged_rows(station)
+    return _arg_window(rows, hours)
+ 
+ 
 @csrf_exempt
 @require_POST
 def arg_download(request):
     expected_key = os.environ.get('ARG_DOWNLOAD_KEY', '')
     if not expected_key:
         return JsonResponse({'error': 'Downloads are not configured on the server.'}, status=503)
-
+ 
     ip = _client_ip(request)
     attempts_key = f'arg_dl_attempts:{ip}'
     attempts = cache.get(attempts_key, 0)
     if attempts >= ARG_DL_MAX_ATTEMPTS:
         return JsonResponse({'error': 'Too many wrong attempts. Try again in 15 minutes.'}, status=429)
-
+ 
     try:
         body = json.loads(request.body or '{}')
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid request.'}, status=400)
-
+ 
     key = str(body.get('key', ''))
     if not hmac.compare_digest(key.encode(), expected_key.encode()):
         cache.set(attempts_key, attempts + 1, ARG_DL_LOCKOUT_SECONDS)
         return JsonResponse({'error': 'Incorrect download key.'}, status=401)
-
+ 
     cache.delete(attempts_key)
-
-    station = str(body.get('station', 'ARGS1')).strip()
-    try:
-        hours = max(1, min(int(body.get('hours', 24)), 24 * 30))
-    except (TypeError, ValueError):
-        hours = 24
-
+ 
+    station = _arg_station(body.get('station'))
+    if not station:
+        return _arg_unknown_station()
+    hours = _arg_hours(body.get('hours'))
+ 
     try:
         rows = _load_arg_rows(station, hours)
     except ClientError as e:
@@ -1056,10 +1061,10 @@ def arg_download(request):
     except Exception as e:
         print(f"❌ Error in arg_download: {e}")
         return JsonResponse({'error': 'Failed to prepare download.'}, status=500)
-
+ 
     if not rows:
         return JsonResponse({'error': f'No ARG data found for {station}'}, status=404)
-
+ 
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(['ID', 'Timestamp', 'RFD(mm)', 'T(c)', 'RH(%)'])
@@ -1070,8 +1075,9 @@ def arg_download(request):
             '' if r['temperature'] is None else r['temperature'],
             '' if r['humidity'] is None else r['humidity'],
         ])
-
+ 
+    filename = f"{station}_{ARG_STATIONS[station]['name']}_{hours}h.csv"
     response = HttpResponse(buf.getvalue(), content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="{station}_{hours}h.csv"'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     response['Cache-Control'] = 'no-store'
     return response
